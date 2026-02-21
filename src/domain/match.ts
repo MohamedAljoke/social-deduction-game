@@ -68,6 +68,10 @@ export class Match {
   }
 
   public addPlayer(name: string): Player {
+    if (this.status !== MatchStatus.LOBBY) {
+      throw new Error("Cannot join after match started");
+    }
+
     const id = crypto.randomUUID();
     const player = new Player(id, name);
     this.players.push(player);

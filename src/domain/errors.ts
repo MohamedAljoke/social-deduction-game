@@ -14,6 +14,18 @@ export class PlayerNotFound extends DomainError {
   }
 }
 
+export class MatchNotFound extends DomainError {
+  constructor() {
+    super("Match not found", "match_not_found");
+  }
+}
+
+export class MatchAlreadyStarted extends DomainError {
+  constructor() {
+    super("Cannot join after match started", "match_already_started");
+  }
+}
+
 export class WrongPhaseError extends DomainError {
   constructor(expectedPhase: PhaseType, currentPhase: PhaseType) {
     super(
