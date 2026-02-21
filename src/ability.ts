@@ -4,5 +4,8 @@ export enum AbilityId {
 }
 
 export class Ability {
-  constructor(public readonly id: AbilityId) {}
+  constructor(
+    public readonly id: AbilityId,
+    public readonly canUseWhenDead: boolean = false,
+  ) {}
 }

@@ -1,5 +1,8 @@
+import { Template } from "./template";
+
 export class Player {
   private alive: boolean = true;
+  private template: Template | null = null;
 
   constructor(
     public readonly id: string,
@@ -12,5 +15,13 @@ export class Player {
 
   public eliminate(): void {
     this.alive = false;
+  }
+
+  public getTemplate(): Template | null {
+    return this.template;
+  }
+
+  public assignTemplate(template: Template): void {
+    this.template = template;
   }
 }

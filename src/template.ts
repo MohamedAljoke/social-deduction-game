@@ -12,4 +12,8 @@ export class Template {
     public readonly alignment: Alignment,
     public readonly abilities: Ability[],
   ) {}
+
+  public getAbility(abilityId: AbilityId): Ability | undefined {
+    return this.abilities.find((ability) => ability.id == abilityId);
+  }
 }
