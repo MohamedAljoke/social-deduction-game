@@ -13,14 +13,26 @@ import { Action } from "./action";
 import { AbilityEffectFactory, EffectRegistry } from "./effects";
 import { ResolutionState } from "./resolution/ResolutionState";
 
+export enum MatchStatus {
+  LOBBY = "lobby",
+  STARTED = "started",
+  FINISHED = "finished",
+}
+
 export class Match {
   private players: Player[] = [];
   private phase: Phase = new Phase();
   private actionQueue: Action[] = [];
   private effectRegistry: EffectRegistry;
+  private status: MatchStatus;
 
   constructor() {
     this.effectRegistry = AbilityEffectFactory.createRegistry();
+    this.status = MatchStatus.LOBBY;
+  }
+
+  getStatus() {
+    return this.status;
   }
 
   public submitAction(
