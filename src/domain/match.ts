@@ -11,6 +11,7 @@ import { Phase, PhaseType } from "./phase";
 import { Player } from "./player";
 import { AbilityId } from "./ability";
 import { Action } from "./action";
+import { Vote } from "./vote";
 import { AbilityEffectFactory, EffectRegistry } from "./effects";
 import { ResolutionState } from "./resolution/ResolutionState";
 import { ResolutionContext } from "./resolution/ResolutionContext";
@@ -26,6 +27,7 @@ export class Match {
   private players: Player[] = [];
   private phase: Phase = new Phase();
   private actionQueue: Action[] = [];
+  private voteQueue: Vote[] = [];
   private effectRegistry: EffectRegistry;
   private status: MatchStatus;
 
@@ -36,6 +38,24 @@ export class Match {
 
   getStatus() {
     return this.status;
+  }
+
+  getWinner(): "heroes" | "villains" | "draw" | null {
+    if (this.status !== MatchStatus.FINISHED) {
+      return null;
+    }
+
+    const alivePlayers = this.players.filter(p => p.isAlive());
+
+    if (alivePlayers.length === 0) {
+      return "draw";
+    }
+
+    const aliveVillains = alivePlayers.filter(p =>
+      p.getTemplate()?.alignment === "villain"
+    ).length;
+
+    return aliveVillains === 0 ? "heroes" : "villains";
   }
 
   public start(templates: Template[]): void {
@@ -66,6 +86,27 @@ export class Match {
     const action = player.act(abilityId, targetIds);
 
     this.actionQueue.push(action);
+  }
+
+  public submitVote(voterId: string, targetId: string): void {
+    this.ensurePhase("voting");
+
+    const voter = this.getPlayerByID(voterId);
+    const target = this.getPlayerByID(targetId);
+
+    if (!voter.isAlive()) {
+      throw new PlayerIsDeadError();
+    }
+
+    if (!target.isAlive()) {
+      throw new PlayerIsDeadError();
+    }
+
+    // Remove previous vote from this voter
+    this.voteQueue = this.voteQueue.filter(v => v.voterId !== voterId);
+
+    const vote = new Vote(voterId, targetId);
+    this.voteQueue.push(vote);
   }
 
   private ensurePhase(expected: PhaseType) {
@@ -114,8 +155,15 @@ export class Match {
   }
 
   public advancePhase(): PhaseType {
+    const currentPhase = this.getCurrentPhase();
     const next = this.phase.nextPhase();
 
+    // Tally votes when leaving voting phase
+    if (currentPhase === "voting") {
+      this.tallyVotes();
+    }
+
+    // Resolve actions when entering resolution phase
     if (next === "resolution") {
       this.resolveActions();
       this.checkWinCondition();
@@ -124,9 +172,67 @@ export class Match {
     return next;
   }
 
+  private tallyVotes(): void {
+    if (this.voteQueue.length === 0) {
+      return;
+    }
+
+    // Count votes for each target
+    const voteCounts = new Map<string, number>();
+    for (const vote of this.voteQueue) {
+      const currentCount = voteCounts.get(vote.targetId) || 0;
+      voteCounts.set(vote.targetId, currentCount + 1);
+    }
+
+    // Find player(s) with most votes
+    let maxVotes = 0;
+    let playersWithMaxVotes: string[] = [];
+
+    for (const [playerId, count] of voteCounts.entries()) {
+      if (count > maxVotes) {
+        maxVotes = count;
+        playersWithMaxVotes = [playerId];
+      } else if (count === maxVotes) {
+        playersWithMaxVotes.push(playerId);
+      }
+    }
+
+    // Eliminate if there's a clear majority (no ties)
+    if (playersWithMaxVotes.length === 1) {
+      this.eliminatePlayer(playersWithMaxVotes[0]);
+    }
+
+    // Clear votes
+    this.voteQueue = [];
+  }
+
   private checkWinCondition(): void {
-    // TODO: Implement win condition logic
-    // For now, just check if game should end
+    const alivePlayers = this.players.filter(p => p.isAlive());
+
+    if (alivePlayers.length === 0) {
+      this.status = MatchStatus.FINISHED;
+      return;
+    }
+
+    const aliveVillains = alivePlayers.filter(p =>
+      p.getTemplate()?.alignment === "villain"
+    ).length;
+
+    const aliveHeroes = alivePlayers.filter(p =>
+      p.getTemplate()?.alignment === "hero"
+    ).length;
+
+    // Villains win if they equal or outnumber heroes
+    if (aliveVillains > 0 && aliveVillains >= aliveHeroes) {
+      this.status = MatchStatus.FINISHED;
+      return;
+    }
+
+    // Heroes win if all villains are dead
+    if (aliveVillains === 0) {
+      this.status = MatchStatus.FINISHED;
+      return;
+    }
   }
 
   private resolveActions(): void {

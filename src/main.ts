@@ -7,8 +7,10 @@ import { JoinMatchUseCase } from "./application/JoinMatchUseCase";
 import { CreateTemplateUseCase } from "./application/CreateTemplateUseCase";
 import { StartMatchUseCase } from "./application/StartMatchUseCase";
 import { SubmitActionUseCase } from "./application/SubmitActionUseCase";
+import { SubmitVoteUseCase } from "./application/SubmitVoteUseCase";
 import { AdvancePhaseUseCase } from "./application/AdvancePhaseUseCase";
 import { GetMatchUseCase } from "./application/GetMatchUseCase";
+import { GetPlayerRoleUseCase } from "./application/GetPlayerRoleUseCase";
 import { ListTemplatesUseCase } from "./application/ListTemplatesUseCase";
 import { GetTemplateUseCase } from "./application/GetTemplateUseCase";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
@@ -26,8 +28,10 @@ const templateRepository: TemplateRepository = new InMemoryTemplateRepository();
 const createMatchUseCase = new CreateMatchUseCase(matchRepository);
 const joinMatchUseCase = new JoinMatchUseCase(matchRepository);
 const getMatchUseCase = new GetMatchUseCase(matchRepository);
+const getPlayerRoleUseCase = new GetPlayerRoleUseCase(matchRepository);
 const startMatchUseCase = new StartMatchUseCase(matchRepository, templateRepository);
 const submitActionUseCase = new SubmitActionUseCase(matchRepository);
+const submitVoteUseCase = new SubmitVoteUseCase(matchRepository);
 const advancePhaseUseCase = new AdvancePhaseUseCase(matchRepository);
 const createTemplateUseCase = new CreateTemplateUseCase(templateRepository);
 const listTemplatesUseCase = new ListTemplatesUseCase(templateRepository);
@@ -52,6 +56,17 @@ app.get("/matches/:id", async (req, res) => {
 
   try {
     const result = await getMatchUseCase.execute(id);
+    res.json(result);
+  } catch (err) {
+    handleError(err, res);
+  }
+});
+
+app.get("/matches/:matchId/players/:playerId/role", async (req, res) => {
+  const { matchId, playerId } = req.params;
+
+  try {
+    const result = await getPlayerRoleUseCase.execute(matchId, playerId);
     res.json(result);
   } catch (err) {
     handleError(err, res);
@@ -168,6 +183,32 @@ app.post("/matches/:id/actions", async (req, res) => {
       parsed.data.actorId,
       parsed.data.abilityId as AbilityId,
       parsed.data.targetIds
+    );
+    res.json(result);
+  } catch (err) {
+    handleError(err, res);
+  }
+});
+
+const submitVoteSchema = z.object({
+  voterId: z.string(),
+  targetId: z.string(),
+});
+
+app.post("/matches/:id/votes", async (req, res) => {
+  const { id } = req.params;
+  const parsed = submitVoteSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request", details: parsed.error });
+    return;
+  }
+
+  try {
+    const result = await submitVoteUseCase.execute(
+      id,
+      parsed.data.voterId,
+      parsed.data.targetId
     );
     res.json(result);
   } catch (err) {
