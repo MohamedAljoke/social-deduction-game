@@ -13,7 +13,7 @@ export class GetMatchUseCase {
 
     return {
       id: session.id,
-      status: session.status,
+      status: session.match.getStatus(),
       currentPhase: session.match.getCurrentPhase(),
       winner: session.match.getWinner(),
       players: session.match.getPlayers().map(p => ({

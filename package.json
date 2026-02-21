@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/main.ts",
     "test": "vitest",
+    "demo": "tsx demo.ts",
     "coverage": "vitest run --coverage"
   },
   "keywords": [],
