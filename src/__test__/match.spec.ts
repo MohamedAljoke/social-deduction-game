@@ -1,15 +1,15 @@
 import { describe, expect, test } from "vitest";
-import { Match } from "../match";
+import { Match } from "../domain/match";
 import {
   AbilityDoesNotBelongToUser,
   MissingTemplate,
   PlayerIsDeadError,
   PlayerNotFound,
   WrongPhaseError,
-} from "../errors";
-import { PHASE_ORDER } from "../phase";
-import { Alignment, Template } from "../template";
-import { Ability, AbilityId } from "../ability";
+} from "../domain/errors";
+import { PHASE_ORDER } from "../domain/phase";
+import { Alignment, Template } from "../domain/template";
+import { Ability, AbilityId } from "../domain/ability";
 
 describe("match", () => {
   test("should get all players", () => {
