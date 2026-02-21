@@ -10,11 +10,18 @@ import { Phase, PhaseType } from "./phase";
 import { Player } from "./player";
 import { AbilityId } from "./ability";
 import { Action } from "./action";
+import { AbilityEffectFactory, EffectRegistry } from "./effects";
+import { ResolutionState } from "./resolution/ResolutionState";
 
 export class Match {
   private players: Player[] = [];
   private phase: Phase = new Phase();
   private actionQueue: Action[] = [];
+  private effectRegistry: EffectRegistry;
+
+  constructor() {
+    this.effectRegistry = AbilityEffectFactory.createRegistry();
+  }
 
   public submitAction(
     actorId: string,
@@ -68,5 +75,30 @@ export class Match {
     }
 
     return player;
+  }
+
+  public resolveActions(): void {
+    this.ensurePhase("resolution");
+
+    const state: ResolutionState = {
+      protected: new Set<string>(),
+    };
+
+    // Create action-effect pairs and sort by priority
+    const actionEffectPairs = this.actionQueue
+      .map((action) => ({
+        action,
+        effect: this.effectRegistry.getEffect(action.abilityId),
+      }))
+      .filter((pair) => pair.effect !== undefined)
+      .sort((a, b) => a.effect!.priority - b.effect!.priority);
+
+    // Execute effects in priority order
+    for (const { action, effect } of actionEffectPairs) {
+      effect!.execute(action, this.actionQueue, this, state);
+    }
+
+    // Clear the queue after resolution
+    this.actionQueue = [];
   }
 }
