@@ -1,0 +1,64 @@
+import { Router } from "express";
+import { z } from "zod";
+import { Alignment } from "../../domain/template";
+import { AbilityId } from "../../domain/ability";
+import { CreateTemplateUseCase } from "../../application/CreateTemplateUseCase";
+import { ListTemplatesUseCase } from "../../application/ListTemplatesUseCase";
+import { GetTemplateUseCase } from "../../application/GetTemplateUseCase";
+import { handleError } from "../middleware";
+
+export type TemplateDeps = {
+  createTemplate: CreateTemplateUseCase;
+  listTemplates: ListTemplatesUseCase;
+  getTemplate: GetTemplateUseCase;
+};
+
+const templateSchema = z.object({
+  alignment: z.enum(["villain", "hero", "neutral"]),
+  abilities: z.array(z.object({
+    id: z.enum(["kill", "protect"]),
+    canUseWhenDead: z.boolean().optional(),
+  })),
+});
+
+export function createTemplateRouter(deps: TemplateDeps): Router {
+  const router = Router();
+
+  router.get("/", async (_req, res) => {
+    const result = await deps.listTemplates.execute();
+    res.json(result);
+  });
+
+  router.get("/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await deps.getTemplate.execute(id);
+      res.json(result);
+    } catch (err) {
+      handleError(err, res);
+    }
+  });
+
+  router.post("/", async (req, res) => {
+    const parsed = templateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request", details: parsed.error });
+      return;
+    }
+    try {
+      const input = {
+        alignment: parsed.data.alignment as Alignment,
+        abilities: parsed.data.abilities.map(a => ({
+          id: a.id as AbilityId,
+          canUseWhenDead: a.canUseWhenDead ?? false,
+        })),
+      };
+      const result = await deps.createTemplate.execute(input);
+      res.status(201).json(result);
+    } catch (err) {
+      handleError(err, res);
+    }
+  });
+
+  return router;
+}
