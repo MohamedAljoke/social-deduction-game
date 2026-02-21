@@ -1,7 +1,15 @@
 import { describe, expect, test } from "vitest";
 import { Match } from "../match";
-import { PlayerNotFound } from "../errors";
+import {
+  AbilityDoesNotBelongToUser,
+  MissingTemplate,
+  PlayerIsDeadError,
+  PlayerNotFound,
+  WrongPhaseError,
+} from "../errors";
 import { PHASE_ORDER } from "../phase";
+import { Alignment, Template } from "../template";
+import { Ability, AbilityId } from "../ability";
 
 describe("match", () => {
   test("should get all players", () => {
@@ -57,5 +65,96 @@ describe("match", () => {
     match.eliminatePlayer(player.id);
 
     expect(match.getPlayerByID(player.id).isAlive()).toBe(false);
+  });
+
+  test("should allow player to act when player has the ability", () => {
+    const match = new Match();
+
+    const playerOne = match.addPlayer("test1");
+    const playerTwo = match.addPlayer("test2");
+
+    const templateKiller = new Template("player_one_id", Alignment.Villain, [
+      new Ability(AbilityId.Kill),
+    ]);
+
+    playerOne.assignTemplate(templateKiller);
+
+    match.nextPhase();
+    match.nextPhase();
+
+    expect(() =>
+      match.submitAction(playerOne.id, AbilityId.Kill, [playerTwo.id]),
+    ).not.toThrow();
+  });
+
+  test("should not allow action in discussion phase", () => {
+    const match = new Match();
+
+    const playerOne = match.addPlayer("test1");
+    const playerTwo = match.addPlayer("test2");
+
+    const templateKiller = new Template("player_one_id", Alignment.Villain, [
+      new Ability(AbilityId.Kill),
+    ]);
+
+    playerOne.assignTemplate(templateKiller);
+
+    expect(() =>
+      match.submitAction(playerOne.id, AbilityId.Kill, [playerTwo.id]),
+    ).toThrow(WrongPhaseError);
+  });
+  test("should not allow action if player does not have a template", () => {
+    const match = new Match();
+
+    const playerOne = match.addPlayer("test1");
+    const playerTwo = match.addPlayer("test2");
+
+    match.nextPhase();
+    match.nextPhase();
+
+    expect(() =>
+      match.submitAction(playerOne.id, AbilityId.Kill, [playerTwo.id]),
+    ).toThrow(MissingTemplate);
+  });
+  test("should not allow action if player does not have the ability", () => {
+    const match = new Match();
+
+    const playerOne = match.addPlayer("test1");
+    const playerTwo = match.addPlayer("test2");
+
+    const templateKiller = new Template("player_one_id", Alignment.Villain, [
+      new Ability(AbilityId.Kill),
+    ]);
+
+    playerOne.assignTemplate(templateKiller);
+
+    match.nextPhase();
+    match.nextPhase();
+
+    expect(() =>
+      match.submitAction(playerOne.id, AbilityId.Protect, [playerTwo.id]),
+    ).toThrow(AbilityDoesNotBelongToUser);
+  });
+
+  test("should not allow a dead player to make action for alive ability", () => {
+    const match = new Match();
+
+    const playerOne = match.addPlayer("test1");
+    const playerTwo = match.addPlayer("test2");
+
+    const templateKiller = new Template("player_one_id", Alignment.Villain, [
+      new Ability(AbilityId.Kill),
+    ]);
+
+    playerOne.assignTemplate(templateKiller);
+
+    playerOne.eliminate();
+
+    match.nextPhase();
+    match.nextPhase();
+
+    expect(() =>
+      match.submitAction(playerOne.id, AbilityId.Kill, [playerTwo.id]),
+    ).toThrow(PlayerIsDeadError);
   });
 });

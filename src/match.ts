@@ -21,30 +21,20 @@ export class Match {
     abilityId: AbilityId,
     targetIds: string[],
   ): void {
-    if (this.getCurrentPhase() !== "action") {
-      throw new WrongPhaseError("action", this.getCurrentPhase());
-    }
+    this.ensurePhase("action");
 
-    const actorPlayer = this.getPlayerByID(actorId);
-    const actorPlayerTemplate = actorPlayer.getTemplate();
-    if (!actorPlayerTemplate) {
-      throw new MissingTemplate();
-    }
-
-    const ability = actorPlayerTemplate.getAbility(abilityId);
-    if (!ability) {
-      throw new AbilityDoesNotBelongToUser();
-    }
-
-    if (!actorPlayer.isAlive() && !ability.canUseWhenDead) {
-      throw new PlayerIsDeadError();
-    }
-
-    const action = new Action(actorId, abilityId, targetIds);
+    const player = this.getPlayerByID(actorId);
+    const action = player.act(abilityId, targetIds);
 
     this.actionQueue.push(action);
   }
 
+  private ensurePhase(expected: PhaseType) {
+    const current = this.getCurrentPhase();
+    if (current !== expected) {
+      throw new WrongPhaseError("action", this.getCurrentPhase());
+    }
+  }
   public eliminatePlayer(id: string): void {
     const player = this.getPlayerByID(id);
     player.eliminate();
@@ -58,9 +48,12 @@ export class Match {
     return this.phase.nextPhase();
   }
 
-  public addPlayer(name: string): void {
+  public addPlayer(name: string): Player {
     const id = crypto.randomUUID();
-    this.players.push(new Player(id, name));
+    const player = new Player(id, name);
+    this.players.push(player);
+
+    return player;
   }
 
   public getPlayers(): Player[] {

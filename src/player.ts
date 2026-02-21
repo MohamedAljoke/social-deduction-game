@@ -1,3 +1,10 @@
+import { AbilityId } from "./ability";
+import { Action } from "./action";
+import {
+  AbilityDoesNotBelongToUser,
+  MissingTemplate,
+  PlayerIsDeadError,
+} from "./errors";
 import { Template } from "./template";
 
 export class Player {
@@ -23,5 +30,24 @@ export class Player {
 
   public assignTemplate(template: Template): void {
     this.template = template;
+  }
+
+  public act(abilityId: AbilityId, targetIds: string[]): Action {
+    if (!this.template) {
+      throw new MissingTemplate();
+    }
+
+    const ability = this.template.getAbility(abilityId);
+    if (!ability) {
+      throw new AbilityDoesNotBelongToUser();
+    }
+
+    if (!this.isAlive() && !ability.canUseWhenDead) {
+      throw new PlayerIsDeadError();
+    }
+
+    const action = new Action(this.id, abilityId, targetIds);
+
+    return action;
   }
 }
