@@ -17,4 +17,8 @@ export class InMemoryTemplateRepository implements TemplateRepository {
       .map((id) => this.templates.get(id))
       .filter((t): t is Template => t !== undefined);
   }
+
+  async findAll(): Promise<Template[]> {
+    return Array.from(this.templates.values());
+  }
 }

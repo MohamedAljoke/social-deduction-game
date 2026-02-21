@@ -9,6 +9,8 @@ import { StartMatchUseCase } from "./application/StartMatchUseCase";
 import { SubmitActionUseCase } from "./application/SubmitActionUseCase";
 import { AdvancePhaseUseCase } from "./application/AdvancePhaseUseCase";
 import { GetMatchUseCase } from "./application/GetMatchUseCase";
+import { ListTemplatesUseCase } from "./application/ListTemplatesUseCase";
+import { GetTemplateUseCase } from "./application/GetTemplateUseCase";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 import { InMemoryTemplateRepository } from "./infrastructure/persistence/InMemoryTemplateRepository";
 import { MatchRepository } from "./infrastructure/persistence/MatchRepository";
@@ -23,11 +25,13 @@ const templateRepository: TemplateRepository = new InMemoryTemplateRepository();
 
 const createMatchUseCase = new CreateMatchUseCase(matchRepository);
 const joinMatchUseCase = new JoinMatchUseCase(matchRepository);
-const createTemplateUseCase = new CreateTemplateUseCase(templateRepository);
+const getMatchUseCase = new GetMatchUseCase(matchRepository);
 const startMatchUseCase = new StartMatchUseCase(matchRepository, templateRepository);
 const submitActionUseCase = new SubmitActionUseCase(matchRepository);
 const advancePhaseUseCase = new AdvancePhaseUseCase(matchRepository);
-const getMatchUseCase = new GetMatchUseCase(matchRepository);
+const createTemplateUseCase = new CreateTemplateUseCase(templateRepository);
+const listTemplatesUseCase = new ListTemplatesUseCase(templateRepository);
+const getTemplateUseCase = new GetTemplateUseCase(templateRepository);
 
 const handleError = (err: unknown, res: express.Response) => {
   if (err instanceof DomainError) {
@@ -69,6 +73,22 @@ app.post("/matches/:id/join", async (req, res) => {
 
   try {
     const result = await joinMatchUseCase.execute(id, parsed.data.playerName);
+    res.json(result);
+  } catch (err) {
+    handleError(err, res);
+  }
+});
+
+app.get("/templates", async (req, res) => {
+  const result = await listTemplatesUseCase.execute();
+  res.json(result);
+});
+
+app.get("/templates/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await getTemplateUseCase.execute(id);
     res.json(result);
   } catch (err) {
     handleError(err, res);
