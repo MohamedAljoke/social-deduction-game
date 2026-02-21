@@ -1,15 +1,16 @@
 import crypto from "node:crypto";
 import { PlayerNotFound } from "./errors";
-import { Phase, PHASE_ORDER, PhaseType } from "./phase";
-
-type Player = {
-  id: string;
-  name: string;
-};
+import { Phase, PhaseType } from "./phase";
+import { Player } from "./player";
 
 export class Match {
   private players: Player[] = [];
   private phase: Phase = new Phase();
+
+  public eliminatePlayer(id: string): void {
+    const player = this.getPlayerByID(id);
+    player.eliminate();
+  }
 
   public getCurrentPhase(): PhaseType {
     return this.phase.getCurrentPhase();
@@ -21,7 +22,7 @@ export class Match {
 
   public addPlayer(name: string): void {
     const id = crypto.randomUUID();
-    this.players.push({ id: id, name });
+    this.players.push(new Player(id, name));
   }
 
   public getPlayers(): Player[] {

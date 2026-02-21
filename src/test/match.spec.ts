@@ -46,4 +46,16 @@ describe("match", () => {
       );
     });
   });
+
+  test("should eliminate player when found", () => {
+    const match = new Match();
+
+    match.addPlayer("test1");
+    match.addPlayer("test2");
+
+    const player = match.getPlayers()[0];
+    match.eliminatePlayer(player.id);
+
+    expect(match.getPlayerByID(player.id).isAlive()).toBe(false);
+  });
 });
