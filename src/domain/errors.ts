@@ -49,3 +49,15 @@ export class PlayerIsDeadError extends DomainError {
     super("ability can not be used by a dead player", "player_dead");
   }
 }
+
+export class TemplateNotFound extends DomainError {
+  constructor() {
+    super("Template not found", "template_not_found");
+  }
+}
+
+export class InsufficientPlayers extends DomainError {
+  constructor() {
+    super("Need at least 2 players to start", "insufficient_players");
+  }
+}

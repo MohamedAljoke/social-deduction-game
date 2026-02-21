@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {
   AbilityDoesNotBelongToUser,
+  MatchAlreadyStarted,
   MissingTemplate,
   PlayerIsDeadError,
   PlayerNotFound,
@@ -12,6 +13,8 @@ import { AbilityId } from "./ability";
 import { Action } from "./action";
 import { AbilityEffectFactory, EffectRegistry } from "./effects";
 import { ResolutionState } from "./resolution/ResolutionState";
+import { ResolutionContext } from "./resolution/ResolutionContext";
+import { Template } from "./template";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -33,6 +36,23 @@ export class Match {
 
   getStatus() {
     return this.status;
+  }
+
+  public start(templates: Template[]): void {
+    if (this.status !== MatchStatus.LOBBY) {
+      throw new MatchAlreadyStarted();
+    }
+
+    const templateMap = new Map(templates.map((t) => [t.id, t]));
+
+    this.players.forEach((player, index) => {
+      const template = templateMap.get(templates[index].id);
+      if (template) {
+        player.assignTemplate(template);
+      }
+    });
+
+    this.status = MatchStatus.STARTED;
   }
 
   public submitAction(
@@ -93,11 +113,33 @@ export class Match {
     return player;
   }
 
-  public resolveActions(): void {
-    this.ensurePhase("resolution");
+  public advancePhase(): PhaseType {
+    const next = this.phase.nextPhase();
 
+    if (next === "resolution") {
+      this.resolveActions();
+      this.checkWinCondition();
+    }
+
+    return next;
+  }
+
+  private checkWinCondition(): void {
+    // TODO: Implement win condition logic
+    // For now, just check if game should end
+  }
+
+  private resolveActions(): void {
     const state: ResolutionState = {
       protected: new Set<string>(),
+    };
+
+    const context: ResolutionContext = {
+      killPlayer: (id: string) => this.eliminatePlayer(id),
+      isPlayerAlive: (id: string) => {
+        const player = this.getPlayerByID(id);
+        return player.isAlive();
+      },
     };
 
     // Create action-effect pairs and sort by priority
@@ -111,7 +153,7 @@ export class Match {
 
     // Execute effects in priority order
     for (const { action, effect } of actionEffectPairs) {
-      effect!.execute(action, this.actionQueue, this, state);
+      effect!.execute(action, this.actionQueue, context, state);
     }
 
     // Clear the queue after resolution

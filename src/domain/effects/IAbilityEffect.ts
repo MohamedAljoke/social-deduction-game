@@ -1,5 +1,5 @@
 import { Action } from "../action";
-import { Match } from "../match";
+import { ResolutionContext } from "../resolution/ResolutionContext";
 import { ResolutionState } from "../resolution/ResolutionState";
 
 export interface IAbilityEffect {
@@ -7,7 +7,7 @@ export interface IAbilityEffect {
   execute(
     action: Action,
     allActions: Action[],
-    match: Match,
+    context: ResolutionContext,
     state: ResolutionState,
   ): void;
 }
