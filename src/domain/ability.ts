@@ -1,6 +1,8 @@
 export enum AbilityId {
   Kill = "kill",
   Protect = "protect",
+  Roleblock = "roleblock",
+  Investigate = "investigate",
 }
 
 export class Ability {

@@ -16,6 +16,7 @@ export class GetMatchUseCase {
       status: session.match.getStatus(),
       currentPhase: session.match.getCurrentPhase(),
       winner: session.match.getWinner(),
+      jesterWinners: session.match.getJesterWinners(),
       players: session.match.getPlayers().map(p => ({
         id: p.id,
         name: p.name,

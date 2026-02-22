@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Match } from "../domain/match";
+import { Match, MatchStatus } from "../domain/match";
 import {
   AbilityDoesNotBelongToUser,
   MissingTemplate,
@@ -134,6 +134,63 @@ describe("match", () => {
     expect(() =>
       match.submitAction(playerOne.id, AbilityId.Protect, [playerTwo.id]),
     ).toThrow(AbilityDoesNotBelongToUser);
+  });
+
+  describe("jester win condition", () => {
+    function makeJesterTemplate(endsGameOnWin: boolean) {
+      return new Template("jester_tmpl", Alignment.Neutral, [], "vote_eliminated", endsGameOnWin);
+    }
+
+    function advanceToVoting(match: Match) {
+      // Starts in "discussion", advance once to reach "voting"
+      match.advancePhase();
+    }
+
+    test("jester voted out with endsGameOnWin:true ends the match immediately", () => {
+      const match = new Match();
+      const jester = match.addPlayer("jester");
+      const hero = match.addPlayer("hero");
+
+      jester.assignTemplate(makeJesterTemplate(true));
+      hero.assignTemplate(new Template("hero_tmpl", Alignment.Hero, []));
+
+      advanceToVoting(match);
+      match.submitVote(hero.id, jester.id);
+      match.advancePhase(); // leaves voting → tallies votes, checks jester win
+
+      expect(match.getStatus()).toBe(MatchStatus.FINISHED);
+      expect(match.getWinner()).toBe("jester");
+      expect(match.getJesterWinners()).toContain(jester.id);
+    });
+
+    test("jester voted out with endsGameOnWin:false does not end the match", () => {
+      const match = new Match();
+      const jester = match.addPlayer("jester");
+      const hero = match.addPlayer("hero");
+
+      jester.assignTemplate(makeJesterTemplate(false));
+      hero.assignTemplate(new Template("hero_tmpl", Alignment.Hero, []));
+
+      advanceToVoting(match);
+      match.submitVote(hero.id, jester.id);
+      match.advancePhase(); // leaves voting
+
+      expect(match.getStatus()).not.toBe(MatchStatus.FINISHED);
+      expect(match.getJesterWinners()).toContain(jester.id);
+    });
+
+    test("jester killed at night does not trigger jester win", () => {
+      const match = new Match();
+      const jester = match.addPlayer("jester");
+      match.addPlayer("villain");
+
+      jester.assignTemplate(makeJesterTemplate(true));
+
+      // Simulate a night kill by eliminating directly (not through vote tally)
+      match.eliminatePlayer(jester.id);
+
+      expect(match.getJesterWinners()).toHaveLength(0);
+    });
   });
 
   test("should not allow a dead player to make action for alive ability", () => {

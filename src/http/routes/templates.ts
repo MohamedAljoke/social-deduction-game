@@ -19,6 +19,8 @@ const templateSchema = z.object({
     id: z.enum(["kill", "protect"]),
     canUseWhenDead: z.boolean().optional(),
   })),
+  winCondition: z.enum(["default", "vote_eliminated"]).optional(),
+  endsGameOnWin: z.boolean().optional(),
 });
 
 export function createTemplateRouter(deps: TemplateDeps): Router {
@@ -52,6 +54,8 @@ export function createTemplateRouter(deps: TemplateDeps): Router {
           id: a.id as AbilityId,
           canUseWhenDead: a.canUseWhenDead ?? false,
         })),
+        winCondition: parsed.data.winCondition,
+        endsGameOnWin: parsed.data.endsGameOnWin,
       };
       const result = await deps.createTemplate.execute(input);
       res.status(201).json(result);

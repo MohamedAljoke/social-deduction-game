@@ -1,4 +1,4 @@
 export type ResolutionState = {
   protected: Set<string>;
-  // Future: blocked, silenced, redirected, etc.
+  investigations: Map<string, string>; // actorId → target alignment
 };

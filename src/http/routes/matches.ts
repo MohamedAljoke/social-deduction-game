@@ -111,7 +111,7 @@ export function createMatchRouter(deps: MatchDeps): Router {
         id,
         parsed.data.actorId,
         parsed.data.abilityId as AbilityId,
-        parsed.data.targetIds
+        parsed.data.targetIds,
       );
       res.json(result);
     } catch (err) {
@@ -130,7 +130,7 @@ export function createMatchRouter(deps: MatchDeps): Router {
       const result = await deps.submitVote.execute(
         id,
         parsed.data.voterId,
-        parsed.data.targetId
+        parsed.data.targetId,
       );
       res.json(result);
     } catch (err) {

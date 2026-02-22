@@ -30,6 +30,10 @@ export class Match {
   private voteQueue: Vote[] = [];
   private effectRegistry: EffectRegistry;
   private status: MatchStatus;
+  private investigationResults: Map<string, string> = new Map();
+  private voteEliminatedThisRound: string | null = null;
+  private jesterWinners: Set<string> = new Set();
+  private endedByJesterWin: boolean = false;
 
   constructor() {
     this.effectRegistry = AbilityEffectFactory.createRegistry();
@@ -40,9 +44,13 @@ export class Match {
     return this.status;
   }
 
-  getWinner(): "heroes" | "villains" | "draw" | null {
+  getWinner(): "heroes" | "villains" | "draw" | "jester" | null {
     if (this.status !== MatchStatus.FINISHED) {
       return null;
+    }
+
+    if (this.endedByJesterWin) {
+      return "jester";
     }
 
     const alivePlayers = this.players.filter(p => p.isAlive());
@@ -161,6 +169,7 @@ export class Match {
     // Tally votes when leaving voting phase
     if (currentPhase === "voting") {
       this.tallyVotes();
+      this.checkJesterWin();
     }
 
     // Resolve actions when entering resolution phase
@@ -173,6 +182,8 @@ export class Match {
   }
 
   private tallyVotes(): void {
+    this.voteEliminatedThisRound = null;
+
     if (this.voteQueue.length === 0) {
       return;
     }
@@ -199,11 +210,30 @@ export class Match {
 
     // Eliminate if there's a clear majority (no ties)
     if (playersWithMaxVotes.length === 1) {
-      this.eliminatePlayer(playersWithMaxVotes[0]);
+      const target = playersWithMaxVotes[0];
+      this.eliminatePlayer(target);
+      this.voteEliminatedThisRound = target;
     }
 
     // Clear votes
     this.voteQueue = [];
+  }
+
+  private checkJesterWin(): void {
+    if (!this.voteEliminatedThisRound) return;
+    const player = this.getPlayerByID(this.voteEliminatedThisRound);
+    const template = player.getTemplate();
+    if (template?.winCondition === "vote_eliminated") {
+      this.jesterWinners.add(player.id);
+      if (template.endsGameOnWin) {
+        this.endedByJesterWin = true;
+        this.status = MatchStatus.FINISHED;
+      }
+    }
+  }
+
+  public getJesterWinners(): string[] {
+    return Array.from(this.jesterWinners);
   }
 
   private checkWinCondition(): void {
@@ -235,9 +265,16 @@ export class Match {
     }
   }
 
+  public getInvestigationResult(playerId: string): string | null {
+    return this.investigationResults.get(playerId) ?? null;
+  }
+
   private resolveActions(): void {
+    this.investigationResults = new Map();
+
     const state: ResolutionState = {
       protected: new Set<string>(),
+      investigations: new Map<string, string>(),
     };
 
     const context: ResolutionContext = {
@@ -245,6 +282,10 @@ export class Match {
       isPlayerAlive: (id: string) => {
         const player = this.getPlayerByID(id);
         return player.isAlive();
+      },
+      getPlayerAlignment: (id: string) => {
+        const player = this.getPlayerByID(id);
+        return player.getTemplate()?.alignment ?? "unknown";
       },
     };
 
@@ -261,6 +302,9 @@ export class Match {
     for (const { action, effect } of actionEffectPairs) {
       effect!.execute(action, this.actionQueue, context, state);
     }
+
+    // Persist investigation results for this round
+    this.investigationResults = state.investigations;
 
     // Clear the queue after resolution
     this.actionQueue = [];
