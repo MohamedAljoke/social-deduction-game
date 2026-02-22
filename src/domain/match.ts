@@ -16,7 +16,9 @@ import { PlayerRoster } from "./PlayerRoster";
 import { VoteTallier } from "./VoteTallier";
 import { ActionResolver } from "./ActionResolver";
 import { WinConditionEvaluator } from "./winConditions/WinConditionEvaluator";
+import { WinResult, playerToSnapshot } from "./winConditions/IWinCondition";
 import { VoteEliminatedWinCondition } from "./winConditions/VoteEliminatedWinCondition";
+import { MajorityWinCondition } from "./winConditions/MajorityWinCondition";
 import { ResolutionEvent } from "./resolution/ResolutionContext";
 import { PhaseManager } from "./phase/PhaseManager";
 import { MatchContext } from "./phase/MatchContext";
@@ -32,6 +34,7 @@ export class Match {
   private status: MatchStatus;
   private jesterWinners: Set<string> = new Set();
   private endedByJesterWin: boolean = false;
+  private lastWinResult: WinResult | null = null;
 
   private playerRoster: PlayerRoster;
   private voteTallier: VoteTallier;
@@ -45,6 +48,7 @@ export class Match {
     this.actionResolver = new ActionResolver(this.playerRoster);
     this.winConditionEvaluator = new WinConditionEvaluator([
       new VoteEliminatedWinCondition(),
+      new MajorityWinCondition(),
     ]);
     this.status = MatchStatus.LOBBY;
     this.phaseManager = new PhaseManager();
@@ -52,19 +56,6 @@ export class Match {
   }
 
   private registerDefaultHooks(): void {
-    const context: MatchContext = {
-      getCurrentPhase: () => this.getCurrentPhase(),
-      getStatus: () => this.status,
-      tallyVotes: () => this.voteTallier.tallyVotes(),
-      getEliminatedThisRound: () => this.voteTallier.getEliminatedThisRound(),
-      getPlayerByID: (id: string) => this.playerRoster.getPlayerByID(id),
-      getAlivePlayers: () => this.playerRoster.getAlivePlayers(),
-      resolveActions: () => this.actionResolver.resolveActions(),
-      setStatus: (status: MatchStatus) => {
-        this.status = status;
-      },
-    };
-
     this.phaseManager.registerOnLeave("voting", (ctx) => {
       ctx.tallyVotes();
       this.checkJesterWin(ctx);
@@ -91,29 +82,19 @@ export class Match {
   }
 
   private checkWinCondition(ctx: MatchContext): void {
-    const alivePlayers = ctx.getAlivePlayers();
+    const players = this.playerRoster.getPlayers().map(playerToSnapshot);
+    const eliminated = ctx.getEliminatedThisRound();
+    const result = this.winConditionEvaluator.evaluate(
+      players,
+      eliminated ?? null,
+      this.status,
+    );
 
-    if (alivePlayers.length === 0) {
-      this.status = MatchStatus.FINISHED;
-      return;
-    }
-
-    const aliveVillains = alivePlayers.filter(p =>
-      p.getTemplate()?.alignment === "villain"
-    ).length;
-
-    const aliveHeroes = alivePlayers.filter(p =>
-      p.getTemplate()?.alignment === "hero"
-    ).length;
-
-    if (aliveVillains > 0 && aliveVillains >= aliveHeroes) {
-      this.status = MatchStatus.FINISHED;
-      return;
-    }
-
-    if (aliveVillains === 0) {
-      this.status = MatchStatus.FINISHED;
-      return;
+    if (result) {
+      this.lastWinResult = result;
+      if (result.endsGame) {
+        this.status = MatchStatus.FINISHED;
+      }
     }
   }
 
@@ -130,17 +111,11 @@ export class Match {
       return "jester";
     }
 
-    const alivePlayers = this.playerRoster.getAlivePlayers();
-
-    if (alivePlayers.length === 0) {
-      return "draw";
+    if (this.lastWinResult) {
+      return this.lastWinResult.winnerLabel;
     }
 
-    const aliveVillains = alivePlayers.filter(p =>
-      p.getTemplate()?.alignment === "villain"
-    ).length;
-
-    return aliveVillains === 0 ? "heroes" : "villains";
+    return null;
   }
 
   public start(templates: Template[]): void {

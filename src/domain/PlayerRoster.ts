@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { Player } from "./player";
-import { PlayerNotFound } from "./errors";
+import { PlayerNotFound, TemplatePlayerCountMismatch } from "./errors";
 import { Template } from "./template";
 
 export class PlayerRoster {
@@ -31,6 +31,10 @@ export class PlayerRoster {
   }
 
   assignTemplates(templates: Template[]): void {
+    if (templates.length !== this.players.length) {
+      throw new TemplatePlayerCountMismatch(templates.length, this.players.length);
+    }
+
     const templateMap = new Map(templates.map((t) => [t.id, t]));
     this.players.forEach((player, index) => {
       const template = templateMap.get(templates[index].id);
