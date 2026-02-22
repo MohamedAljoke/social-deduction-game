@@ -3,8 +3,8 @@ import crypto from "node:crypto";
 import {
   MatchRepository,
   MatchSession,
-} from "../../domain/repositories/MatchRepository";
-import { Match, MatchStatus } from "../../domain/match";
+} from "../domain/repositories/MatchRepository";
+import { Match, MatchStatus } from "../domain/match";
 
 export class CreateMatchUseCase {
   constructor(private readonly repository: MatchRepository) {}

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { AbilityId } from "../../domain/ability";
-import { CreateMatchUseCase } from "../../application/match/create_match";
+import { CreateMatchUseCase } from "../../application/CreateMatch";
 import { JoinMatchUseCase } from "../../application/JoinMatchUseCase";
 import { GetMatchUseCase } from "../../application/GetMatchUseCase";
 import { GetPlayerRoleUseCase } from "../../application/GetPlayerRoleUseCase";

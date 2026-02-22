@@ -1,7 +1,7 @@
 import express from "express";
 import { InMemoryMatchRepository } from "../infrastructure/persistence/InMemoryMatchRepository";
 import { InMemoryTemplateRepository } from "../infrastructure/persistence/InMemoryTemplateRepository";
-import { CreateMatchUseCase } from "../application/match/create_match";
+import { CreateMatchUseCase } from "../application/CreateMatch";
 import { JoinMatchUseCase } from "../application/JoinMatchUseCase";
 import { GetMatchUseCase } from "../application/GetMatchUseCase";
 import { GetPlayerRoleUseCase } from "../application/GetPlayerRoleUseCase";
