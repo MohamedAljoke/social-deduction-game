@@ -1,4 +1,4 @@
-import { AbilityId } from "../ability";
+import { AbilityId } from "../models/ability";
 
 export type ResolutionEventType =
   | "killed"

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Match, MatchStatus } from "../domain/match";
+import { Match, MatchStatus } from "../domain/models/match";
 import {
   AbilityDoesNotBelongToUser,
   MissingTemplate,
@@ -7,9 +7,9 @@ import {
   PlayerNotFound,
   WrongPhaseError,
 } from "../domain/errors";
-import { PHASE_ORDER } from "../domain/phase";
-import { Alignment, Template } from "../domain/template";
-import { Ability, AbilityId } from "../domain/ability";
+import { PHASE_ORDER } from "../domain/models/phase";
+import { Alignment, Template } from "../domain/models/template";
+import { Ability, AbilityId } from "../domain/models/ability";
 
 describe("match", () => {
   test("should get all players", () => {
@@ -138,7 +138,13 @@ describe("match", () => {
 
   describe("jester win condition", () => {
     function makeJesterTemplate(endsGameOnWin: boolean) {
-      return new Template("jester_tmpl", Alignment.Neutral, [], "vote_eliminated", endsGameOnWin);
+      return new Template(
+        "jester_tmpl",
+        Alignment.Neutral,
+        [],
+        "vote_eliminated",
+        endsGameOnWin,
+      );
     }
 
     function advanceToVoting(match: Match) {

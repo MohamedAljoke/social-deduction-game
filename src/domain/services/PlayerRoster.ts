@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
-import { Player } from "./player";
-import { PlayerNotFound, TemplatePlayerCountMismatch } from "./errors";
-import { Template } from "./template";
+import { Player } from "../models/player";
+import { PlayerNotFound, TemplatePlayerCountMismatch } from "../errors";
+import { Template } from "../models/template";
 
 export class PlayerRoster {
   private players: Player[] = [];

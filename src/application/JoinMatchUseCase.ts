@@ -1,6 +1,6 @@
 import { MatchRepository } from "../domain/repositories/MatchRepository";
 import { MatchNotFound, MatchAlreadyStarted } from "../domain/errors";
-import { MatchStatus } from "../domain/match";
+import { MatchStatus } from "../domain/models/match";
 
 export class JoinMatchUseCase {
   constructor(private readonly repository: MatchRepository) {}

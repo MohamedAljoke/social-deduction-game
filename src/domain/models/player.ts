@@ -4,7 +4,7 @@ import {
   AbilityDoesNotBelongToUser,
   MissingTemplate,
   PlayerIsDeadError,
-} from "./errors";
+} from "../errors";
 import { Template } from "./template";
 
 export class Player {

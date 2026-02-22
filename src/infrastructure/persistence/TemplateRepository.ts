@@ -1,4 +1,4 @@
-import { Template } from "../../domain/template";
+import { Template } from "../../domain/models/template";
 
 export interface TemplateRepository {
   save(template: Template): Promise<void>;

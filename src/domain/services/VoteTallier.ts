@@ -1,4 +1,4 @@
-import { Vote } from "./vote";
+import { Vote } from "../models/vote";
 import { PlayerRoster } from "./PlayerRoster";
 
 export class VoteTallier {

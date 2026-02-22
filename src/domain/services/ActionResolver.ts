@@ -1,7 +1,7 @@
-import { Action } from "./action";
-import { AbilityEffectFactory, EffectRegistry, INVESTIGATIONS_KEY } from "./effects";
-import { ResolutionState } from "./resolution/ResolutionState";
-import { ResolutionContext, ResolutionEvent } from "./resolution/ResolutionContext";
+import { Action } from "../models/action";
+import { AbilityEffectFactory, EffectRegistry, INVESTIGATIONS_KEY } from "../effects";
+import { ResolutionState } from "../resolution/ResolutionState";
+import { ResolutionContext, ResolutionEvent } from "../resolution/ResolutionContext";
 import { PlayerRoster } from "./PlayerRoster";
 
 export class ActionResolver {

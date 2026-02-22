@@ -1,4 +1,4 @@
-import { AbilityId } from "../ability";
+import { AbilityId } from "../models/ability";
 import { EffectRegistry } from "./EffectRegistry";
 import { KillEffect } from "./KillEffect";
 import { ProtectEffect } from "./ProtectEffect";

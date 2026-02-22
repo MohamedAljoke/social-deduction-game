@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { Match, MatchStatus } from "../domain/match";
-import { Alignment, Template } from "../domain/template";
-import { Ability, AbilityId } from "../domain/ability";
+import { Match, MatchStatus } from "../domain/models/match";
+import { Alignment, Template } from "../domain/models/template";
+import { Ability, AbilityId } from "../domain/models/ability";
 
 describe("E2E Game Flow - Complete Games Until Winner", () => {
   test("Scenario 1: Villains win by outnumbering heroes", () => {

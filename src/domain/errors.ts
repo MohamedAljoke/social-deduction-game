@@ -1,4 +1,4 @@
-import { PhaseType } from "./phase";
+import { PhaseType } from "./models";
 
 export class DomainError extends Error {
   public readonly code: string;

@@ -1,4 +1,4 @@
-import { Template } from "../../domain/template";
+import { Template } from "../../domain/models/template";
 import { TemplateRepository } from "../../domain/repositories/TemplateRepository";
 
 export class InMemoryTemplateRepository implements TemplateRepository {

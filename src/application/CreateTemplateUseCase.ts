@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { Template, Alignment, WinCondition } from "../domain/template";
-import { Ability, AbilityId } from "../domain/ability";
+import { Template, Alignment, WinCondition } from "../domain/models/template";
+import { Ability, AbilityId } from "../domain/models/ability";
 import { TemplateRepository } from "../domain/repositories/TemplateRepository";
 
 export interface CreateTemplateInput {

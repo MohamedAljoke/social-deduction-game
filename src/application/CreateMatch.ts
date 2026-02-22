@@ -4,7 +4,7 @@ import {
   MatchRepository,
   MatchSession,
 } from "../domain/repositories/MatchRepository";
-import { Match, MatchStatus } from "../domain/match";
+import { Match, MatchStatus } from "../domain/models/match";
 
 export class CreateMatchUseCase {
   constructor(private readonly repository: MatchRepository) {}

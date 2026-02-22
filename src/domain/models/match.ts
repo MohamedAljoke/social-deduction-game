@@ -6,22 +6,22 @@ import {
   PlayerIsDeadError,
   MissingTemplate,
   AbilityDoesNotBelongToUser,
-} from "./errors";
+} from "../errors";
 import { Phase, PhaseType } from "./phase";
 import { Player } from "./player";
 import { AbilityId } from "./ability";
 import { Action } from "./action";
 import { Template } from "./template";
-import { PlayerRoster } from "./PlayerRoster";
-import { VoteTallier } from "./VoteTallier";
-import { ActionResolver } from "./ActionResolver";
-import { WinConditionEvaluator } from "./winConditions/WinConditionEvaluator";
-import { WinResult, playerToSnapshot } from "./winConditions/IWinCondition";
-import { VoteEliminatedWinCondition } from "./winConditions/VoteEliminatedWinCondition";
-import { MajorityWinCondition } from "./winConditions/MajorityWinCondition";
-import { ResolutionEvent } from "./resolution/ResolutionContext";
-import { PhaseManager } from "./phase/PhaseManager";
-import { MatchContext } from "./phase/MatchContext";
+import { PlayerRoster } from "../services/PlayerRoster";
+import { VoteTallier } from "../services/VoteTallier";
+import { ActionResolver } from "../services/ActionResolver";
+import { WinConditionEvaluator } from "../winConditions/WinConditionEvaluator";
+import { WinResult, playerToSnapshot } from "../winConditions/IWinCondition";
+import { VoteEliminatedWinCondition } from "../winConditions/VoteEliminatedWinCondition";
+import { MajorityWinCondition } from "../winConditions/MajorityWinCondition";
+import { ResolutionEvent } from "../resolution/ResolutionContext";
+import { PhaseManager } from "../phase/PhaseManager";
+import { MatchContext } from "../phase/MatchContext";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -136,7 +136,7 @@ export class Match {
 
     const player = this.playerRoster.getPlayerByID(actorId);
     const template = player.getTemplate();
-    
+
     if (!template) {
       throw new MissingTemplate();
     }

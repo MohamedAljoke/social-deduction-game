@@ -1,6 +1,6 @@
 import { MatchRepository } from "../domain/repositories/MatchRepository";
 import { TemplateRepository } from "../domain/repositories/TemplateRepository";
-import { MatchStatus } from "../domain/match";
+import { MatchStatus } from "../domain/models/match";
 import {
   MatchNotFound,
   InsufficientPlayers,

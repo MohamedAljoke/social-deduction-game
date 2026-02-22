@@ -1,4 +1,4 @@
-import { Action } from "../action";
+import { Action } from "../models/action";
 import { ResolutionContext } from "../resolution/ResolutionContext";
 import { ResolutionState } from "../resolution/ResolutionState";
 import { IAbilityEffect } from "./IAbilityEffect";

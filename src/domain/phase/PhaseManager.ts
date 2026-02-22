@@ -1,4 +1,4 @@
-import { PhaseType, PHASE_ORDER } from "../phase";
+import { PhaseType, PHASE_ORDER } from "../models/phase";
 import { PhaseHook, MatchContext } from "./MatchContext";
 
 export class PhaseManager {

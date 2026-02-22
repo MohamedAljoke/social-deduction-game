@@ -1,4 +1,4 @@
-import { AbilityId } from "../ability";
+import { AbilityId } from "../models/ability";
 import { IAbilityEffect } from "./IAbilityEffect";
 
 export class EffectRegistry {

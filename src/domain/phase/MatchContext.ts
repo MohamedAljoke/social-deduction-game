@@ -1,5 +1,5 @@
-import { PhaseType } from "../phase";
-import { MatchStatus } from "../match";
+import { PhaseType } from "../models/phase";
+import { MatchStatus } from "../models/match";
 
 export interface MatchContext {
   getCurrentPhase(): PhaseType;

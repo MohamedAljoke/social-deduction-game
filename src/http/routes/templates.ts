@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import { Alignment } from "../../domain/template";
-import { AbilityId } from "../../domain/ability";
+import { Alignment } from "../../domain/models/template";
+import { AbilityId } from "../../domain/models/ability";
 import { CreateTemplateUseCase } from "../../application/CreateTemplateUseCase";
 import { ListTemplatesUseCase } from "../../application/ListTemplatesUseCase";
 import { GetTemplateUseCase } from "../../application/GetTemplateUseCase";

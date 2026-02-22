@@ -1,6 +1,6 @@
 import { MatchRepository } from "../domain/repositories/MatchRepository";
 import { MatchNotFound } from "../domain/errors";
-import { AbilityId } from "../domain/ability";
+import { AbilityId } from "../domain/models/ability";
 
 export class SubmitActionUseCase {
   constructor(private readonly repository: MatchRepository) {}

@@ -1,4 +1,4 @@
-import { Match, MatchStatus } from "../../domain/match";
+import { Match, MatchStatus } from "../../domain/models/match";
 
 export interface MatchSession {
   id: string;
