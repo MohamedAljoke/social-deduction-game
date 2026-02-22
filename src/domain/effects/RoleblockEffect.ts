@@ -9,7 +9,7 @@ export class RoleblockEffect implements IAbilityEffect {
   execute(
     action: Action,
     allActions: Action[],
-    _context: ResolutionContext,
+    context: ResolutionContext,
     _state: ResolutionState,
   ): void {
     if (action.cancelled) return;
@@ -18,6 +18,13 @@ export class RoleblockEffect implements IAbilityEffect {
       for (const a of allActions) {
         if (a.actorId === targetId) {
           a.cancelled = true;
+          context.emit({
+            type: "action_failed",
+            actorId: action.actorId,
+            targetIds: [targetId],
+            abilityId: action.abilityId,
+            message: `${targetId}'s action was roleblocked`,
+          });
         }
       }
     }

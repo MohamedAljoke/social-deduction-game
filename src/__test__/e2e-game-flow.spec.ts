@@ -18,7 +18,7 @@ describe("E2E Game Flow - Complete Games Until Winner", () => {
     ]);
 
     const doctorTemplate = new Template("doctor", Alignment.Hero, [
-      new Ability(AbilityId.Protect),
+      new Ability(AbilityId.Protect, false, 1, true),
     ]);
 
     const citizenTemplate = new Template("citizen", Alignment.Hero, []);
@@ -86,7 +86,7 @@ describe("E2E Game Flow - Complete Games Until Winner", () => {
     ]);
 
     const protectorTemplate = new Template("protector", Alignment.Hero, [
-      new Ability(AbilityId.Protect),
+      new Ability(AbilityId.Protect, false, 1, true),
     ]);
 
     const citizenTemplate = new Template("citizen", Alignment.Hero, []);
@@ -202,7 +202,7 @@ describe("E2E Game Flow - Complete Games Until Winner", () => {
     ]);
 
     const doctorTemplate = new Template("doctor", Alignment.Hero, [
-      new Ability(AbilityId.Protect),
+      new Ability(AbilityId.Protect, false, 1, true),
     ]);
 
     const citizenTemplate = new Template("citizen", Alignment.Hero, []);

@@ -1,4 +1,4 @@
-import { MatchRepository, MatchSession } from "./MatchRepository";
+import { MatchRepository, MatchSession } from "../../domain/repositories/MatchRepository";
 
 export class InMemoryMatchRepository implements MatchRepository {
   private matches = new Map<string, MatchSession>();

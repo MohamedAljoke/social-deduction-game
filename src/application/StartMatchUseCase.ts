@@ -1,5 +1,5 @@
-import { MatchRepository } from "../infrastructure/persistence/MatchRepository";
-import { TemplateRepository } from "../infrastructure/persistence/TemplateRepository";
+import { MatchRepository } from "../domain/repositories/MatchRepository";
+import { TemplateRepository } from "../domain/repositories/TemplateRepository";
 import { MatchStatus } from "../domain/match";
 import {
   MatchNotFound,

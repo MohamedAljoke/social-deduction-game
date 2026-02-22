@@ -1,21 +1,25 @@
-import crypto from "node:crypto";
 import {
-  AbilityDoesNotBelongToUser,
   MatchAlreadyStarted,
-  MissingTemplate,
-  PlayerIsDeadError,
-  PlayerNotFound,
   WrongPhaseError,
+  InvalidTargetCount,
+  CannotTargetSelf,
+  PlayerIsDeadError,
+  MissingTemplate,
+  AbilityDoesNotBelongToUser,
 } from "./errors";
 import { Phase, PhaseType } from "./phase";
 import { Player } from "./player";
 import { AbilityId } from "./ability";
 import { Action } from "./action";
-import { Vote } from "./vote";
-import { AbilityEffectFactory, EffectRegistry } from "./effects";
-import { ResolutionState } from "./resolution/ResolutionState";
-import { ResolutionContext } from "./resolution/ResolutionContext";
 import { Template } from "./template";
+import { PlayerRoster } from "./PlayerRoster";
+import { VoteTallier } from "./VoteTallier";
+import { ActionResolver } from "./ActionResolver";
+import { WinConditionEvaluator } from "./winConditions/WinConditionEvaluator";
+import { VoteEliminatedWinCondition } from "./winConditions/VoteEliminatedWinCondition";
+import { ResolutionEvent } from "./resolution/ResolutionContext";
+import { PhaseManager } from "./phase/PhaseManager";
+import { MatchContext } from "./phase/MatchContext";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -24,20 +28,93 @@ export enum MatchStatus {
 }
 
 export class Match {
-  private players: Player[] = [];
   private phase: Phase = new Phase();
-  private actionQueue: Action[] = [];
-  private voteQueue: Vote[] = [];
-  private effectRegistry: EffectRegistry;
   private status: MatchStatus;
-  private investigationResults: Map<string, string> = new Map();
-  private voteEliminatedThisRound: string | null = null;
   private jesterWinners: Set<string> = new Set();
   private endedByJesterWin: boolean = false;
 
+  private playerRoster: PlayerRoster;
+  private voteTallier: VoteTallier;
+  private actionResolver: ActionResolver;
+  private winConditionEvaluator: WinConditionEvaluator;
+  private phaseManager: PhaseManager;
+
   constructor() {
-    this.effectRegistry = AbilityEffectFactory.createRegistry();
+    this.playerRoster = new PlayerRoster();
+    this.voteTallier = new VoteTallier(this.playerRoster);
+    this.actionResolver = new ActionResolver(this.playerRoster);
+    this.winConditionEvaluator = new WinConditionEvaluator([
+      new VoteEliminatedWinCondition(),
+    ]);
     this.status = MatchStatus.LOBBY;
+    this.phaseManager = new PhaseManager();
+    this.registerDefaultHooks();
+  }
+
+  private registerDefaultHooks(): void {
+    const context: MatchContext = {
+      getCurrentPhase: () => this.getCurrentPhase(),
+      getStatus: () => this.status,
+      tallyVotes: () => this.voteTallier.tallyVotes(),
+      getEliminatedThisRound: () => this.voteTallier.getEliminatedThisRound(),
+      getPlayerByID: (id: string) => this.playerRoster.getPlayerByID(id),
+      getAlivePlayers: () => this.playerRoster.getAlivePlayers(),
+      resolveActions: () => this.actionResolver.resolveActions(),
+      setStatus: (status: MatchStatus) => {
+        this.status = status;
+      },
+    };
+
+    this.phaseManager.registerOnLeave("voting", (ctx) => {
+      ctx.tallyVotes();
+      this.checkJesterWin(ctx);
+    });
+
+    this.phaseManager.registerOnEnter("resolution", (ctx) => {
+      ctx.resolveActions();
+      this.checkWinCondition(ctx);
+    });
+  }
+
+  private checkJesterWin(ctx: MatchContext): void {
+    const eliminated = ctx.getEliminatedThisRound();
+    if (!eliminated) return;
+    const player = ctx.getPlayerByID(eliminated);
+    const template = player.getTemplate();
+    if (template?.winCondition === "vote_eliminated") {
+      this.jesterWinners.add(player.id);
+      if (template.endsGameOnWin) {
+        this.endedByJesterWin = true;
+        this.status = MatchStatus.FINISHED;
+      }
+    }
+  }
+
+  private checkWinCondition(ctx: MatchContext): void {
+    const alivePlayers = ctx.getAlivePlayers();
+
+    if (alivePlayers.length === 0) {
+      this.status = MatchStatus.FINISHED;
+      return;
+    }
+
+    const aliveVillains = alivePlayers.filter(p =>
+      p.getTemplate()?.alignment === "villain"
+    ).length;
+
+    const aliveHeroes = alivePlayers.filter(p =>
+      p.getTemplate()?.alignment === "hero"
+    ).length;
+
+    if (aliveVillains > 0 && aliveVillains >= aliveHeroes) {
+      this.status = MatchStatus.FINISHED;
+      return;
+    }
+
+    if (aliveVillains === 0) {
+      this.status = MatchStatus.FINISHED;
+      return;
+    }
   }
 
   getStatus() {
@@ -53,7 +130,7 @@ export class Match {
       return "jester";
     }
 
-    const alivePlayers = this.players.filter(p => p.isAlive());
+    const alivePlayers = this.playerRoster.getAlivePlayers();
 
     if (alivePlayers.length === 0) {
       return "draw";
@@ -71,15 +148,7 @@ export class Match {
       throw new MatchAlreadyStarted();
     }
 
-    const templateMap = new Map(templates.map((t) => [t.id, t]));
-
-    this.players.forEach((player, index) => {
-      const template = templateMap.get(templates[index].id);
-      if (template) {
-        player.assignTemplate(template);
-      }
-    });
-
+    this.playerRoster.assignTemplates(templates);
     this.status = MatchStatus.STARTED;
   }
 
@@ -90,42 +159,51 @@ export class Match {
   ): void {
     this.ensurePhase("action");
 
-    const player = this.getPlayerByID(actorId);
+    const player = this.playerRoster.getPlayerByID(actorId);
+    const template = player.getTemplate();
+    
+    if (!template) {
+      throw new MissingTemplate();
+    }
+
+    const ability = template.getAbility(abilityId);
+    if (!ability) {
+      throw new AbilityDoesNotBelongToUser();
+    }
+
+    if (targetIds.length !== ability.targetCount) {
+      throw new InvalidTargetCount(ability.targetCount, targetIds.length);
+    }
+
+    for (const targetId of targetIds) {
+      const target = this.playerRoster.getPlayerByID(targetId);
+      if (ability.requiresAliveTarget && !target.isAlive()) {
+        throw new PlayerIsDeadError();
+      }
+      if (!ability.canTargetSelf && targetId === actorId) {
+        throw new CannotTargetSelf();
+      }
+    }
+
     const action = player.act(abilityId, targetIds);
 
-    this.actionQueue.push(action);
+    this.actionResolver.submitAction(action);
   }
 
   public submitVote(voterId: string, targetId: string): void {
     this.ensurePhase("voting");
-
-    const voter = this.getPlayerByID(voterId);
-    const target = this.getPlayerByID(targetId);
-
-    if (!voter.isAlive()) {
-      throw new PlayerIsDeadError();
-    }
-
-    if (!target.isAlive()) {
-      throw new PlayerIsDeadError();
-    }
-
-    // Remove previous vote from this voter
-    this.voteQueue = this.voteQueue.filter(v => v.voterId !== voterId);
-
-    const vote = new Vote(voterId, targetId);
-    this.voteQueue.push(vote);
+    this.voteTallier.submitVote(voterId, targetId);
   }
 
   private ensurePhase(expected: PhaseType) {
     const current = this.getCurrentPhase();
     if (current !== expected) {
-      throw new WrongPhaseError("action", this.getCurrentPhase());
+      throw new WrongPhaseError(expected, current);
     }
   }
+
   public eliminatePlayer(id: string): void {
-    const player = this.getPlayerByID(id);
-    player.eliminate();
+    this.playerRoster.eliminatePlayer(id);
   }
 
   public getCurrentPhase(): PhaseType {
@@ -141,172 +219,45 @@ export class Match {
       throw new Error("Cannot join after match started");
     }
 
-    const id = crypto.randomUUID();
-    const player = new Player(id, name);
-    this.players.push(player);
-
-    return player;
+    return this.playerRoster.addPlayer(name);
   }
 
   public getPlayers(): Player[] {
-    return this.players;
+    return this.playerRoster.getPlayers();
   }
 
   public getPlayerByID(id: string): Player {
-    const player = this.players.find((p) => p.id === id);
-
-    if (!player) {
-      throw new PlayerNotFound();
-    }
-
-    return player;
+    return this.playerRoster.getPlayerByID(id);
   }
 
   public advancePhase(): PhaseType {
-    const currentPhase = this.getCurrentPhase();
-    const next = this.phase.nextPhase();
+    const context: MatchContext = {
+      getCurrentPhase: () => this.getCurrentPhase(),
+      getStatus: () => this.status,
+      tallyVotes: () => this.voteTallier.tallyVotes(),
+      getEliminatedThisRound: () => this.voteTallier.getEliminatedThisRound(),
+      getPlayerByID: (id: string) => this.playerRoster.getPlayerByID(id),
+      getAlivePlayers: () => this.playerRoster.getAlivePlayers(),
+      resolveActions: () => this.actionResolver.resolveActions(),
+      setStatus: (status: MatchStatus) => {
+        this.status = status;
+      },
+    };
 
-    // Tally votes when leaving voting phase
-    if (currentPhase === "voting") {
-      this.tallyVotes();
-      this.checkJesterWin();
-    }
-
-    // Resolve actions when entering resolution phase
-    if (next === "resolution") {
-      this.resolveActions();
-      this.checkWinCondition();
-    }
-
+    const next = this.phaseManager.advance(context);
+    this.phase.nextPhase();
     return next;
-  }
-
-  private tallyVotes(): void {
-    this.voteEliminatedThisRound = null;
-
-    if (this.voteQueue.length === 0) {
-      return;
-    }
-
-    // Count votes for each target
-    const voteCounts = new Map<string, number>();
-    for (const vote of this.voteQueue) {
-      const currentCount = voteCounts.get(vote.targetId) || 0;
-      voteCounts.set(vote.targetId, currentCount + 1);
-    }
-
-    // Find player(s) with most votes
-    let maxVotes = 0;
-    let playersWithMaxVotes: string[] = [];
-
-    for (const [playerId, count] of voteCounts.entries()) {
-      if (count > maxVotes) {
-        maxVotes = count;
-        playersWithMaxVotes = [playerId];
-      } else if (count === maxVotes) {
-        playersWithMaxVotes.push(playerId);
-      }
-    }
-
-    // Eliminate if there's a clear majority (no ties)
-    if (playersWithMaxVotes.length === 1) {
-      const target = playersWithMaxVotes[0];
-      this.eliminatePlayer(target);
-      this.voteEliminatedThisRound = target;
-    }
-
-    // Clear votes
-    this.voteQueue = [];
-  }
-
-  private checkJesterWin(): void {
-    if (!this.voteEliminatedThisRound) return;
-    const player = this.getPlayerByID(this.voteEliminatedThisRound);
-    const template = player.getTemplate();
-    if (template?.winCondition === "vote_eliminated") {
-      this.jesterWinners.add(player.id);
-      if (template.endsGameOnWin) {
-        this.endedByJesterWin = true;
-        this.status = MatchStatus.FINISHED;
-      }
-    }
   }
 
   public getJesterWinners(): string[] {
     return Array.from(this.jesterWinners);
   }
 
-  private checkWinCondition(): void {
-    const alivePlayers = this.players.filter(p => p.isAlive());
-
-    if (alivePlayers.length === 0) {
-      this.status = MatchStatus.FINISHED;
-      return;
-    }
-
-    const aliveVillains = alivePlayers.filter(p =>
-      p.getTemplate()?.alignment === "villain"
-    ).length;
-
-    const aliveHeroes = alivePlayers.filter(p =>
-      p.getTemplate()?.alignment === "hero"
-    ).length;
-
-    // Villains win if they equal or outnumber heroes
-    if (aliveVillains > 0 && aliveVillains >= aliveHeroes) {
-      this.status = MatchStatus.FINISHED;
-      return;
-    }
-
-    // Heroes win if all villains are dead
-    if (aliveVillains === 0) {
-      this.status = MatchStatus.FINISHED;
-      return;
-    }
-  }
-
   public getInvestigationResult(playerId: string): string | null {
-    return this.investigationResults.get(playerId) ?? null;
+    return this.actionResolver.getInvestigationResults().get(playerId) ?? null;
   }
 
-  private resolveActions(): void {
-    this.investigationResults = new Map();
-
-    const state: ResolutionState = {
-      protected: new Set<string>(),
-      investigations: new Map<string, string>(),
-    };
-
-    const context: ResolutionContext = {
-      killPlayer: (id: string) => this.eliminatePlayer(id),
-      isPlayerAlive: (id: string) => {
-        const player = this.getPlayerByID(id);
-        return player.isAlive();
-      },
-      getPlayerAlignment: (id: string) => {
-        const player = this.getPlayerByID(id);
-        return player.getTemplate()?.alignment ?? "unknown";
-      },
-    };
-
-    // Create action-effect pairs and sort by priority
-    const actionEffectPairs = this.actionQueue
-      .map((action) => ({
-        action,
-        effect: this.effectRegistry.getEffect(action.abilityId),
-      }))
-      .filter((pair) => pair.effect !== undefined)
-      .sort((a, b) => a.effect!.priority - b.effect!.priority);
-
-    // Execute effects in priority order
-    for (const { action, effect } of actionEffectPairs) {
-      effect!.execute(action, this.actionQueue, context, state);
-    }
-
-    // Persist investigation results for this round
-    this.investigationResults = state.investigations;
-
-    // Clear the queue after resolution
-    this.actionQueue = [];
+  public getLastNightEvents(): ResolutionEvent[] {
+    return this.actionResolver.getEvents();
   }
 }

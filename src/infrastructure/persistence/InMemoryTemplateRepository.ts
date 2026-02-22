@@ -1,5 +1,5 @@
 import { Template } from "../../domain/template";
-import { TemplateRepository } from "./TemplateRepository";
+import { TemplateRepository } from "../../domain/repositories/TemplateRepository";
 
 export class InMemoryTemplateRepository implements TemplateRepository {
   private templates = new Map<string, Template>();

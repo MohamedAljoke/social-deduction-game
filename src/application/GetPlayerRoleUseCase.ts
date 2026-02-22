@@ -1,4 +1,4 @@
-import { MatchRepository } from "../infrastructure/persistence/MatchRepository";
+import { MatchRepository } from "../domain/repositories/MatchRepository";
 import { MatchNotFound, PlayerNotFound, MissingTemplate } from "../domain/errors";
 
 export class GetPlayerRoleUseCase {

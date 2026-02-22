@@ -44,15 +44,15 @@ Concrete implementations:
 
 ## Acceptance Criteria
 
-- [ ] `IWinCondition` interface defined in `domain/winConditions/`
-- [ ] `WinResult` type defined
-- [ ] `MajorityWinCondition` extracts current hero/villain logic from `checkWinCondition()`
-- [ ] `VoteEliminatedWinCondition` extracts current jester logic from `checkJesterWin()`
-- [ ] `WinConditionEvaluator` iterates registered conditions and returns the first non-null result
-- [ ] Jester-specific state (`jesterWinners`, `endedByJesterWin`, `voteEliminatedThisRound`) moved out of `Match` and into the win condition
-- [ ] `checkWinCondition()` and `checkJesterWin()` removed from `Match`
-- [ ] `getWinner()` delegates to `WinConditionEvaluator`
-- [ ] All existing tests pass
+- [x] `IWinCondition` interface defined in `domain/winConditions/`
+- [x] `WinResult` type defined
+- [x] `MajorityWinCondition` extracts current hero/villain logic from `checkWinCondition()`
+- [x] `VoteEliminatedWinCondition` extracts current jester logic from `checkJesterWin()`
+- [x] `WinConditionEvaluator` iterates registered conditions and returns the first non-null result
+- [x] Jester-specific state (`jesterWinners`, `endedByJesterWin`, `voteEliminatedThisRound`) moved out of `Match` and into the win condition
+- [x] `checkWinCondition()` and `checkJesterWin()` removed from `Match`
+- [x] `getWinner()` delegates to `WinConditionEvaluator`
+- [x] All existing tests pass
 
 ---
 

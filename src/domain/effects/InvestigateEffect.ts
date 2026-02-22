@@ -3,6 +3,8 @@ import { ResolutionContext } from "../resolution/ResolutionContext";
 import { ResolutionState } from "../resolution/ResolutionState";
 import { IAbilityEffect } from "./IAbilityEffect";
 
+export const INVESTIGATIONS_KEY = "investigations";
+
 export class InvestigateEffect implements IAbilityEffect {
   readonly priority = 30;
 
@@ -17,7 +19,14 @@ export class InvestigateEffect implements IAbilityEffect {
     for (const targetId of action.targetIds) {
       if (context.isPlayerAlive(targetId)) {
         const alignment = context.getPlayerAlignment(targetId);
-        state.investigations.set(action.actorId, alignment);
+        state.getMap(INVESTIGATIONS_KEY).set(action.actorId, alignment);
+        context.emit({
+          type: "investigated",
+          actorId: action.actorId,
+          targetIds: [targetId],
+          abilityId: action.abilityId,
+          message: `Investigated ${targetId}: ${alignment}`,
+        });
       }
     }
   }

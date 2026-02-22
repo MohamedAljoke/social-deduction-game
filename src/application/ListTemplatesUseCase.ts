@@ -1,4 +1,4 @@
-import { TemplateRepository } from "../infrastructure/persistence/TemplateRepository";
+import { TemplateRepository } from "../domain/repositories/TemplateRepository";
 
 export class ListTemplatesUseCase {
   constructor(private readonly repository: TemplateRepository) {}

@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import { Template, Alignment, WinCondition } from "../domain/template";
 import { Ability, AbilityId } from "../domain/ability";
-import { TemplateRepository } from "../infrastructure/persistence/TemplateRepository";
+import { TemplateRepository } from "../domain/repositories/TemplateRepository";
 
 export interface CreateTemplateInput {
   alignment: Alignment;
-  abilities: { id: AbilityId; canUseWhenDead: boolean }[];
+  abilities: { id: AbilityId; canUseWhenDead: boolean; targetCount?: number; canTargetSelf?: boolean; requiresAliveTarget?: boolean }[];
   winCondition?: WinCondition;
   endsGameOnWin?: boolean;
 }
@@ -22,7 +22,13 @@ export class CreateTemplateUseCase {
       crypto.randomUUID(),
       input.alignment,
       input.abilities.map(
-        (a) => new Ability(a.id, a.canUseWhenDead)
+        (a) => new Ability(
+          a.id, 
+          a.canUseWhenDead, 
+          a.targetCount ?? 1, 
+          a.canTargetSelf ?? false, 
+          a.requiresAliveTarget ?? true
+        )
       ),
       input.winCondition,
       input.endsGameOnWin,

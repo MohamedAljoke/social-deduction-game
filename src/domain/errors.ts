@@ -61,3 +61,27 @@ export class InsufficientPlayers extends DomainError {
     super("Need at least 2 players to start", "insufficient_players");
   }
 }
+
+export class TemplatePlayerCountMismatch extends DomainError {
+  constructor(templateCount: number, playerCount: number) {
+    super(
+      `Template count (${templateCount}) must match player count (${playerCount})`,
+      "template_player_count_mismatch",
+    );
+  }
+}
+
+export class InvalidTargetCount extends DomainError {
+  constructor(expected: number, actual: number) {
+    super(
+      `Invalid target count: expected ${expected}, got ${actual}`,
+      "invalid_target_count",
+    );
+  }
+}
+
+export class CannotTargetSelf extends DomainError {
+  constructor() {
+    super("Cannot target yourself", "cannot_target_self");
+  }
+}

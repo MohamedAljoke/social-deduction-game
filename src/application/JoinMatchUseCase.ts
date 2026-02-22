@@ -1,4 +1,4 @@
-import { MatchRepository } from "../infrastructure/persistence/MatchRepository";
+import { MatchRepository } from "../domain/repositories/MatchRepository";
 import { MatchNotFound, MatchAlreadyStarted } from "../domain/errors";
 import { MatchStatus } from "../domain/match";
 

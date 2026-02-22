@@ -1,4 +1,4 @@
-import { MatchRepository } from "../infrastructure/persistence/MatchRepository";
+import { MatchRepository } from "../domain/repositories/MatchRepository";
 import { MatchNotFound } from "../domain/errors";
 import { AbilityId } from "../domain/ability";
 

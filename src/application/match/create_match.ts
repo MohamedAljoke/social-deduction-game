@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import {
   MatchRepository,
   MatchSession,
-} from "../../infrastructure/persistence/MatchRepository";
+} from "../../domain/repositories/MatchRepository";
 import { Match, MatchStatus } from "../../domain/match";
 
 export class CreateMatchUseCase {
@@ -14,7 +14,6 @@ export class CreateMatchUseCase {
 
     const session: MatchSession = {
       id: crypto.randomUUID().toString(),
-      status: MatchStatus.LOBBY,
       match,
       createdAt: new Date(),
     };
@@ -23,7 +22,7 @@ export class CreateMatchUseCase {
 
     return {
       id: session.id,
-      status: session.status,
+      status: MatchStatus.LOBBY,
       createdAt: session.createdAt,
     };
   }

@@ -30,9 +30,11 @@ const startSchema = z.object({
   templateIds: z.array(z.string()),
 });
 
+const abilityIdValues = Object.values(AbilityId) as [string, ...string[]];
+
 const submitActionSchema = z.object({
   actorId: z.string(),
-  abilityId: z.enum(["kill", "protect"]),
+  abilityId: z.enum(abilityIdValues),
   targetIds: z.array(z.string()),
 });
 

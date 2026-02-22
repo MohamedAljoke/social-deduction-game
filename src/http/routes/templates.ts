@@ -13,10 +13,12 @@ export type TemplateDeps = {
   getTemplate: GetTemplateUseCase;
 };
 
+const abilityIdValues = Object.values(AbilityId) as [string, ...string[]];
+
 const templateSchema = z.object({
   alignment: z.enum(["villain", "hero", "neutral"]),
   abilities: z.array(z.object({
-    id: z.enum(["kill", "protect"]),
+    id: z.enum(abilityIdValues),
     canUseWhenDead: z.boolean().optional(),
   })),
   winCondition: z.enum(["default", "vote_eliminated"]).optional(),
