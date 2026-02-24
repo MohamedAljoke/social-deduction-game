@@ -1,3 +1,5 @@
+import { PhaseType } from "./models";
+
 export class DomainError extends Error {
   public readonly code: string;
   constructor(message: string, code: string) {
@@ -24,6 +26,14 @@ export class MatchAlreadyStarted extends DomainError {
   }
 }
 
+export class WrongPhaseError extends DomainError {
+  constructor(expectedPhase: PhaseType, currentPhase: PhaseType) {
+    super(
+      `wrong phase expected ${expectedPhase}, but got ${currentPhase}`,
+      "wrong_phase",
+    );
+  }
+}
 export class MissingTemplate extends DomainError {
   constructor() {
     super("no template found", "template_not_found");

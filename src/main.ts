@@ -1,12 +1,8 @@
-import { ExpressServer } from "./http/express_adapter";
-import { HonoServer } from "./http/hono_adapter";
-import { registerRoutes } from "./http/routes";
+import { createApp } from "./app";
 
-const expressServer = new ExpressServer();
-const honoServer = new HonoServer();
+async function bootstrap() {
+  const server = createApp();
+  server.listen(3000);
+}
 
-registerRoutes(expressServer);
-registerRoutes(honoServer);
-
-expressServer.listen(3000);
-honoServer.listen(3001);
+bootstrap();
