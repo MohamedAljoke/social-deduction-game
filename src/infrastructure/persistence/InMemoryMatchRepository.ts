@@ -1,4 +1,7 @@
-import { MatchRepository, MatchSession } from "../../domain/repositories/MatchRepository";
+import {
+  MatchRepository,
+  MatchSession,
+} from "../../domain/ports/persistance/MatchRepository";
 
 export class InMemoryMatchRepository implements MatchRepository {
   private matches = new Map<string, MatchSession>();

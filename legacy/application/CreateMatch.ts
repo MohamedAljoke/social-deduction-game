@@ -1,9 +1,10 @@
+import { z } from "zod";
 import crypto from "node:crypto";
 import {
   MatchRepository,
   MatchSession,
-} from "../domain/ports/persistance/MatchRepository";
-import { Match, MatchStatus } from "../domain/entity/match";
+} from "../domain/repositories/MatchRepository";
+import { Match, MatchStatus } from "../domain/models/match";
 
 export class CreateMatchUseCase {
   constructor(private readonly repository: MatchRepository) {}

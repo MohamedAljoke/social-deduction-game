@@ -1,5 +1,5 @@
 import { CreateMatchUseCase } from "./application/CreateMatch";
-import { MatchRepository } from "./domain/repositories/MatchRepository";
+import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 
 // Branded token type used for type-safe dependency resolution.
