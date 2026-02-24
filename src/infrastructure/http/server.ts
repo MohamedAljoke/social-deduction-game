@@ -21,7 +21,7 @@ export type HttpHandler = (
 
 export interface HttpServer {
   register(method: HttpMethod, path: string, handler: HttpHandler): void;
-
+  close(): Promise<void>;
   listen(port: number): void;
 }
 

@@ -11,8 +11,11 @@ import {
   normalizeQuery,
 } from "./server";
 
+type NodeServer = ReturnType<typeof serve>;
+
 export class HonoServer implements HttpServer {
   private app = new Hono();
+  private server?: NodeServer;
 
   register(method: HttpMethod, path: string, handler: HttpHandler) {
     this.app[method](path, async (c: Context) => {
@@ -43,16 +46,27 @@ export class HonoServer implements HttpServer {
     });
   }
 
-  listen(port: number) {
-    serve(
-      {
-        fetch: this.app.fetch,
-        port,
-      },
-      () => {
-        console.log(`hono app is running on port: ${port}`);
-      },
-    );
+  async listen(port: number): Promise<void> {
+    return new Promise((resolve) => {
+      this.server = serve(
+        {
+          fetch: this.app.fetch,
+          port,
+        },
+        () => resolve(),
+      );
+    });
+  }
+
+  async close(): Promise<void> {
+    if (!this.server) return;
+
+    return new Promise((resolve, reject) => {
+      this.server?.close((err?: Error) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
   }
 }
 

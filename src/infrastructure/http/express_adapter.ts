@@ -7,9 +7,11 @@ import {
   mapErrorToHttp,
   normalizeQuery,
 } from "./server";
+import { Server } from "http";
 
 export class ExpressServer implements HttpServer {
   private app = express();
+  private server?: Server;
 
   constructor() {
     this.app.use(express.json());
@@ -45,8 +47,20 @@ export class ExpressServer implements HttpServer {
   }
 
   listen(port: number) {
-    this.app.listen(port, () => {
-      console.log(`express app is running in port: ${port}`);
+    return new Promise<void>((resolve) => {
+      this.server = this.app.listen(port, () => {
+        resolve();
+      });
+    });
+  }
+
+  async close() {
+    return new Promise<void>((resolve, reject) => {
+      if (!this.server) return resolve();
+      this.server.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
     });
   }
 }

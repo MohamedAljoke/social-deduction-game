@@ -1,4 +1,5 @@
 import { CreateMatchUseCase } from "./application/CreateMatch";
+import { ListMatchesUseCase } from "./application/ListMatchs";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 
@@ -12,6 +13,7 @@ export type Token<T> = string & { __type?: T };
 export const TOKENS = {
   MatchRepository: "MatchRepository" as Token<MatchRepository>,
   CreateMatchUseCase: "CreateMatchUseCase" as Token<CreateMatchUseCase>,
+  ListMatchesUseCase: "ListMatchesUseCase" as Token<ListMatchesUseCase>,
 };
 
 export class Container {
@@ -56,6 +58,11 @@ export function buildContainer() {
   container.register(
     TOKENS.CreateMatchUseCase,
     (c) => new CreateMatchUseCase(c.resolve(TOKENS.MatchRepository)),
+  );
+
+  container.register(
+    TOKENS.ListMatchesUseCase,
+    (c) => new ListMatchesUseCase(c.resolve(TOKENS.MatchRepository)),
   );
 
   return container;

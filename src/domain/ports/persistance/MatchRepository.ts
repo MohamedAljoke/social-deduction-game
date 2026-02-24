@@ -1,13 +1,8 @@
 import { Match } from "../../entity/match";
 
-export interface MatchSession {
-  id: string;
-  match: Match;
-  createdAt: Date;
-}
-
 export interface MatchRepository {
-  save(match: MatchSession): Promise<void>;
-  findById(id: string): Promise<MatchSession | null>;
+  save(match: Match): Promise<void>;
+  findById(id: string): Promise<Match | null>;
+  list(): Promise<Match[]>;
   delete(id: string): Promise<void>;
 }
