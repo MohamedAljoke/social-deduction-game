@@ -1,6 +1,7 @@
 import { Player, PlayerResponse } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
+import { Template } from "./template";
 import { InsufficientPlayers, MatchAlreadyStarted } from "../errors";
 
 export enum MatchStatus {
@@ -18,6 +19,7 @@ interface MatchProps {
   players?: Player[];
   phase?: Phase;
   actions?: Action[];
+  templates?: Template[];
 }
 
 export class Match {
@@ -29,6 +31,7 @@ export class Match {
   private players: Player[];
   private phase: Phase;
   private actions: Action[];
+  private templates: Template[];
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -38,6 +41,7 @@ export class Match {
     this.players = props.players ?? [];
     this.phase = props.phase ?? new Phase();
     this.actions = props.actions ?? [];
+    this.templates = props.templates ?? [];
   }
 
   public getStatus(): MatchStatus {
@@ -46,6 +50,14 @@ export class Match {
 
   public getPlayers(): Player[] {
     return this.players;
+  }
+
+  public getTemplates(): Template[] {
+    return this.templates;
+  }
+
+  public setTemplates(templates: Template[]): void {
+    this.templates = templates;
   }
 
   public start(): void {
@@ -99,6 +111,15 @@ export class Match {
         abilityId: action.abilityId,
         targetIds: action.targetIds,
         cancelled: action.cancelled,
+      })),
+      templates: this.templates.map((template) => ({
+        id: template.id,
+        alignment: template.alignment,
+        abilities: template.abilities.map((ability) => ({
+          id: ability.id,
+        })),
+        winCondition: template.winCondition,
+        endsGameOnWin: template.endsGameOnWin,
       })),
     };
   }

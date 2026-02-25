@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createApp } from "../../app";
 import { MatchResponse, MatchStatus } from "../../domain/entity/match";
+import { Alignment } from "../../domain/entity/template";
+import { AbilityId } from "../../domain/entity/ability";
 import {
   InsufficientPlayers,
   MatchAlreadyStarted,
@@ -105,10 +107,19 @@ describe("Match E2E", () => {
         phase: "discussion",
       });
 
+      console.log(body.players);
       expect(body.players).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ name: "alice", status: "alive" }),
-          expect.objectContaining({ name: "bob", status: "alive" }),
+          expect.objectContaining({
+            name: "alice",
+            status: "alive",
+            templateId: expect.any(String),
+          }),
+          expect.objectContaining({
+            name: "bob",
+            status: "alive",
+            templateId: expect.any(String),
+          }),
         ]),
       );
     });
@@ -183,6 +194,21 @@ async function startMatchHelper(matchId: string): Promise<{
     `http://localhost:${port}/match/${matchId}/start`,
     {
       method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        templates: [
+          {
+            alignment: Alignment.Villain,
+            abilities: [{ id: AbilityId.Kill }],
+          },
+          {
+            alignment: Alignment.Hero,
+            abilities: [{ id: AbilityId.Protect }],
+          },
+        ],
+      }),
     },
   );
 

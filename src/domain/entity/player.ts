@@ -10,6 +10,7 @@ export class Player {
   public readonly id: string;
   public name: string;
   private status: PlayerStatus;
+  private templateId?: string;
 
   constructor(props: { id: string; name: string }) {
     this.id = props.id;
@@ -33,11 +34,20 @@ export class Player {
     return this.status === PlayerStatus.ALIVE;
   }
 
+  public assignTemplate(templateId: string): void {
+    this.templateId = templateId;
+  }
+
+  public getTemplateId(): string | undefined {
+    return this.templateId;
+  }
+
   public toJSON() {
     return {
       id: this.id,
       name: this.name,
       status: this.status,
+      templateId: this.templateId,
     };
   }
 }

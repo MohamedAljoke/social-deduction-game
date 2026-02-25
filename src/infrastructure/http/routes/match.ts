@@ -30,8 +30,9 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
   server.register("post", "/match/:matchId/start", async (req, res) => {
     const useCase = container.resolve(TOKENS.StartMatchUseCase);
     const { matchId } = req.params;
+    const { templates } = req.body ?? {};
 
-    const result = await useCase.execute({ matchId });
+    const result = await useCase.execute({ matchId, templates });
 
     res.status(200).json(result);
   });

@@ -46,8 +46,8 @@
 
 - **Game lifecycle**
   - **StartMatchUseCase**
-    - Input: `matchId`.
-    - Behavior: validate minimum player count, template/player count matching, assign templates/roles, set initial `Phase`.
+    - Input: `matchId`, plus a list of per-player `templates` for this match (alignment + abilities).
+    - Behavior: validate minimum player count; validate that the number of templates matches the number of players; create `Template` value objects inside the `Match` aggregate (templates live inside a match, not as a separate aggregate), randomly assign one template to each player (so team and abilities are known before the game actually runs), store the templates on the `Match`, and set the initial `Phase`.
   - **AdvancePhaseUseCase**
     - Input: `matchId`.
     - Behavior: move `Phase` along the configured order, trigger resolution when entering/leaving particular phases, stop when match is `FINISHED`.
