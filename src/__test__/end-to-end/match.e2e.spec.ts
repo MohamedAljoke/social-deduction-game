@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createApp } from "../app";
-import { MatchResponse, MatchStatus } from "../domain/entity/match";
+import { createApp } from "../../app";
+import { MatchResponse, MatchStatus } from "../../domain/entity/match";
 
 const port = 4001;
 
