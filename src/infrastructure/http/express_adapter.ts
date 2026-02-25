@@ -45,6 +45,7 @@ export class ExpressServer implements HttpServer {
         // eslint-disable-next-line no-console
         console.error("HTTP handler error:", error);
         const { status, body } = mapErrorToHttp(error);
+        res.setHeader("Connection", "close");
         res.status(status).json(body);
       }
     });

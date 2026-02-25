@@ -1,7 +1,7 @@
 import { Player, PlayerResponse } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
-import { MatchAlreadyStarted } from "../errors";
+import { InsufficientPlayers, MatchAlreadyStarted } from "../errors";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -46,6 +46,18 @@ export class Match {
 
   public getPlayers(): Player[] {
     return this.players;
+  }
+
+  public start(): void {
+    if (this.status !== MatchStatus.LOBBY) {
+      throw new MatchAlreadyStarted();
+    }
+
+    if (this.players.length < 2) {
+      throw new InsufficientPlayers();
+    }
+
+    this.status = MatchStatus.STARTED;
   }
 
   public addPlayer(player: Player): void {

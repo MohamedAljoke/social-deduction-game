@@ -39,7 +39,7 @@
 - **Lobby & players**
   - **JoinMatchUseCase**
     - Input: `matchId`, player name/id.
-    - Behavior: add `Player` to `Match` while in `LOBBY`, enforce uniqueness and capacity.
+    - Behavior: request to add `Player` to `Match` while in `LOBBY`; the `Match` aggregate (`addPlayer`) enforces that players can only be added when status is `LOBBY`, plus any uniqueness/capacity rules.
   - **LeaveMatchUseCase** (optional)
     - Input: `matchId`, player id.
     - Behavior: remove player or mark as left before match start.
