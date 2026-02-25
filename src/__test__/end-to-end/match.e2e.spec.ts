@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createApp } from "../../app";
 import { MatchResponse, MatchStatus } from "../../domain/entity/match";
+import { MatchNotFound } from "../../domain/errors";
 
 const port = 4001;
 
@@ -50,6 +51,13 @@ describe("Match E2E", () => {
       name: "alice",
       status: "alive",
     });
+  });
+  it("should return an error if we try to add a player to a non existing match", async () => {
+    const { body, response } = await joinMatchHelper("some_id", "alice");
+
+    expect(response.status).toBe(400);
+    expect(body).toHaveProperty("error", "match_not_found");
+    expect(body).toHaveProperty("message", new MatchNotFound().message);
   });
 });
 

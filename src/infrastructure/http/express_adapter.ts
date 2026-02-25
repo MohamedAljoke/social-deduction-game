@@ -26,6 +26,7 @@ export class ExpressServer implements HttpServer {
             return this;
           },
           json(data: unknown) {
+            res.setHeader("Connection", "close");
             res.json(data);
           },
         };
@@ -40,6 +41,9 @@ export class ExpressServer implements HttpServer {
           httpResponse,
         );
       } catch (error) {
+        // Temporary logging to debug server-side errors during tests.
+        // eslint-disable-next-line no-console
+        console.error("HTTP handler error:", error);
         const { status, body } = mapErrorToHttp(error);
         res.status(status).json(body);
       }
@@ -47,9 +51,15 @@ export class ExpressServer implements HttpServer {
   }
 
   listen(port: number) {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       this.server = this.app.listen(port, () => {
         resolve();
+      });
+
+      this.server.on("error", (err) => {
+        // eslint-disable-next-line no-console
+        console.error("HTTP server listen error:", err);
+        reject(err);
       });
     });
   }
