@@ -25,6 +25,8 @@ graph TB
         subgraph "Entities"
             Match[Match Entity]
             Player[Player Entity]
+            Template[Template (Role) Entity]
+            Ability[Ability Entity]
         end
         
         subgraph "Ports (Interfaces)"
@@ -66,7 +68,7 @@ flowchart LR
         end
 
         subgraph "domain (Core)"
-            Entities[Entities<br/>match.ts]
+            Entities[Entities<br/>match.ts<br/>player.ts<br/>template.ts<br/>ability.ts]
             Ports[Ports/Interfaces<br/>MatchRepository.ts<br/>TemplateRepository.ts]
         end
     end

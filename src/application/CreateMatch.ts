@@ -1,28 +1,22 @@
 import crypto from "node:crypto";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
-import { Match } from "../domain/entity/match";
+import { Match, MatchResponse } from "../domain/entity/match";
+
+export interface CreateMatchInput {
+  name?: string;
+}
 
 export class CreateMatchUseCase {
   constructor(private readonly repository: MatchRepository) {}
 
-  async execute(): Promise<CreateMatchOutput> {
+  async execute(input: CreateMatchInput = {}): Promise<MatchResponse> {
     const match = new Match({
       id: crypto.randomUUID().toString(),
-      name: "match_one",
+      name: input.name ?? "match_one",
     });
 
     await this.repository.save(match);
 
-    return {
-      id: match.id,
-      status: match.getStatus(),
-      createdAt: match.createdAt,
-    };
+    return match.toJSON();
   }
-}
-
-export interface CreateMatchOutput {
-  id: string;
-  status: string;
-  createdAt: Date;
 }

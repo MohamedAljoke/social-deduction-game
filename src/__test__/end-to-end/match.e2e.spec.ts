@@ -36,6 +36,21 @@ describe("Match E2E", () => {
     expect(body[0]).toHaveProperty("status", "lobby");
     expect(body[0]).toHaveProperty("createdAt");
   });
+
+  it("should allow a player to join a match", async () => {
+    const { body: match } = await createMatchHelper();
+
+    const { body, response } = await joinMatchHelper(match.id, "alice");
+
+    expect(response.status).toBe(200);
+    expect(body.id).toBe(match.id);
+    expect(body.players).toBeDefined();
+    expect(body.players.length).toBe(1);
+    expect(body.players[0]).toMatchObject({
+      name: "alice",
+      status: "alive",
+    });
+  });
 });
 
 async function createMatchHelper(): Promise<{
@@ -59,6 +74,29 @@ async function listMatchesHelper(): Promise<{
   });
 
   const body = (await response.json()) as MatchResponse[];
+
+  return { body, response };
+}
+
+async function joinMatchHelper(
+  matchId: string,
+  name: string,
+): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
+  const response = await fetch(
+    `http://localhost:${port}/match/${matchId}/join`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    },
+  );
+
+  const body = (await response.json()) as MatchResponse;
 
   return { body, response };
 }

@@ -13,7 +13,6 @@ export type MatchResponse = ReturnType<Match["toJSON"]>;
 interface MatchProps {
   id: string;
   name: string;
-  templateId?: string;
   createdAt?: Date;
   players?: Player[];
   phase?: Phase;
@@ -24,7 +23,6 @@ export class Match {
   public readonly id: string;
   public name: string;
   public readonly createdAt: Date;
-  public readonly templateId?: string;
 
   private status: MatchStatus;
   private players: Player[];
@@ -34,7 +32,6 @@ export class Match {
   constructor(props: MatchProps) {
     this.id = props.id;
     this.name = props.name;
-    this.templateId = props.templateId;
     this.createdAt = props.createdAt ?? new Date();
     this.status = MatchStatus.LOBBY;
     this.players = props.players ?? [];
@@ -76,7 +73,6 @@ export class Match {
       name: this.name,
       createdAt: this.createdAt,
       status: this.status,
-      templateId: this.templateId,
       players: this.players.map(
         (player: Player): PlayerResponse => player.toJSON(),
       ),
