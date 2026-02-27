@@ -6,6 +6,6 @@ export class Action {
   constructor(
     public readonly actorId: string,
     public readonly abilityId: AbilityId,
-    public targetIds: string[],
+    public readonly targetIds: string[],
   ) {}
 }

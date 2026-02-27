@@ -2,7 +2,12 @@ import { Player, PlayerResponse } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Template } from "./template";
-import { InsufficientPlayers, MatchAlreadyStarted } from "../errors";
+import {
+  InsufficientPlayers,
+  MatchAlreadyStarted,
+  TemplateNotFound,
+  TemplatePlayerCountMismatch,
+} from "../errors";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -15,16 +20,17 @@ export type MatchResponse = ReturnType<Match["toJSON"]>;
 interface MatchProps {
   id: string;
   name: string;
-  createdAt?: Date;
+  createdAt: Date;
   players?: Player[];
   phase?: Phase;
   actions?: Action[];
   templates?: Template[];
+  status: MatchStatus;
 }
 
 export class Match {
   public readonly id: string;
-  public name: string;
+  public readonly name: string;
   public readonly createdAt: Date;
 
   private status: MatchStatus;
@@ -36,8 +42,8 @@ export class Match {
   constructor(props: MatchProps) {
     this.id = props.id;
     this.name = props.name;
-    this.createdAt = props.createdAt ?? new Date();
-    this.status = MatchStatus.LOBBY;
+    this.createdAt = props.createdAt;
+    this.status = props.status;
     this.players = props.players ?? [];
     this.phase = props.phase ?? new Phase();
     this.actions = props.actions ?? [];
@@ -48,6 +54,8 @@ export class Match {
     return new Match({
       id: crypto.randomUUID().toString(),
       name: name,
+      status: MatchStatus.LOBBY,
+      createdAt: new Date(),
     });
   }
 
@@ -67,14 +75,11 @@ export class Match {
     this.templates = templates;
   }
 
-  public start(): void {
-    if (this.status !== MatchStatus.LOBBY) {
-      throw new MatchAlreadyStarted();
-    }
+  public startWithTemplates(templates: Template[]): void {
+    this.templates = templates;
 
-    if (this.players.length < 2) {
-      throw new InsufficientPlayers();
-    }
+    this.validateStart();
+    this.assignTemplates();
 
     this.status = MatchStatus.STARTED;
   }
@@ -101,6 +106,44 @@ export class Match {
 
   public addAction(action: Action): void {
     this.actions.push(action);
+  }
+
+  private assignTemplates() {
+    const shuffled = this.shuffle(this.templates);
+
+    for (let i = 0; i < this.players.length; i++) {
+      this.players[i].assignTemplate(shuffled[i].id);
+    }
+  }
+
+  private validateStart() {
+    if (this.status !== MatchStatus.LOBBY) {
+      throw new MatchAlreadyStarted();
+    }
+
+    if (this.players.length < 2) {
+      throw new InsufficientPlayers();
+    }
+
+    if (!this.templates || this.templates.length === 0) {
+      throw new TemplateNotFound();
+    }
+
+    if (this.templates.length !== this.players.length) {
+      throw new TemplatePlayerCountMismatch(
+        this.templates.length,
+        this.players.length,
+      );
+    }
+  }
+
+  private shuffle<T>(items: T[]): T[] {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
   }
 
   toJSON() {

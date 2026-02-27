@@ -19,13 +19,7 @@ export class JoinMatchUseCase {
       throw new MatchNotFound();
     }
 
-    const playerId = crypto.randomUUID().toString();
-    const newPlayer = new Player({
-      id: playerId,
-      name: input.playerName,
-    });
-
-    match.addPlayer(newPlayer);
+    match.addPlayer(Player.create(input.playerName));
     await this.repository.save(match);
 
     return match.toJSON();

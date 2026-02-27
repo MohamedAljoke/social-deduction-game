@@ -26,56 +26,16 @@ export class StartMatchUseCase {
       throw new MatchNotFound();
     }
 
-    match.start();
+    const templates = input.templates.map((raw, index) => {
+      const abilities = raw.abilities.map((a) => new Ability(a.id));
 
-    const players = match.getPlayers();
-    const rawTemplates = input.templates;
-
-    if (!rawTemplates || rawTemplates.length === 0) {
-      throw new TemplateNotFound();
-    }
-
-    if (rawTemplates.length !== players.length) {
-      throw new TemplatePlayerCountMismatch(
-        rawTemplates.length,
-        players.length,
-      );
-    }
-
-    const templates: Template[] = rawTemplates.map((raw, index) => {
-      const abilities = raw.abilities.map(
-        (a) => new Ability(a.id as AbilityId),
-      );
-
-      return new Template(
-        `template_${index}`,
-        raw.alignment as Alignment,
-        abilities,
-      );
+      return new Template(`template_${index}`, raw.alignment, abilities);
     });
 
-    const shuffledTemplates = this.shuffle(templates);
-
-    for (let index = 0; index < players.length; index++) {
-      const player = players[index];
-      const template = shuffledTemplates[index];
-
-      player.assignTemplate(template.id);
-    }
-
-    match.setTemplates(templates);
+    match.startWithTemplates(templates);
 
     await this.matchRepository.save(match);
 
     return match.toJSON();
-  }
-
-  private shuffle<T>(items: T[]): T[] {
-    const copy = [...items];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
   }
 }

@@ -1,4 +1,4 @@
-import { DomainError } from "../../domain/errors";
+import { DomainError, ValidationError } from "../../domain/errors";
 
 export type HttpMethod = "get" | "post" | "put" | "delete";
 
@@ -42,6 +42,17 @@ export function normalizeQuery(query: any): Record<string, string> {
 }
 
 export function mapErrorToHttp(error: unknown) {
+  if (error instanceof ValidationError) {
+    return {
+      status: error.statusCode,
+      body: {
+        error: "validation_error",
+        message: error.message,
+        issues: error.issues,
+      },
+    };
+  }
+
   if (error instanceof DomainError) {
     return {
       status: 400,

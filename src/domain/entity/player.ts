@@ -8,7 +8,7 @@ export type PlayerResponse = ReturnType<Player["toJSON"]>;
 
 export class Player {
   public readonly id: string;
-  public name: string;
+  public readonly name: string;
   private status: PlayerStatus;
   private templateId?: string;
 
@@ -16,6 +16,13 @@ export class Player {
     this.id = props.id;
     this.name = props.name;
     this.status = PlayerStatus.ALIVE;
+  }
+
+  static create(name: string): Player {
+    return new Player({
+      id: crypto.randomUUID().toString(),
+      name: name,
+    });
   }
 
   public getStatus(): PlayerStatus {

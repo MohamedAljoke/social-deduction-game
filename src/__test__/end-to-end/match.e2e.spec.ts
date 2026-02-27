@@ -31,6 +31,22 @@ describe("Match E2E", () => {
       expect(body).toHaveProperty("id");
       expect(body.status).toBe(MatchStatus.LOBBY);
     });
+
+    it("should create a match with custom name", async () => {
+      const { body, response } = await createMatchHelper("my_match");
+
+      expect(response.status).toBe(201);
+      expect(body.name).toBe("my_match");
+    });
+    it("should reject invalid body type", async () => {
+      const response = await fetch(`http://localhost:${port}/match`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: 123 }),
+      });
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe("ListMatches UseCase", () => {
@@ -89,6 +105,51 @@ describe("Match E2E", () => {
         message: new MatchNotFound().message,
       });
     });
+
+    it("should reject missing name", async () => {
+      const { body: match } = await createMatchHelper();
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/join`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject empty name", async () => {
+      const { body: match } = await createMatchHelper();
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/join`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: "" }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject non-string name", async () => {
+      const { body: match } = await createMatchHelper();
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/join`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: 123 }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe("StartMatch UseCase", () => {
@@ -134,15 +195,129 @@ describe("Match E2E", () => {
         message: new InsufficientPlayers().message,
       });
     });
+
+    it("should reject missing templates", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/start`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject empty templates", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/start`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ templates: [] }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject invalid alignment", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/start`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            templates: [
+              { alignment: "invalid", abilities: [{ id: AbilityId.Kill }] },
+              {
+                alignment: Alignment.Hero,
+                abilities: [{ id: AbilityId.Protect }],
+              },
+            ],
+          }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject invalid ability id", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/start`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            templates: [
+              {
+                alignment: Alignment.Villain,
+                abilities: [{ id: "invalid" }],
+              },
+              {
+                alignment: Alignment.Hero,
+                abilities: [{ id: AbilityId.Protect }],
+              },
+            ],
+          }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject template with empty abilities", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/start`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            templates: [
+              { alignment: Alignment.Villain, abilities: [] },
+              {
+                alignment: Alignment.Hero,
+                abilities: [{ id: AbilityId.Protect }],
+              },
+            ],
+          }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
   });
 });
 
-async function createMatchHelper(): Promise<{
+async function createMatchHelper(name?: string): Promise<{
   body: MatchResponse;
   response: Response;
 }> {
   const response = await fetch(`http://localhost:${port}/match`, {
     method: "POST",
+    headers: { "content-type": "application/json" },
+    body: name ? JSON.stringify({ name }) : undefined,
   });
 
   const body = (await response.json()) as MatchResponse;
