@@ -107,7 +107,6 @@ describe("Match E2E", () => {
         phase: "discussion",
       });
 
-      console.log(body.players);
       expect(body.players).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

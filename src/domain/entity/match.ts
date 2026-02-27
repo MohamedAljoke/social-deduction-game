@@ -44,6 +44,13 @@ export class Match {
     this.templates = props.templates ?? [];
   }
 
+  static create(name: string): Match {
+    return new Match({
+      id: crypto.randomUUID().toString(),
+      name: name,
+    });
+  }
+
   public getStatus(): MatchStatus {
     return this.status;
   }

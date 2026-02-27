@@ -20,7 +20,6 @@ export class JoinMatchUseCase {
     }
 
     const playerId = crypto.randomUUID().toString();
-
     const newPlayer = new Player({
       id: playerId,
       name: input.playerName,

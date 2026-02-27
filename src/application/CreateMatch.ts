@@ -10,11 +10,7 @@ export class CreateMatchUseCase {
   constructor(private readonly repository: MatchRepository) {}
 
   async execute(input: CreateMatchInput = {}): Promise<MatchResponse> {
-    const match = new Match({
-      id: crypto.randomUUID().toString(),
-      name: input.name ?? "match_one",
-    });
-
+    const match = Match.create(input.name ?? "match_one");
     await this.repository.save(match);
 
     return match.toJSON();

@@ -43,7 +43,7 @@ export class ExpressServer implements HttpServer {
       } catch (error) {
         // Temporary logging to debug server-side errors during tests.
         // eslint-disable-next-line no-console
-        console.error("HTTP handler error:", error);
+        // console.error("HTTP handler error:", error);
         const { status, body } = mapErrorToHttp(error);
         res.setHeader("Connection", "close");
         res.status(status).json(body);
