@@ -2,6 +2,9 @@ import { CreateMatchUseCase } from "./application/CreateMatch";
 import { ListMatchesUseCase } from "./application/ListMatchs";
 import { JoinMatchUseCase } from "./application/JoinMatch";
 import { StartMatchUseCase } from "./application/StartMatch";
+import { UseAbilityUseCase } from "./application/UseAbility";
+import { AdvancePhaseUseCase } from "./application/AdvancePhase";
+import { GetMatchUseCase } from "./application/GetMatch";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 
@@ -18,6 +21,9 @@ export const TOKENS = {
   ListMatchesUseCase: "ListMatchesUseCase" as Token<ListMatchesUseCase>,
   JoinMatchUseCase: "JoinMatchUseCase" as Token<JoinMatchUseCase>,
   StartMatchUseCase: "StartMatchUseCase" as Token<StartMatchUseCase>,
+  UseAbilityUseCase: "UseAbilityUseCase" as Token<UseAbilityUseCase>,
+  AdvancePhaseUseCase: "AdvancePhaseUseCase" as Token<AdvancePhaseUseCase>,
+  GetMatchUseCase: "GetMatchUseCase" as Token<GetMatchUseCase>,
 };
 
 export class Container {
@@ -77,6 +83,21 @@ export function buildContainer() {
   container.register(
     TOKENS.StartMatchUseCase,
     (c) => new StartMatchUseCase(c.resolve(TOKENS.MatchRepository)),
+  );
+
+  container.register(
+    TOKENS.UseAbilityUseCase,
+    (c) => new UseAbilityUseCase(c.resolve(TOKENS.MatchRepository)),
+  );
+
+  container.register(
+    TOKENS.AdvancePhaseUseCase,
+    (c) => new AdvancePhaseUseCase(c.resolve(TOKENS.MatchRepository)),
+  );
+
+  container.register(
+    TOKENS.GetMatchUseCase,
+    (c) => new GetMatchUseCase(c.resolve(TOKENS.MatchRepository)),
   );
 
   return container;

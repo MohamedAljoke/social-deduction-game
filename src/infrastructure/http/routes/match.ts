@@ -8,6 +8,8 @@ import {
   JoinMatchSchema,
   StartMatchBody,
   StartMatchSchema,
+  UseAbilityBody,
+  UseAbilitySchema,
 } from "../validators";
 import { validateBody } from "../middlewares/validator";
 
@@ -29,6 +31,13 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     const useCase = container.resolve(TOKENS.ListMatchesUseCase);
     const result = await useCase.execute();
     res.status(200).json(result);
+  });
+
+  server.register("get", "/match/:matchId", async (req, res) => {
+    const useCase = container.resolve(TOKENS.GetMatchUseCase);
+    const match = await useCase.execute({ matchId: req.params.matchId });
+    
+    res.status(200).json(match);
   });
 
   server.register(
@@ -66,4 +75,33 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
       res.status(200).json(result);
     },
   );
+
+  server.register(
+    "post",
+    "/match/:matchId/ability",
+    validateBody(UseAbilitySchema),
+    async (req, res) => {
+      const useCase = container.resolve(TOKENS.UseAbilityUseCase);
+      const { matchId } = req.params;
+      const body: UseAbilityBody = req.body;
+
+      const result = await useCase.execute({
+        matchId,
+        actorId: body.actorId,
+        abilityId: body.abilityId,
+        targetIds: body.targetIds,
+      });
+
+      res.status(200).json(result);
+    },
+  );
+
+  server.register("post", "/match/:matchId/phase", async (req, res) => {
+    const useCase = container.resolve(TOKENS.AdvancePhaseUseCase);
+    const { matchId } = req.params;
+
+    const result = await useCase.execute({ matchId });
+
+    res.status(200).json(result);
+  });
 }

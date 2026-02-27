@@ -7,6 +7,14 @@ import {
   InsufficientPlayers,
   MatchAlreadyStarted,
   MatchNotFound,
+  MatchNotStarted,
+  InvalidPhase,
+  PlayerNotInMatch,
+  PlayerIsDeadError,
+  AbilityDoesNotBelongToUser,
+  InvalidTargetCount,
+  CannotTargetSelf,
+  TargetNotAlive,
 } from "../../domain/errors";
 
 const port = 4001;
@@ -308,6 +316,250 @@ describe("Match E2E", () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe("UseAbility UseCase", () => {
+    it("should use ability in action phase", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const alice = matchInAction.players.find((p) => p.name === "alice");
+      const bob = matchInAction.players.find((p) => p.name === "bob");
+      const aliceTemplate = matchInAction.templates.find(
+        (t) => t.id === alice!.templateId,
+      );
+      const abilityToUse = aliceTemplate!.abilities[0].id;
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        abilityToUse,
+        [bob!.id],
+      );
+
+      expect(response.status).toBe(200);
+      expect(body.actions).toHaveLength(1);
+      expect(body.actions[0]).toMatchObject({
+        actorId: alice!.id,
+        abilityId: abilityToUse,
+        targetIds: [bob!.id],
+      });
+    });
+
+    it("should reject ability when match not started", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const { body: started } = await startMatchHelper(match.id);
+      const alice = started.players.find((p) => p.name === "alice");
+      const bob = started.players.find((p) => p.name === "bob");
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        AbilityId.Kill,
+        [bob!.id],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new InvalidPhase().code,
+        message: new InvalidPhase().message,
+      });
+    });
+
+    it("should reject ability in non-action phase", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const { body: started } = await startMatchHelper(match.id);
+      const alice = started.players.find((p) => p.name === "alice");
+      const bob = started.players.find((p) => p.name === "bob");
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        AbilityId.Kill,
+        [bob!.id],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new InvalidPhase().code,
+        message: new InvalidPhase().message,
+      });
+    });
+
+    it("should reject ability when match not found", async () => {
+      const { response, body } = await useAbilityHelper(
+        "nonexistent",
+        "actor",
+        AbilityId.Kill,
+        ["target"],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new MatchNotFound().code,
+        message: new MatchNotFound().message,
+      });
+    });
+
+    it("should reject invalid ability id", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+
+      const alice = (await getMatch(match.id)).players.find(
+        (p) => p.name === "alice",
+      );
+      const bob = (await getMatch(match.id)).players.find(
+        (p) => p.name === "bob",
+      );
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/ability`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            actorId: alice!.id,
+            abilityId: "invalid",
+            targetIds: [bob!.id],
+          }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject ability not owned by player", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const alice = matchInAction.players.find((p) => p.name === "alice");
+      const bob = matchInAction.players.find((p) => p.name === "bob");
+      const bobTemplate = matchInAction.templates.find(
+        (t) => t.id === bob!.templateId,
+      );
+      const abilityBobHas = bobTemplate!.abilities[0].id;
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        abilityBobHas,
+        [bob!.id],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new AbilityDoesNotBelongToUser().code,
+        message: new AbilityDoesNotBelongToUser().message,
+      });
+    });
+
+    it("should reject wrong target count", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const alice = matchInAction.players.find((p) => p.name === "alice");
+      const bob = matchInAction.players.find((p) => p.name === "bob");
+      const aliceTemplate = matchInAction.templates.find(
+        (t) => t.id === alice!.templateId,
+      );
+      const abilityAliceHas = aliceTemplate!.abilities[0].id;
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        abilityAliceHas,
+        [],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new InvalidTargetCount(1, 0).code,
+        message: new InvalidTargetCount(1, 0).message,
+      });
+    });
+
+    it("should reject self-targeting when not allowed", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const alice = matchInAction.players.find((p) => p.name === "alice");
+      const aliceTemplate = matchInAction.templates.find(
+        (t) => t.id === alice!.templateId,
+      );
+      const abilityAliceHas = aliceTemplate!.abilities[0].id;
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        abilityAliceHas,
+        [alice!.id],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new CannotTargetSelf().code,
+        message: new CannotTargetSelf().message,
+      });
+    });
+
+    it("should reject self-targeting when not allowed", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const alice = matchInAction.players.find((p) => p.name === "alice");
+      const aliceTemplate = matchInAction.templates.find(
+        (t) => t.id === alice!.templateId,
+      );
+      const abilityAliceHas = aliceTemplate!.abilities[0].id;
+
+      const { response, body } = await useAbilityHelper(
+        match.id,
+        alice!.id,
+        abilityAliceHas,
+        [alice!.id],
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new CannotTargetSelf().code,
+        message: new CannotTargetSelf().message,
+      });
+    });
+  });
 });
 
 async function createMatchHelper(name?: string): Promise<{
@@ -389,4 +641,59 @@ async function startMatchHelper(matchId: string): Promise<{
   const body = (await response.json()) as MatchResponse;
 
   return { body, response };
+}
+
+async function useAbilityHelper(
+  matchId: string,
+  actorId: string,
+  abilityId: string,
+  targetIds: string[],
+): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
+  const response = await fetch(
+    `http://localhost:${port}/match/${matchId}/ability`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        actorId,
+        abilityId,
+        targetIds,
+      }),
+    },
+  );
+
+  const body = (await response.json()) as MatchResponse;
+
+  return { body, response };
+}
+
+async function advanceToActionPhase(matchId: string): Promise<void> {
+  let currentPhase = "discussion";
+  while (currentPhase !== "action") {
+    const response = await fetch(
+      `http://localhost:${port}/match/${matchId}/phase`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      },
+    );
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(`Failed to advance phase: ${JSON.stringify(body)}`);
+    }
+    const match = (await response.json()) as MatchResponse;
+    currentPhase = match.phase;
+  }
+}
+
+async function getMatch(matchId: string): Promise<MatchResponse> {
+  const response = await fetch(`http://localhost:${port}/match/${matchId}`, {
+    method: "GET",
+  });
+  return (await response.json()) as MatchResponse;
 }

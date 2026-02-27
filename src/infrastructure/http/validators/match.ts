@@ -30,3 +30,11 @@ export const StartMatchSchema = z.object({
 });
 
 export type StartMatchBody = z.infer<typeof StartMatchSchema>;
+
+export const UseAbilitySchema = z.object({
+  actorId: z.string().min(1, "Actor ID is required"),
+  abilityId: z.enum(AbilityId),
+  targetIds: z.array(z.string().min(1, "Target ID is required")),
+});
+
+export type UseAbilityBody = z.infer<typeof UseAbilitySchema>;

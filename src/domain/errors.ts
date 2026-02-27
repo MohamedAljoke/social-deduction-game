@@ -85,3 +85,27 @@ export class CannotTargetSelf extends DomainError {
     super("Cannot target yourself", "cannot_target_self");
   }
 }
+
+export class InvalidPhase extends DomainError {
+  constructor() {
+    super("Ability can only be used during action phase", "invalid_phase");
+  }
+}
+
+export class MatchNotStarted extends DomainError {
+  constructor() {
+    super("Match must be started to use abilities", "match_not_started");
+  }
+}
+
+export class PlayerNotInMatch extends DomainError {
+  constructor() {
+    super("Player is not part of this match", "player_not_in_match");
+  }
+}
+
+export class TargetNotAlive extends DomainError {
+  constructor() {
+    super("Target must be alive", "target_not_alive");
+  }
+}

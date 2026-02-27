@@ -12,7 +12,7 @@ src/
 │   ├── entity/       # Match, Player, Template, Ability, Phase, Action
 │   ├── errors.ts     # Domain errors
 │   └── ports/        # Repository interfaces
-├── application/      # Use cases (orchestrates domain)
+├── application/      # CreateMatch, JoinMatch, StartMatch, ListMatches
 ├── infrastructure/   # Adapters
 │   ├── http/
 │   │   ├── routes/  # HTTP route handlers
@@ -100,6 +100,83 @@ websocket.on("use_ability", (data) => {
   websocket.emit("ability_used", result);
 });
 ```
+
+## Application Layer (Use Cases)
+
+Use cases in `src/application/` orchestrate domain logic. They are transport-agnostic and can be called from HTTP, WebSocket, or CLI.
+
+### CreateMatch
+```typescript
+interface CreateMatchInput {
+  name?: string;
+}
+```
+
+### JoinMatch
+```typescript
+interface JoinMatchInput {
+  matchId: string;
+  playerName: string;
+}
+```
+
+### StartMatch
+```typescript
+interface StartMatchInput {
+  matchId: string;
+  templates: {
+    alignment: Alignment;
+    abilities: { id: AbilityId }[];
+  }[];
+}
+```
+
+### ListMatches
+```typescript
+interface ListMatchesInput {} // No input required
+```
+
+## Domain Entities
+
+Entities live in `src/domain/entity/`:
+
+### Match
+- `id: string` - Unique identifier
+- `name: string` - Display name
+- `status: MatchStatus` - LOBBY | STARTED | FINISHED
+- `players: Player[]` - Players in the match
+- `phase: Phase` - Current game phase
+- `actions: Action[]` - Actions taken this round
+- `templates: Template[]` - Role templates assigned to players
+
+### Player
+- `id: string` - Unique identifier
+- `name: string` - Display name
+- `status: PlayerStatus` - ALIVE | DEAD | ELIMINATED
+- `templateId?: string` - Assigned role template
+
+### Template
+- `id: string` - Unique identifier
+- `alignment: Alignment` - Villain | Hero | Neutral
+- `abilities: Ability[]` - Abilities this role has
+- `winCondition: WinCondition` - default | vote_eliminated
+- `endsGameOnWin: boolean` - Whether this role winning ends the game
+
+### Ability
+- `id: AbilityId` - Kill | Protect | Roleblock | Investigate
+- `canUseWhenDead: boolean` - Whether dead players can use this
+- `targetCount: number` - Number of targets required
+- `canTargetSelf: boolean` - Whether self-targeting is allowed
+- `requiresAliveTarget: boolean` - Whether targets must be alive
+
+### Phase
+- `current: PhaseType` - discussion | voting | action | resolution
+
+### Action
+- `actorId: string` - Player who performed the action
+- `abilityId: AbilityId` - Ability used
+- `targetIds: string[]` - Targets of the ability
+- `cancelled: boolean` - Whether the action was cancelled
 
 ## Adding a New Feature
 

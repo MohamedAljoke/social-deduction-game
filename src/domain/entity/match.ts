@@ -7,7 +7,16 @@ import {
   MatchAlreadyStarted,
   TemplateNotFound,
   TemplatePlayerCountMismatch,
+  MatchNotStarted,
+  InvalidPhase,
+  PlayerNotInMatch,
+  PlayerIsDeadError,
+  AbilityDoesNotBelongToUser,
+  InvalidTargetCount,
+  CannotTargetSelf,
+  TargetNotAlive,
 } from "../errors";
+import { AbilityId } from "./ability";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -76,10 +85,10 @@ export class Match {
   }
 
   public startWithTemplates(templates: Template[]): void {
-    this.templates = templates;
+    this.validateStart(templates);
 
-    this.validateStart();
-    this.assignTemplates();
+    this.templates = templates;
+    this.assignTemplatesToPlayers();
 
     this.status = MatchStatus.STARTED;
   }
@@ -97,6 +106,10 @@ export class Match {
   }
 
   public advancePhase(): PhaseType {
+    if (this.status !== MatchStatus.STARTED) {
+      throw new MatchNotStarted();
+    }
+
     return this.phase.nextPhase();
   }
 
@@ -108,7 +121,61 @@ export class Match {
     this.actions.push(action);
   }
 
-  private assignTemplates() {
+  public useAbility(
+    actorId: string,
+    abilityId: AbilityId,
+    targetIds: string[],
+  ): void {
+    if (this.status !== MatchStatus.STARTED) {
+      throw new MatchNotStarted();
+    }
+
+    if (this.phase.getCurrentPhase() !== "action") {
+      throw new InvalidPhase();
+    }
+
+    const actor = this.players.find((p) => p.id === actorId);
+    if (!actor) {
+      throw new PlayerNotInMatch();
+    }
+
+    const template = this.templates.find((t) => t.id === actor.getTemplateId());
+    if (!template) {
+      throw new TemplateNotFound();
+    }
+
+    const ability = template.getAbility(abilityId);
+    if (!ability) {
+      throw new AbilityDoesNotBelongToUser();
+    }
+
+    if (!actor.isAlive() && !ability.canUseWhenDead) {
+      throw new PlayerIsDeadError();
+    }
+
+    if (targetIds.length !== ability.targetCount) {
+      throw new InvalidTargetCount(ability.targetCount, targetIds.length);
+    }
+
+    for (const targetId of targetIds) {
+      if (targetId === actorId && !ability.canTargetSelf) {
+        throw new CannotTargetSelf();
+      }
+
+      const target = this.players.find((p) => p.id === targetId);
+      if (!target) {
+        throw new PlayerNotInMatch();
+      }
+
+      if (ability.requiresAliveTarget && !target.isAlive()) {
+        throw new TargetNotAlive();
+      }
+    }
+
+    this.actions.push(new Action(actorId, abilityId, targetIds));
+  }
+
+  private assignTemplatesToPlayers() {
     const shuffled = this.shuffle(this.templates);
 
     for (let i = 0; i < this.players.length; i++) {
@@ -116,7 +183,7 @@ export class Match {
     }
   }
 
-  private validateStart() {
+  private validateStart(templates: Template[]) {
     if (this.status !== MatchStatus.LOBBY) {
       throw new MatchAlreadyStarted();
     }
@@ -125,13 +192,13 @@ export class Match {
       throw new InsufficientPlayers();
     }
 
-    if (!this.templates || this.templates.length === 0) {
+    if (!templates || templates.length === 0) {
       throw new TemplateNotFound();
     }
 
-    if (this.templates.length !== this.players.length) {
+    if (templates.length !== this.players.length) {
       throw new TemplatePlayerCountMismatch(
-        this.templates.length,
+        templates.length,
         this.players.length,
       );
     }
