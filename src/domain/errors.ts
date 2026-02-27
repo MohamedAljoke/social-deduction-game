@@ -6,6 +6,16 @@ export class DomainError extends Error {
   }
 }
 
+export class ValidationError extends Error {
+  public readonly statusCode = 400;
+  public readonly issues: string[];
+
+  constructor(issues: string[]) {
+    super("Validation failed");
+    this.issues = issues;
+  }
+}
+
 export class PlayerNotFound extends DomainError {
   constructor() {
     super("Player was not found", "player_not_found");

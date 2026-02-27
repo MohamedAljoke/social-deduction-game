@@ -20,7 +20,7 @@ export type HttpHandler = (
 ) => Promise<void> | void;
 
 export interface HttpServer {
-  register(method: HttpMethod, path: string, handler: HttpHandler): void;
+  register(method: HttpMethod, path: string, ...handlers: HttpHandler[]): void;
   close(): Promise<void>;
   listen(port: number): void;
 }

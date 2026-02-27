@@ -5,6 +5,7 @@ import { Context } from "hono";
 import {
   HttpHandler,
   HttpMethod,
+  HttpRequest,
   HttpResponse,
   HttpServer,
   mapErrorToHttp,
@@ -17,7 +18,7 @@ export class HonoServer implements HttpServer {
   private app = new Hono();
   private server?: NodeServer;
 
-  register(method: HttpMethod, path: string, handler: HttpHandler) {
+  register(method: HttpMethod, path: string, ...handlers: HttpHandler[]) {
     this.app[method](path, async (c: Context) => {
       try {
         const httpResponse: HttpResponse = {
@@ -30,15 +31,16 @@ export class HonoServer implements HttpServer {
           },
         };
 
-        await handler(
-          {
-            body: await safeJson(c),
-            params: c.req.param() as Record<string, string>,
-            query: normalizeQuery(c.req.query()),
-            headers: c.req.header() as any,
-          },
-          httpResponse,
-        );
+        const httpRequest: HttpRequest = {
+          body: await safeJson(c),
+          params: c.req.param() as Record<string, string>,
+          query: normalizeQuery(c.req.query()),
+          headers: c.req.header() as any,
+        };
+
+        for (const handler of handlers) {
+          await handler(httpRequest, httpResponse);
+        }
       } catch (error) {
         const { status, body } = mapErrorToHttp(error);
         return c.json(body, status as any);

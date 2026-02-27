@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import {
   HttpHandler,
   HttpMethod,
+  HttpRequest,
   HttpResponse,
   HttpServer,
   mapErrorToHttp,
@@ -17,7 +18,7 @@ export class ExpressServer implements HttpServer {
     this.app.use(express.json());
   }
 
-  register(method: HttpMethod, path: string, handler: HttpHandler) {
+  register(method: HttpMethod, path: string, ...handlers: HttpHandler[]) {
     this.app[method](path, async (req: Request, res: Response) => {
       try {
         const httpResponse: HttpResponse = {
@@ -31,19 +32,20 @@ export class ExpressServer implements HttpServer {
           },
         };
 
-        await handler(
-          {
-            body: req.body,
-            params: req.params as Record<string, string>,
-            query: normalizeQuery(req.query),
-            headers: req.headers as any,
-          },
-          httpResponse,
-        );
+        const httpRequest: HttpRequest = {
+          body: req.body,
+          params: req.params as Record<string, string>,
+          query: normalizeQuery(req.query),
+          headers: req.headers as any,
+        };
+
+        for (const handler of handlers) {
+          await handler(httpRequest, httpResponse);
+        }
       } catch (error) {
         // Temporary logging to debug server-side errors during tests.
         // eslint-disable-next-line no-console
-        // console.error("HTTP handler error:", error);
+        console.error("HTTP handler error:", error);
         const { status, body } = mapErrorToHttp(error);
         res.setHeader("Connection", "close");
         res.status(status).json(body);
