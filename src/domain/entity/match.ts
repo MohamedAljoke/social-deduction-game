@@ -15,6 +15,7 @@ import {
   InvalidTargetCount,
   CannotTargetSelf,
   TargetNotAlive,
+  PlayerHasNoTemplate,
 } from "../errors";
 import { AbilityId } from "./ability";
 
@@ -134,12 +135,21 @@ export class Match {
       throw new InvalidPhase();
     }
 
-    const actor = this.players.find((p) => p.id === actorId);
+    const uniqueTargetIds = [...new Set(targetIds)];
+
+    const playersById = new Map(this.players.map((p) => [p.id, p]));
+
+    const actor = playersById.get(actorId);
     if (!actor) {
       throw new PlayerNotInMatch();
     }
 
-    const template = this.templates.find((t) => t.id === actor.getTemplateId());
+    const templateId = actor.getTemplateId();
+    if (!templateId) {
+      throw new PlayerHasNoTemplate();
+    }
+
+    const template = this.templates.find((t) => t.id === templateId);
     if (!template) {
       throw new TemplateNotFound();
     }
@@ -149,30 +159,18 @@ export class Match {
       throw new AbilityDoesNotBelongToUser();
     }
 
-    if (!actor.isAlive() && !ability.canUseWhenDead) {
-      throw new PlayerIsDeadError();
-    }
+    const targets = uniqueTargetIds.map((id) => {
+      const target = playersById.get(id);
+      if (!target) throw new PlayerNotInMatch();
+      return target;
+    });
 
-    if (targetIds.length !== ability.targetCount) {
-      throw new InvalidTargetCount(ability.targetCount, targetIds.length);
-    }
+    ability.validateUsage({
+      actor,
+      targets,
+    });
 
-    for (const targetId of targetIds) {
-      if (targetId === actorId && !ability.canTargetSelf) {
-        throw new CannotTargetSelf();
-      }
-
-      const target = this.players.find((p) => p.id === targetId);
-      if (!target) {
-        throw new PlayerNotInMatch();
-      }
-
-      if (ability.requiresAliveTarget && !target.isAlive()) {
-        throw new TargetNotAlive();
-      }
-    }
-
-    this.actions.push(new Action(actorId, abilityId, targetIds));
+    this.actions.push(new Action(actorId, abilityId, uniqueTargetIds));
   }
 
   private assignTemplatesToPlayers() {

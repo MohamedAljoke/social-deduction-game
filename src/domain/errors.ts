@@ -56,6 +56,12 @@ export class TemplateNotFound extends DomainError {
   }
 }
 
+export class PlayerHasNoTemplate extends DomainError {
+  constructor() {
+    super("Player has NO template", "template_not_found");
+  }
+}
+
 export class InsufficientPlayers extends DomainError {
   constructor() {
     super("Need at least 2 players to start", "insufficient_players");
