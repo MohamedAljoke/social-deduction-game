@@ -345,7 +345,7 @@ describe("Match E2E", () => {
       expect(body.actions).toHaveLength(1);
       expect(body.actions[0]).toMatchObject({
         actorId: alice!.id,
-        EffectType: abilityToUse,
+        effectType: abilityToUse,
         targetIds: [bob!.id],
       });
     });

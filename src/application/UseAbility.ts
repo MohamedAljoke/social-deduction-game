@@ -6,7 +6,7 @@ import { EffectType } from "../domain/entity/ability";
 export interface UseAbilityInput {
   matchId: string;
   actorId: string;
-  EffectType: EffectType;
+  effectType: EffectType;
   targetIds: string[];
 }
 
@@ -20,7 +20,7 @@ export class UseAbilityUseCase {
       throw new MatchNotFound();
     }
 
-    match.useAbility(input.actorId, input.EffectType, input.targetIds);
+    match.useAbility(input.actorId, input.effectType, input.targetIds);
 
     await this.matchRepository.save(match);
 
