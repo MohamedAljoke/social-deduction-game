@@ -2,6 +2,7 @@ import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { ActionResolver, ResolutionResult } from "../domain/services/ActionResolver";
+import { VoteResult } from "../domain/entity/vote";
 
 export interface AdvancePhaseInput {
   matchId: string;
@@ -9,6 +10,7 @@ export interface AdvancePhaseInput {
 
 export interface AdvancePhaseResponse extends MatchResponse {
   resolution?: ResolutionResult;
+  voteResolution?: VoteResult[];
 }
 
 export class AdvancePhaseUseCase {
@@ -24,7 +26,14 @@ export class AdvancePhaseUseCase {
       throw new MatchNotFound();
     }
 
+    const previousPhase = match.getPhase();
     const phase = match.advancePhase();
+
+    let voteResolution: VoteResult[] | undefined;
+    if (previousPhase === "voting" && phase === "action") {
+      voteResolution = match.tallyVotes();
+    }
+
     const resolution =
       phase === "resolution"
         ? match.resolveActions(this.actionResolver)
@@ -34,13 +43,18 @@ export class AdvancePhaseUseCase {
 
     const matchResponse = match.toJSON();
 
-    if (!resolution) {
-      return matchResponse;
+    const response: AdvancePhaseResponse = {
+      ...matchResponse,
+    };
+
+    if (voteResolution) {
+      response.voteResolution = voteResolution;
     }
 
-    return {
-      ...matchResponse,
-      resolution,
-    };
+    if (resolution) {
+      response.resolution = resolution;
+    }
+
+    return response;
   }
 }

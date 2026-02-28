@@ -44,3 +44,10 @@ export const UseAbilitySchema = z.object({
 });
 
 export type UseAbilityBody = z.infer<typeof UseAbilitySchema>;
+
+export const CastVoteSchema = z.object({
+  voterId: z.string().min(1, "Voter ID is required"),
+  targetId: z.string().min(1, "Target ID is required"),
+});
+
+export type CastVoteBody = z.infer<typeof CastVoteSchema>;

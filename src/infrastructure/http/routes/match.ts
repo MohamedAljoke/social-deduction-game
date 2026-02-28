@@ -10,6 +10,8 @@ import {
   StartMatchSchema,
   UseAbilityBody,
   UseAbilitySchema,
+  CastVoteBody,
+  CastVoteSchema,
 } from "../validators";
 import { validateBody } from "../middlewares/validator";
 
@@ -104,4 +106,23 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
 
     res.status(200).json(result);
   });
+
+  server.register(
+    "post",
+    "/match/:matchId/vote",
+    validateBody(CastVoteSchema),
+    async (req, res) => {
+      const useCase = container.resolve(TOKENS.CastVoteUseCase);
+      const { matchId } = req.params;
+      const body: CastVoteBody = req.body;
+
+      const result = await useCase.execute({
+        matchId,
+        voterId: body.voterId,
+        targetId: body.targetId,
+      });
+
+      res.status(200).json(result);
+    },
+  );
 }

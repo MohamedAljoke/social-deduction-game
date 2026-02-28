@@ -115,3 +115,15 @@ export class TargetNotAlive extends DomainError {
     super("Target must be alive", "target_not_alive");
   }
 }
+
+export class VoteNotAllowed extends DomainError {
+  constructor() {
+    super("Votes can only be cast during voting phase", "vote_not_allowed");
+  }
+}
+
+export class AlreadyVoted extends DomainError {
+  constructor() {
+    super("Player has already voted this round", "already_voted");
+  }
+}

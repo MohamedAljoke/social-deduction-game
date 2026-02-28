@@ -2,6 +2,7 @@ import { Player, PlayerResponse } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Template } from "./template";
+import { Vote, VoteResult, VoteResultType, VoteSummary } from "./vote";
 import {
   InsufficientPlayers,
   MatchAlreadyStarted,
@@ -16,6 +17,8 @@ import {
   CannotTargetSelf,
   TargetNotAlive,
   PlayerHasNoTemplate,
+  VoteNotAllowed,
+  AlreadyVoted,
 } from "../errors";
 import { EffectType } from "./ability";
 import { ResolutionStage } from "../services/EffectHandler";
@@ -45,6 +48,9 @@ interface MatchProps {
   actions?: Action[];
   templates?: Template[];
   status: MatchStatus;
+  votes?: Vote[];
+  voteHistory?: VoteResult[];
+  round?: number;
 }
 
 export class Match {
@@ -57,6 +63,9 @@ export class Match {
   private phase: Phase;
   private actions: Action[];
   private templates: Template[];
+  private currentVotes: Vote[];
+  private voteHistory: VoteResult[];
+  private currentRound: number;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -67,6 +76,9 @@ export class Match {
     this.phase = props.phase ?? new Phase();
     this.actions = props.actions ?? [];
     this.templates = props.templates ?? [];
+    this.currentVotes = props.votes ?? [];
+    this.voteHistory = props.voteHistory ?? [];
+    this.currentRound = props.round ?? 1;
   }
 
   static create(name: string): Match {
@@ -129,6 +141,84 @@ export class Match {
 
   public addAction(action: Action): void {
     this.actions.push(action);
+  }
+
+  public castVote(voterId: string, targetId: string): void {
+    if (this.status !== MatchStatus.STARTED) {
+      throw new MatchNotStarted();
+    }
+
+    if (this.phase.getCurrentPhase() !== "voting") {
+      throw new VoteNotAllowed();
+    }
+
+    const playersById = new Map(this.players.map((p) => [p.id, p]));
+
+    const voter = playersById.get(voterId);
+    if (!voter) {
+      throw new PlayerNotInMatch();
+    }
+
+    const target = playersById.get(targetId);
+    if (!target) {
+      throw new PlayerNotInMatch();
+    }
+
+    if (!voter.isAlive()) {
+      throw new PlayerIsDeadError();
+    }
+
+    if (!target.isAlive()) {
+      throw new TargetNotAlive();
+    }
+
+    const hasVoted = this.currentVotes.some((v) => v.voterId === voterId);
+    if (hasVoted) {
+      throw new AlreadyVoted();
+    }
+
+    const vote: Vote = {
+      voterId,
+      targetId,
+      timestamp: new Date(),
+      round: this.currentRound,
+    };
+
+    this.currentVotes.push(vote);
+  }
+
+  public tallyVotes(): VoteResult[] {
+    const summary = new VoteSummary(this.currentVotes);
+    const results = summary.resolve(this.currentRound);
+
+    if (results.length === 0) {
+      this.currentVotes = [];
+      return [];
+    }
+
+    const isTie = results[0].resultType === VoteResultType.TIE;
+
+    if (!isTie) {
+      const winner = results[0];
+      const playerToEliminate = this.players.find((p) => p.id === winner.candidateId);
+      if (playerToEliminate) {
+        playerToEliminate.eliminate();
+      }
+      this.currentRound++;
+    }
+
+    this.voteHistory.push(...results);
+    this.currentVotes = [];
+
+    return results;
+  }
+
+  public getCurrentVotes(): Vote[] {
+    return [...this.currentVotes];
+  }
+
+  public getVoteHistory(): VoteResult[] {
+    return [...this.voteHistory];
   }
 
   public useAbility(
@@ -276,6 +366,18 @@ export class Match {
         winCondition: template.winCondition,
         endsGameOnWin: template.endsGameOnWin,
       })),
+      currentVotes: this.currentVotes.map((vote) => ({
+        voterId: vote.voterId,
+        targetId: vote.targetId,
+        timestamp: vote.timestamp,
+        round: vote.round,
+      })),
+      voteHistory: this.voteHistory.map((result) => ({
+        candidateId: result.candidateId,
+        count: result.count,
+        resultType: result.resultType,
+      })),
+      currentRound: this.currentRound,
     };
   }
 }

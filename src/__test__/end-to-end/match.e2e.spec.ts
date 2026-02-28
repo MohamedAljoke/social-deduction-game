@@ -15,6 +15,8 @@ import {
   InvalidTargetCount,
   CannotTargetSelf,
   TargetNotAlive,
+  VoteNotAllowed,
+  AlreadyVoted,
 } from "../../domain/errors";
 
 const port = 4001;
@@ -762,6 +764,159 @@ describe("Match E2E", () => {
       });
     });
   });
+
+  describe("Voting Pipeline", () => {
+    it("should cast vote during voting phase", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToVotingPhase(match.id);
+
+      const matchInVoting = await getMatch(match.id);
+      const alice = matchInVoting.players.find((p) => p.name === "alice");
+      const bob = matchInVoting.players.find((p) => p.name === "bob");
+
+      const { response, body } = await castVoteHelper(
+        match.id,
+        alice!.id,
+        bob!.id,
+      );
+
+      expect(response.status).toBe(200);
+      expect(body.currentVotes).toHaveLength(1);
+      expect(body.currentVotes[0]).toMatchObject({
+        voterId: alice!.id,
+        targetId: bob!.id,
+      });
+    });
+
+    it("should reject vote outside voting phase", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+
+      const matchInDiscussion = await getMatch(match.id);
+      const alice = matchInDiscussion.players.find((p) => p.name === "alice");
+      const bob = matchInDiscussion.players.find((p) => p.name === "bob");
+
+      const { response, body } = await castVoteHelper(
+        match.id,
+        alice!.id,
+        bob!.id,
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new VoteNotAllowed().code,
+        message: new VoteNotAllowed().message,
+      });
+    });
+
+    it("should reject duplicate votes from same player", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToVotingPhase(match.id);
+
+      const matchInVoting = await getMatch(match.id);
+      const alice = matchInVoting.players.find((p) => p.name === "alice");
+      const bob = matchInVoting.players.find((p) => p.name === "bob");
+
+      await castVoteHelper(match.id, alice!.id, bob!.id);
+
+      const { response, body } = await castVoteHelper(
+        match.id,
+        alice!.id,
+        bob!.id,
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new AlreadyVoted().code,
+        message: new AlreadyVoted().message,
+      });
+    });
+
+    it("should eliminate player with highest votes", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToVotingPhase(match.id);
+
+      const matchInVoting = await getMatch(match.id);
+      const alice = matchInVoting.players.find((p) => p.name === "alice");
+      const bob = matchInVoting.players.find((p) => p.name === "bob");
+
+      // Only alice votes for bob — clear 1-0 win, bob is eliminated
+      await castVoteHelper(match.id, alice!.id, bob!.id);
+
+      const { body } = await advancePhaseHelper(match.id);
+
+      expect(body.voteResolution!).toHaveLength(1);
+      expect(body.voteResolution![0].resultType).toBe("eliminated");
+
+      const afterMatch = await getMatch(match.id);
+      const eliminated = afterMatch.players.find(
+        (p) => p.id === body.voteResolution![0].candidateId,
+      );
+      expect(eliminated?.status).toBe("eliminated");
+    });
+
+    it("should handle tie - no elimination", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToVotingPhase(match.id);
+
+      const matchInVoting = await getMatch(match.id);
+      const alice = matchInVoting.players.find((p) => p.name === "alice");
+      const bob = matchInVoting.players.find((p) => p.name === "bob");
+
+      await castVoteHelper(match.id, alice!.id, bob!.id);
+      await castVoteHelper(match.id, bob!.id, alice!.id);
+
+      const { body } = await advancePhaseHelper(match.id);
+
+      expect(body.voteResolution!).toHaveLength(2);
+      const types = body.voteResolution!.map((r) => r.resultType);
+      expect(types).toContain("tie");
+
+      const afterMatch = await getMatch(match.id);
+      const allAlive = afterMatch.players.every((p) => p.status === "alive");
+      expect(allAlive).toBe(true);
+    });
+
+    it("should advance to action phase after voting and tally votes", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchHelper(match.id);
+      await advanceToVotingPhase(match.id);
+
+      const matchInVoting = await getMatch(match.id);
+      const alice = matchInVoting.players.find((p) => p.name === "alice");
+      const bob = matchInVoting.players.find((p) => p.name === "bob");
+
+      await castVoteHelper(match.id, alice!.id, bob!.id);
+      await castVoteHelper(match.id, bob!.id, alice!.id);
+
+      const { body } = await advancePhaseHelper(match.id);
+
+      expect(body.phase).toBe("action");
+      expect(body.voteResolution).toBeDefined();
+    });
+  });
 });
 
 type TemplateAbilityInput = {
@@ -790,6 +945,11 @@ type AdvancePhaseResponse = MatchResponse & {
   resolution?: {
     effects: EffectResultResponse[];
   };
+  voteResolution?: {
+    candidateId: string;
+    count: number;
+    resultType: string;
+  }[];
 };
 
 async function createMatchHelper(name?: string): Promise<{
@@ -978,4 +1138,39 @@ async function getMatch(matchId: string): Promise<MatchResponse> {
     method: "GET",
   });
   return (await response.json()) as MatchResponse;
+}
+
+async function castVoteHelper(
+  matchId: string,
+  voterId: string,
+  targetId: string,
+): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
+  const response = await fetch(
+    `http://localhost:${port}/match/${matchId}/vote`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        voterId,
+        targetId,
+      }),
+    },
+  );
+
+  const body = (await response.json()) as MatchResponse;
+  return { body, response };
+}
+
+async function advanceToVotingPhase(matchId: string): Promise<void> {
+  let currentPhase = "discussion";
+  while (currentPhase !== "voting") {
+    const { response, body } = await advancePhaseHelper(matchId);
+    if (!response.ok) {
+      throw new Error(`Failed to advance phase: ${JSON.stringify(body)}`);
+    }
+    currentPhase = body.phase;
+  }
 }
