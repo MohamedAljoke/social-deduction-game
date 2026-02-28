@@ -1,166 +1,163 @@
-# Social Deduction Game Engine -- Implementation Plan
+# Ability Engine Plan (Scalable to 100+ Abilities)
+
+## Goal
+
+Build a deterministic, extensible game engine where adding a new ability usually means:
+1. Add metadata to an ability catalog.
+2. Add one effect handler (or reuse existing primitives).
+3. Add contract tests for that ability.
+
+No core resolver rewrites for each new ability.
+
+## Current Snapshot (from uncommitted work)
+
+You already have a good start:
+- `ResolveActionsUseCase` exists.
+- Effects are split (`KillEffect`, `ProtectEffect`, `RoleblockEffect`, `InvestigateEffect`).
+- `ActionResolver` has a registry and priority ordering.
+- `Match` can now clear actions and be marked finished.
+
+Main scaling gaps:
+- Registry uses `instanceof` mapping (not plugin-friendly).
+- Resolution state is too narrow for complex interactions.
+- Effects mutate match directly during iteration.
+- No stable interaction hooks (before/after target, before/after resolve, on death, end round).
+- No test matrix for cross-ability combinations.
+
+## Target Engine Model
+
+### 1) Ability Catalog (data-first)
+
+Define each ability by metadata + behavior id:
+- `id`, `timingWindow`, `priority`, `targetingRules`, `tags`.
+- `handlerId` points to a resolver handler.
+
+This allows 100+ ability definitions without 100 deep core changes.
+
+### 2) Resolution Pipeline (staged)
+
+Process each round in deterministic stages:
+1. Intake: collect valid actions from `Match`.
+2. Normalize: create immutable `ActionIntent` entries.
+3. Order: sort by `timingWindow`, `priority`, deterministic tie-breakers.
+4. Resolve: execute handlers against `ResolutionState`.
+5. Commit: apply resulting state transitions to `Match`.
+6. Emit: publish `ResolutionEvent[]` for clients/logs/replay.
 
-## Vision
+### 3) Rich ResolutionState
 
-Build a transport-agnostic, extensible social deduction game framework
-supporting flexible templates, abilities, win conditions, and phase
-systems.
+Use a central state model for interactions:
+- Statuses (blocked, protected, silenced, redirected, immune, marked, etc.).
+- Durations (`this_round`, `next_round`, `permanent`).
+- Per-player flags and counters.
+- Round-local scratch data for chain effects.
 
-Architecture follows: - Clean Architecture - Hexagonal (Ports &
-Adapters) - Domain-driven design principles
+### 4) Interaction Hooks
 
----
+Support combination logic through hooks, not pairwise hardcoding:
+- `beforeAction`
+- `beforeTarget`
+- `beforeApply`
+- `afterApply`
+- `onDeath`
+- `endOfRound`
 
-# Phase 1 -- Core Gameplay Completion
+Abilities/modifiers subscribe to hooks. This keeps interactions composable.
 
-## 1. UseAbility Use Case
+### 5) Event-Driven Outcomes
 
-### Goal
+Every outcome should produce an event:
+- `player_killed`, `player_protected`, `player_blocked`, `ability_failed`, etc.
 
-Allow a player to use an ability during the correct phase.
+Events become the source for:
+- UI updates
+- audit/replay
+- deterministic tests
 
-### Responsibilities
+## Recommended Domain Changes
 
-- Validate match exists
-- Validate match is STARTED
-- Validate correct phase
-- Validate actor is alive (unless ability allows dead usage)
-- Validate target count
-- Validate target rules (alive, self-targeting, etc.)
-- Persist action
+- Keep `Match` as orchestration aggregate (players, phase, queued actions, lifecycle).
+- Move interaction complexity into `domain/resolution/*`.
+- Keep `UseAbility` validation in domain, but make it read from ability catalog rules.
+- Keep `CheckWinConditions` pure and separate.
 
-### Output
+## Suggested Folder Target
 
-Updated match state or confirmation payload
+```text
+src/domain/
+  abilities/
+    AbilityCatalog.ts
+    definitions/
+      kill.ts
+      protect.ts
+      roleblock.ts
+  resolution/
+    ActionIntent.ts
+    ResolutionEngine.ts
+    ResolutionPipeline.ts
+    ResolutionState.ts
+    hooks.ts
+    handlers/
+      killHandler.ts
+      protectHandler.ts
+      roleblockHandler.ts
+  services/
+    CheckWinConditions.ts
+```
 
----
+## Determinism Rules (must-have)
 
-## 2. AdvancePhase Use Case
+When two actions conflict, use fixed ordering:
+1. timing window
+2. priority
+3. actor id (or action id) as final tie-breaker
 
-### Goal
+Never rely on insertion order or random iteration.
 
-Transition between phases safely.
+## Testing Strategy for 100+ Abilities
 
-### Responsibilities
+### 1) Ability Contract Tests
 
-- Validate match STARTED
-- Move phase forward
-- Trigger resolution if entering resolution phase
+Each ability gets a shared suite:
+- target validation
+- alive/dead constraints
+- expected events
+- expected state transitions
 
----
+### 2) Interaction Matrix Tests
 
-## 3. ResolveActions Use Case
+Add focused pair/triple interaction tests for critical combos:
+- protect vs kill
+- roleblock vs protect
+- redirect vs investigate
+- immunity vs kill
 
-### Goal
+### 3) Deterministic Snapshot Tests
 
-Apply all actions in correct order.
+Given same match state + action list, engine output must match snapshot exactly.
 
-### Responsibilities
+## Migration Plan (from your current code)
 
-- Fetch match
-- Sort actions (resolution priority if needed)
-- Apply effects:
-  - Kill
-  - Protect
-  - Roleblock
-  - Investigate
-- Clear round actions
-- Check win conditions
-- Persist updated match
+### Phase A: Stabilize Current Resolver
+- Replace `instanceof` mapping with explicit `effect.abilityId`.
+- Return `ResolutionResult { events, stateChanges }` instead of only side effects.
+- Add tests for current 4 abilities.
 
----
+### Phase B: Introduce Pipeline + State
+- Add `ResolutionState` modules and hook points.
+- Stop direct mutation inside handlers where possible; commit in one place.
 
-## 4. CheckWinConditions (Domain Service)
+### Phase C: Catalog-Driven Abilities
+- Add `AbilityCatalog` and move validation metadata there.
+- Keep enum ids for now, then migrate to extensible string ids if needed.
 
-### Goal
+### Phase D: Expand Abilities Safely
+- Add abilities by handler + catalog entry + contract tests.
+- Track complexity by tags and hooks, not custom branches in `Match`.
 
-Determine if game has ended.
+## Immediate Next Implementation Steps
 
-### Responsibilities
-
-- Count alignments alive
-- Evaluate custom winCondition flags
-- If win met:
-  - Set match status to FINISHED
-
----
-
-## 5. GetMatchState Use Case
-
-### Goal
-
-Return match projection for client.
-
-### Variants
-
-- Public View (no hidden roles)
-- Player View (only own role visible)
-- Admin View
-
----
-
-# Phase 2 -- Improvements & Hardening
-
-## 6. Remove Mutable Getters
-
-Return ReadonlyArray for: - players - templates - actions
-
----
-
-## 7. Protect State Transitions
-
-Ensure: - Cannot advance phase if LOBBY - Cannot add actions if
-FINISHED - Cannot add players after STARTED
-
----
-
-## 8. Introduce Domain Services
-
-Create: - ActionResolver.ts - WinConditionEvaluator.ts
-
-Avoid making Match a "God Entity".
-
----
-
-# Phase 3 -- WebSocket Integration
-
-## Goals
-
-Enable real-time updates without modifying domain or application layers.
-
-### Steps
-
-1.  Create infrastructure/websocket/
-2.  Call same use cases from WS handlers
-3.  Emit domain events as socket messages
-
-Optional: - Introduce domain events (MatchStarted, PhaseAdvanced,
-AbilityUsed)
-
----
-
-# Phase 4 -- Persistence Layer Upgrade
-
-Replace InMemory repository with: - PostgreSQL implementation - Or
-event-sourced version (optional advanced step)
-
----
-
-# Phase 5 -- Advanced Features
-
-- Resolution priority system
-- Ability cooldowns
-- Multi-round modifiers
-- Custom phase configuration
-- Spectator mode
-- Replay support (action history log)
-
----
-
-# Final Goal
-
-A fully extensible social deduction engine where: - Templates define
-roles - Abilities define mechanics - Phases define flow - Use cases
-orchestrate domain - Infrastructure handles transport
-
-Transport-agnostic. Framework-ready. Production-safe.
+1. Refactor `ActionResolver` registration API (`abilityId` on each effect).
+2. Introduce `ResolutionResult` and central commit function.
+3. Add test file for `ResolveActionsUseCase` and resolver interactions.
+4. Add docs for ability definition schema (metadata + handler).

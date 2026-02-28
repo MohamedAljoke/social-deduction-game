@@ -1,193 +1,154 @@
 # Project Structure Guide
 
-## Overview
+## Objective
 
-This is a **general-purpose social deduction game** framework - not Among Us, Werewolf, or Mafia specifically. The architecture is designed to support any social deduction mechanics through flexible templates, abilities, and phases.
+This project is a transport-agnostic social deduction engine. The structure below is optimized for:
+- 100+ abilities
+- deterministic resolution
+- composable ability interactions
+- clean architecture boundaries
 
-## Layer Structure
+## Core Layer Boundaries
 
-```
+- `domain`: pure game rules, no HTTP/WebSocket/framework code.
+- `application`: use-case orchestration.
+- `infrastructure`: adapters (HTTP, persistence, future WebSocket).
+
+Dependency rule:
+- `domain` depends on nothing external.
+- `application` depends on `domain`.
+- `infrastructure` depends on `application` + `domain` ports.
+
+## Recommended Structure (Scalable)
+
+```text
 src/
-├── domain/           # Business logic (no external dependencies)
-│   ├── entity/       # Match, Player, Template, Ability, Phase, Action
-│   ├── errors.ts     # Domain errors
-│   └── ports/        # Repository interfaces
-├── application/      # CreateMatch, JoinMatch, StartMatch, ListMatches
-├── infrastructure/   # Adapters
-│   ├── http/
-│   │   ├── routes/  # HTTP route handlers
-│   │   ├── validators/  # Zod schemas for request validation
-│   │   └── *.ts     # Server adapters (Express, Hono)
-│   └── persistence/ # Repository implementations
+  domain/
+    entity/
+      match.ts
+      player.ts
+      phase.ts
+      template.ts
+      action.ts
+    abilities/
+      AbilityCatalog.ts
+      AbilityDefinition.ts
+      definitions/
+        kill.ts
+        protect.ts
+        roleblock.ts
+        investigate.ts
+    resolution/
+      ResolutionEngine.ts
+      ResolutionPipeline.ts
+      ResolutionState.ts
+      ResolutionResult.ts
+      hooks.ts
+      handlers/
+        killHandler.ts
+        protectHandler.ts
+        roleblockHandler.ts
+        investigateHandler.ts
+    services/
+      CheckWinConditions.ts
+    ports/
+      persistance/
+        MatchRepository.ts
+    errors.ts
+
+  application/
+    CreateMatch.ts
+    JoinMatch.ts
+    StartMatch.ts
+    UseAbility.ts
+    AdvancePhase.ts
+    ResolveActions.ts
+    GetMatch.ts
+    ListMatchs.ts
+
+  infrastructure/
+    http/
+      routes/
+      validators/
+      middlewares/
+      hono_adapter.ts
+      express_adapter.ts
+    persistence/
+      InMemoryMatchRepository.ts
 ```
 
-## Validators
+## Responsibility Split
 
-Validators live in `src/infrastructure/http/validators/` and use **Zod** for runtime validation of HTTP request bodies.
+### `domain/entity/*`
+- Aggregates and entities only.
+- Keep `Match` focused on lifecycle and action queue ownership.
+- Avoid placing cross-ability interaction logic here.
 
-```typescript
-import { z } from "zod";
+### `domain/abilities/*`
+- Ability metadata (target count, self-target rules, phases, tags, priority).
+- Definitions are data-first and map to resolver handlers.
 
-export const CreateMatchSchema = z.object({
-  name: z.string().optional(),
-});
+### `domain/resolution/*`
+- All effect combination complexity.
+- Deterministic ordering and conflict handling.
+- Hook system (`beforeAction`, `beforeApply`, `afterApply`, `onDeath`, `endOfRound`).
+- Produces `ResolutionResult` (state changes + events).
 
-export type CreateMatchBody = z.infer<typeof CreateMatchSchema>;
+### `domain/services/*`
+- Pure domain services that are not entity methods.
+- Example: win condition evaluation.
+
+### `application/*`
+- Fetch aggregate from repository.
+- Call domain operations/services.
+- Persist and return DTOs.
+- No transport-specific logic.
+
+### `infrastructure/*`
+- Request validation, route handling, serialization, repository adapters.
+- No business rules beyond data parsing/translation.
+
+## Action and Resolution Data Flow
+
+1. `UseAbilityUseCase` calls `match.useAbility(...)`.
+2. `Match` validates ownership/targets and queues `Action`.
+3. `ResolveActionsUseCase` calls `ResolutionEngine.resolve(matchSnapshot)`.
+4. Engine returns `ResolutionResult` with deterministic events and transitions.
+5. Use case commits transitions to `Match`, clears round actions, checks win condition.
+
+## Design Rules for 100 Abilities
+
+1. New ability should not require edits in `Match`.
+2. New ability should not require custom branching in `ResolveActionsUseCase`.
+3. Ability behavior should be added via catalog + handler.
+4. Interactions should use hooks/state tags, not one-off pairwise if/else chains.
+5. Every resolution outcome should emit an event.
+
+## Testing Layout
+
+```text
+src/__test__/
+  domain/
+    abilities/
+      contracts/
+    resolution/
+      interactions/
+      determinism/
+  application/
+    resolve-actions.spec.ts
+  end-to-end/
+    match.e2e.spec.ts
+  fitness-functions/
+    architecture-fitness.spec.ts
 ```
 
-**Pattern**: Each endpoint has a corresponding Zod schema that validates the request body. Types are inferred from schemas for use in routes.
-
-## Domain
-
-All business logic belongs in `src/domain/`. This includes:
-
-- **Entities**: Match, Player, Template, Ability, Phase, Action
-- **Business Rules**: Match status transitions, player management, ability targeting
-- **Errors**: Domain-specific errors (e.g., `MatchNotFound`, `InsufficientPlayers`)
-
-### Key Principle
-
-**Business rules must not depend on HTTP**. The domain has no knowledge of HTTP requests, responses, or WebSockets. This allows the same use cases to work with different transport layers.
-
-## Errors
-
-Errors are defined in `src/domain/errors.ts`:
-
-```typescript
-export class DomainError extends Error {
-  public readonly code: string;
-  constructor(message: string, code: string) {
-    super(message);
-    this.code = code;
-  }
-}
-
-export class MatchNotFound extends DomainError {
-  constructor() {
-    super("Match not found", "match_not_found");
-  }
-}
-```
-
-## Important: HTTP vs WebSocket
-
-Some game actions require **real-time communication** and will need WebSocket support later (e.g., live ability usage, phase transitions).
-
-### Current Pattern (HTTP)
-
-```typescript
-// Routes receive HTTP requests, validate body, call use case
-server.register("post", "/match/:matchId/start", async (req, res) => {
-  const body = validateBody(StartMatchSchema, req.body);
-  const result = await useCase.execute({ matchId, templates: body.templates });
-  res.status(200).json(result);
-});
-```
-
-### Future Pattern (WebSocket)
-
-When adding WebSocket support:
-
-1. Keep use cases in `src/application/` - they are transport-agnostic
-2. Create WebSocket adapters in `src/infrastructure/websocket/`
-3. Use the **same use cases** - just call them from WebSocket handlers instead of HTTP handlers
-
-```typescript
-// Example future WebSocket handler (pseudo-code)
-websocket.on("use_ability", (data) => {
-  const body = validateBody(UseAbilitySchema, data);
-  const result = useCase.execute(body);
-  websocket.emit("ability_used", result);
-});
-```
-
-## Application Layer (Use Cases)
-
-Use cases in `src/application/` orchestrate domain logic. They are transport-agnostic and can be called from HTTP, WebSocket, or CLI.
-
-### CreateMatch
-```typescript
-interface CreateMatchInput {
-  name?: string;
-}
-```
-
-### JoinMatch
-```typescript
-interface JoinMatchInput {
-  matchId: string;
-  playerName: string;
-}
-```
-
-### StartMatch
-```typescript
-interface StartMatchInput {
-  matchId: string;
-  templates: {
-    alignment: Alignment;
-    abilities: { id: AbilityId }[];
-  }[];
-}
-```
-
-### ListMatches
-```typescript
-interface ListMatchesInput {} // No input required
-```
-
-## Domain Entities
-
-Entities live in `src/domain/entity/`:
-
-### Match
-- `id: string` - Unique identifier
-- `name: string` - Display name
-- `status: MatchStatus` - LOBBY | STARTED | FINISHED
-- `players: Player[]` - Players in the match
-- `phase: Phase` - Current game phase
-- `actions: Action[]` - Actions taken this round
-- `templates: Template[]` - Role templates assigned to players
-
-### Player
-- `id: string` - Unique identifier
-- `name: string` - Display name
-- `status: PlayerStatus` - ALIVE | DEAD | ELIMINATED
-- `templateId?: string` - Assigned role template
-
-### Template
-- `id: string` - Unique identifier
-- `alignment: Alignment` - Villain | Hero | Neutral
-- `abilities: Ability[]` - Abilities this role has
-- `winCondition: WinCondition` - default | vote_eliminated
-- `endsGameOnWin: boolean` - Whether this role winning ends the game
-
-### Ability
-- `id: AbilityId` - Kill | Protect | Roleblock | Investigate
-- `canUseWhenDead: boolean` - Whether dead players can use this
-- `targetCount: number` - Number of targets required
-- `canTargetSelf: boolean` - Whether self-targeting is allowed
-- `requiresAliveTarget: boolean` - Whether targets must be alive
-
-### Phase
-- `current: PhaseType` - discussion | voting | action | resolution
-
-### Action
-- `actorId: string` - Player who performed the action
-- `abilityId: AbilityId` - Ability used
-- `targetIds: string[]` - Targets of the ability
-- `cancelled: boolean` - Whether the action was cancelled
-
-## Adding a New Feature
-
-1. **Domain**: Add business logic in `src/domain/entity/` if needed
-2. **Application**: Create use case in `src/application/`
-3. **Validators**: Add Zod schema in `src/infrastructure/http/validators/`
-4. **Routes**: Register endpoint in `src/infrastructure/http/routes/`
+- Contract tests: one reusable suite per ability definition.
+- Interaction tests: high-risk combinations (pair/triple).
+- Determinism tests: same input -> same ordered events.
+- Fitness tests: preserve clean architecture boundaries.
 
 ## Notes
 
-- This is NOT Werewolf/Mafia/Among Us - it's a flexible framework
-- Templates define roles (alignment + abilities)
-- Phases control game flow
-- Actions represent player ability usage
+- Keep current uncommitted resolver/effects work as the base.
+- Refactor incrementally into `domain/resolution` and `domain/abilities`.
+- Prioritize deterministic outputs and test coverage before adding many abilities.

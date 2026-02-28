@@ -44,6 +44,15 @@ export class AbilityDoesNotBelongToUser extends DomainError {
     super("ability does not belong to user", "ability_not_found");
   }
 }
+
+export class AbilityDefinitionNotFound extends DomainError {
+  constructor(abilityId: string) {
+    super(
+      `Ability definition not found for ability: ${abilityId}`,
+      "ability_definition_not_found",
+    );
+  }
+}
 export class PlayerIsDeadError extends DomainError {
   constructor() {
     super("ability can not be used by a dead player", "player_dead");

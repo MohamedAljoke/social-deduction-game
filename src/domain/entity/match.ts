@@ -122,6 +122,14 @@ export class Match {
     this.actions.push(action);
   }
 
+  public clearActions(): void {
+    this.actions = [];
+  }
+
+  public setFinished(): void {
+    this.status = MatchStatus.FINISHED;
+  }
+
   public useAbility(
     actorId: string,
     abilityId: AbilityId,

@@ -7,6 +7,7 @@ import {
 import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
 import { Ability, AbilityId } from "../domain/entity/ability";
+import { defaultAbilityCatalog } from "../domain/abilities";
 
 export interface StartMatchInput {
   matchId: string;
@@ -27,7 +28,16 @@ export class StartMatchUseCase {
     }
 
     const templates = input.templates.map((raw, index) => {
-      const abilities = raw.abilities.map((a) => new Ability(a.id));
+      const abilities = raw.abilities.map((a) => {
+        const definition = defaultAbilityCatalog.getDefinition(a.id);
+        return new Ability(
+          a.id,
+          definition.targeting.canUseWhenDead,
+          definition.targeting.targetCount,
+          definition.targeting.canTargetSelf,
+          definition.targeting.requiresAliveTarget,
+        );
+      });
 
       return new Template(`template_${index}`, raw.alignment, abilities);
     });

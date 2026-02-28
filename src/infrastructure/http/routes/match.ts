@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { Container, TOKENS } from "../../../container";
 import { HttpServer } from "../server";
 import {
@@ -36,7 +35,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
   server.register("get", "/match/:matchId", async (req, res) => {
     const useCase = container.resolve(TOKENS.GetMatchUseCase);
     const match = await useCase.execute({ matchId: req.params.matchId });
-    
+
     res.status(200).json(match);
   });
 
@@ -98,6 +97,15 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
 
   server.register("post", "/match/:matchId/phase", async (req, res) => {
     const useCase = container.resolve(TOKENS.AdvancePhaseUseCase);
+    const { matchId } = req.params;
+
+    const result = await useCase.execute({ matchId });
+
+    res.status(200).json(result);
+  });
+
+  server.register("post", "/match/:matchId/resolve", async (req, res) => {
+    const useCase = container.resolve(TOKENS.ResolveActionsUseCase);
     const { matchId } = req.params;
 
     const result = await useCase.execute({ matchId });
