@@ -1,101 +1,108 @@
 # Architecture
 
-This project follows **Clean Architecture** principles with **Hexagonal Ports & Adapters** pattern.
+This project uses Clean Architecture with ports/adapters and an effect-driven game engine.
 
-## Overview
+## Core Model
 
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        HTTP[HTTP Clients]
-        WS[WebSocket]
-    end
+- **Effect is identity**: abilities are defined by `EffectType` (`kill`, `protect`, `roleblock`, `investigate`) and config, not by hardcoded role classes.
+- **Composable templates**: each template (role) is a composition of abilities with per-ability config (`priority`, targeting rules, dead/alive usage rules).
+- **Queued actions + resolver pipeline**: actions are queued during action phase, then resolved when phase advances to `resolution`.
 
-    subgraph "Infrastructure Layer (Adapters)"
-        Hono[Hono Adapter]
-        Express[Express Adapter]
-        InMemoryRepo[InMemory Match Repository]
-    end
-
-    subgraph "Application Layer (Use Cases)"
-        CreateMatch[CreateMatch Use Case]
-    end
-
-    subgraph "Domain Layer (Core)"
-        subgraph "Entities"
-            Match[Match Entity]
-            Player[Player Entity]
-            Template[Template (Role) Entity]
-            Ability[Ability Entity]
-        end
-        
-        subgraph "Ports (Interfaces)"
-            MatchRepoPort[MatchRepository Port]
-            TemplateRepoPort[TemplateRepository Port]
-        end
-    end
-
-    HTTP --> Hono
-    HTTP --> Express
-    WS --> Hono
-
-    Hono --> CreateMatch
-    Express --> CreateMatch
-
-    CreateMatch --> MatchRepoPort
-    MatchRepoPort -->|implements| InMemoryRepo
-
-    CreateMatch --> Match
-    Match --> MatchRepoPort
-```
-
-## Layer Diagram
+## Layered Design
 
 ```mermaid
 flowchart LR
-    subgraph "Outside"
-        Client[HTTP/WebSocket Clients]
-    end
+    Client[HTTP Clients]
+    Http[Infrastructure HTTP Adapters<br/>Express/Hono]
+    Routes[Route Handlers + Validators]
+    UseCases[Application Use Cases]
+    Domain[Domain Entities + Services]
+    Ports[Domain Repository Ports]
+    Persistence[In-Memory Repositories]
 
-    subgraph "src/"
-        subgraph "infrastructure (Adapters)"
-            HTTP[HTTP Servers<br/>hono_adapter.ts<br/>express_adapter.ts]
-            Persistence[Persistence<br/>InMemoryMatchRepository]
-        end
-
-        subgraph "application (Use Cases)"
-            UseCases[CreateMatch.ts<br/>Use Cases]
-        end
-
-        subgraph "domain (Core)"
-            Entities[Entities<br/>match.ts<br/>player.ts<br/>template.ts<br/>ability.ts]
-            Ports[Ports/Interfaces<br/>MatchRepository.ts<br/>TemplateRepository.ts]
-        end
-    end
-
-    Client --> HTTP
-    HTTP --> UseCases
-    UseCases --> Ports
-    UseCases --> Entities
-    Ports -->|implemented by| Persistence
+    Client --> Http --> Routes --> UseCases --> Domain
+    UseCases --> Ports --> Persistence
 ```
 
-## Directory Structure
+### Dependency Rule
 
-| Layer | Folder | Responsibility |
-|-------|--------|----------------|
-| **Domain** | `src/domain/` | Entities, business rules, port interfaces |
-| **Application** | `src/application/` | Use cases orchestrating domain logic |
-| **Infrastructure** | `src/infrastructure/` | Adapters (HTTP servers, persistence) |
+- `domain` does not depend on `application` or `infrastructure`.
+- `application` depends on `domain`.
+- `infrastructure` depends on `application`/`domain` contracts.
 
-## Dependency Rule
+The fitness test at `src/__test__/fitness-functions/architecture-fitness.spec.ts` enforces that domain code does not import from infrastructure.
 
-- `application` depends on `domain`
-- `infrastructure` depends on `domain` (via ports)
-- `domain` has **no** external dependencies
+## Resolution Architecture
 
-## Key Files
+The action resolver is a staged pipeline with commit semantics:
 
-- **Domain**: `src/domain/entity/match.ts`, `src/domain/ports/persistance/MatchRepository.ts`
-- **Application**: `src/application/CreateMatch.ts`
-- **Infrastructure**: `src/infrastructure/http/hono_adapter.ts`, `src/infrastructure/persistence/InMemoryMatchRepository.ts`
+1. `Match.useAbility(...)` validates usage and snapshots action metadata (`effectType`, `priority`, `stage`).
+2. `AdvancePhaseUseCase` advances phase.
+3. If phase becomes `resolution`, it calls `match.resolveActions(actionResolver)`.
+4. `ActionResolver` executes handlers by stage and priority.
+5. Handlers write to `ResolutionContext` (modifiers, pending state changes, effect results).
+6. Commit phase applies pending state changes (for now: `pending_death -> player.kill()`).
+7. Match action queue is cleared.
+
+```mermaid
+flowchart TD
+    A[Queued Actions] --> B[Group by ResolutionStage]
+    B --> C[Sort by priority desc]
+    C --> D[Run EffectHandler]
+    D --> E[ResolutionContext<br/>modifiers + stateChanges + results]
+    E --> F[Commit state changes]
+    F --> G[ResolutionResult effects]
+```
+
+### Resolution Stages
+
+- `TARGET_MUTATION` (0)
+- `DEFENSIVE` (1)
+- `CANCELLATION` (2)
+- `OFFENSIVE` (3)
+- `READ` (4)
+
+Built-in handlers:
+
+- `RoleblockHandler` -> `CANCELLATION`
+- `ProtectHandler` -> `DEFENSIVE`
+- `KillHandler` -> `OFFENSIVE`
+- `InvestigateHandler` -> `READ`
+
+## Main Components
+
+### Domain Entities (`src/domain/entity`)
+
+- `Match`: lifecycle, phase, action queue, ability usage, resolution integration.
+- `Player`: alive/dead status and template assignment.
+- `Template`: alignment + ability composition (+ optional `name`).
+- `Ability`: effect type + full targeting/usage config + default priority.
+- `Action`: immutable snapshot used by resolver (`effectType`, `priority`, `stage`, `targetIds`).
+- `Phase`: phase transitions (`discussion -> voting -> action -> resolution -> ...`).
+
+### Domain Services (`src/domain/services`)
+
+- `EffectHandler` + `ResolutionStage`: handler contract and staged execution model.
+- `ResolutionContext`: per-round scratchpad (modifiers, pending state changes, effect results).
+- `ActionResolver`: orchestrates staged execution and commit phase.
+
+### Application Use Cases (`src/application`)
+
+- `CreateMatch`
+- `ListMatchs`
+- `GetMatch`
+- `JoinMatch`
+- `StartMatch` (full template/ability config input)
+- `UseAbility` (`effectType` input)
+- `AdvancePhase` (auto-runs resolution when entering `resolution`)
+
+### Infrastructure (`src/infrastructure`)
+
+- HTTP adapters: `express_adapter.ts`, `hono_adapter.ts`
+- Request validation: Zod schemas in `http/validators/match.ts`
+- Persistence adapters: in-memory repositories
+- Route registration in `http/routes/match.ts`
+
+### Composition Root
+
+- `src/container.ts` wires repositories, use cases, and a singleton `ActionResolver` with built-in handlers.

@@ -2,202 +2,149 @@
 
 ## Overview
 
-This is a **general-purpose social deduction game** framework - not Among Us, Werewolf, or Mafia specifically. The architecture is designed to support any social deduction mechanics through flexible templates, abilities, and phases.
+This is a general-purpose social deduction engine with composable role abilities and a staged action resolution pipeline.
 
-## Layer Structure
+## Source Tree
 
-```
+```text
 src/
-├── domain/           # Business logic (no external dependencies)
-│   ├── entity/       # Match, Player, Template, Ability, Phase, Action
-│   ├── errors.ts     # Domain errors
-│   └── ports/        # Repository interfaces
-├── application/      # CreateMatch, JoinMatch, StartMatch, ListMatches
-├── infrastructure/   # Adapters
+├── app.ts
+├── main.ts
+├── container.ts
+├── application/
+│   ├── AdvancePhase.ts
+│   ├── CreateMatch.ts
+│   ├── GetMatch.ts
+│   ├── JoinMatch.ts
+│   ├── ListMatchs.ts
+│   ├── StartMatch.ts
+│   └── UseAbility.ts
+├── domain/
+│   ├── entity/
+│   │   ├── ability.ts
+│   │   ├── action.ts
+│   │   ├── match.ts
+│   │   ├── phase.ts
+│   │   ├── player.ts
+│   │   └── template.ts
+│   ├── services/
+│   │   ├── ActionResolver.ts
+│   │   ├── EffectHandler.ts
+│   │   ├── ResolutionContext.ts
+│   │   └── handlers/
+│   │       ├── InvestigateHandler.ts
+│   │       ├── KillHandler.ts
+│   │       ├── ProtectHandler.ts
+│   │       └── RoleblockHandler.ts
+│   ├── ports/
+│   │   └── persistance/
+│   │       ├── MatchRepository.ts
+│   │       └── TemplateRepository.ts
+│   └── errors.ts
+├── infrastructure/
 │   ├── http/
-│   │   ├── routes/  # HTTP route handlers
-│   │   ├── validators/  # Zod schemas for request validation
-│   │   └── *.ts     # Server adapters (Express, Hono)
-│   └── persistence/ # Repository implementations
+│   │   ├── express_adapter.ts
+│   │   ├── hono_adapter.ts
+│   │   ├── middlewares/
+│   │   │   └── validator.ts
+│   │   ├── routes/
+│   │   │   ├── match.ts
+│   │   │   └── route.ts
+│   │   ├── server.ts
+│   │   └── validators/
+│   │       ├── index.ts
+│   │       └── match.ts
+│   └── persistence/
+│       ├── InMemoryMatchRepository.ts
+│       └── InMemoryTemplateRepository.ts
+└── __test__/
+    ├── domain/
+    ├── end-to-end/
+    └── fitness-functions/
 ```
 
-## Validators
+## Layer Responsibilities
 
-Validators live in `src/infrastructure/http/validators/` and use **Zod** for runtime validation of HTTP request bodies.
+- `src/domain`: core game rules, entities, resolver pipeline, ports, and domain errors.
+- `src/application`: use cases that coordinate domain objects and repositories.
+- `src/infrastructure`: HTTP adapters, request validation, route wiring, and in-memory adapters.
+- `src/container.ts`: dependency injection/composition root.
 
-```typescript
-import { z } from "zod";
+## Key Domain Types
 
-export const CreateMatchSchema = z.object({
-  name: z.string().optional(),
-});
+### Ability (`src/domain/entity/ability.ts`)
 
-export type CreateMatchBody = z.infer<typeof CreateMatchSchema>;
-```
+- `EffectType`: `kill | protect | roleblock | investigate`
+- `DEFAULT_PRIORITY`: built-in priority map per effect type.
+- `Ability` fields:
+  - `id`
+  - `priority`
+  - `canUseWhenDead`
+  - `targetCount`
+  - `canTargetSelf`
+  - `requiresAliveTarget`
 
-**Pattern**: Each endpoint has a corresponding Zod schema that validates the request body. Types are inferred from schemas for use in routes.
+### Action (`src/domain/entity/action.ts`)
 
-## Domain
+- Snapshot data captured when ability is used:
+  - `actorId`
+  - `effectType`
+  - `priority`
+  - `stage`
+  - `targetIds`
+  - `cancelled`
 
-All business logic belongs in `src/domain/`. This includes:
+### Template (`src/domain/entity/template.ts`)
 
-- **Entities**: Match, Player, Template, Ability, Phase, Action
-- **Business Rules**: Match status transitions, player management, ability targeting
-- **Errors**: Domain-specific errors (e.g., `MatchNotFound`, `InsufficientPlayers`)
+- `name?` is optional.
+- `getAbility(effectType)` returns matching ability config.
 
-### Key Principle
+### Match (`src/domain/entity/match.ts`)
 
-**Business rules must not depend on HTTP**. The domain has no knowledge of HTTP requests, responses, or WebSockets. This allows the same use cases to work with different transport layers.
+- Validates and queues ability usage in action phase.
+- Resolves queue only in `resolution` phase through `resolveActions(resolver)`.
+- Clears action queue after resolution.
+- Serializes full template ability config in `toJSON()`.
 
-## Errors
+## Resolution Subsystem
 
-Errors are defined in `src/domain/errors.ts`:
+Implemented under `src/domain/services/`:
 
-```typescript
-export class DomainError extends Error {
-  public readonly code: string;
-  constructor(message: string, code: string) {
-    super(message);
-    this.code = code;
-  }
-}
+- `EffectHandler.ts`: handler contract + `ResolutionStage`.
+- `ResolutionContext.ts`: per-round modifiers, state changes, and effect results.
+- `ActionResolver.ts`: stage grouping, priority sorting, roleblock cancellation, commit phase.
+- `handlers/*`: built-in effects (`kill`, `protect`, `roleblock`, `investigate`).
 
-export class MatchNotFound extends DomainError {
-  constructor() {
-    super("Match not found", "match_not_found");
-  }
-}
-```
+Execution path:
 
-## Important: HTTP vs WebSocket
+1. `UseAbilityUseCase` queues actions.
+2. `AdvancePhaseUseCase` advances phase.
+3. If next phase is `resolution`, `ActionResolver` runs and returns `resolution.effects`.
 
-Some game actions require **real-time communication** and will need WebSocket support later (e.g., live ability usage, phase transitions).
+## HTTP Contracts (current)
 
-### Current Pattern (HTTP)
+### `POST /match/:matchId/start`
 
-```typescript
-// Routes receive HTTP requests, validate body, call use case
-server.register("post", "/match/:matchId/start", async (req, res) => {
-  const body = validateBody(StartMatchSchema, req.body);
-  const result = await useCase.execute({ matchId, templates: body.templates });
-  res.status(200).json(result);
-});
-```
+- Body:
+  - `templates[].name?`
+  - `templates[].alignment`
+  - `templates[].abilities[].id`
+  - optional ability config: `priority`, `canUseWhenDead`, `targetCount`, `canTargetSelf`, `requiresAliveTarget`
 
-### Future Pattern (WebSocket)
+### `POST /match/:matchId/ability`
 
-When adding WebSocket support:
+- Body:
+  - `actorId`
+  - `effectType`
+  - `targetIds`
 
-1. Keep use cases in `src/application/` - they are transport-agnostic
-2. Create WebSocket adapters in `src/infrastructure/websocket/`
-3. Use the **same use cases** - just call them from WebSocket handlers instead of HTTP handlers
+### `POST /match/:matchId/phase`
 
-```typescript
-// Example future WebSocket handler (pseudo-code)
-websocket.on("use_ability", (data) => {
-  const body = validateBody(UseAbilitySchema, data);
-  const result = useCase.execute(body);
-  websocket.emit("ability_used", result);
-});
-```
+- Returns regular match payload.
+- Includes `resolution` only when phase advanced into `resolution`.
 
-## Application Layer (Use Cases)
+## Tests
 
-Use cases in `src/application/` orchestrate domain logic. They are transport-agnostic and can be called from HTTP, WebSocket, or CLI.
-
-### CreateMatch
-
-```typescript
-interface CreateMatchInput {
-  name?: string;
-}
-```
-
-### JoinMatch
-
-```typescript
-interface JoinMatchInput {
-  matchId: string;
-  playerName: string;
-}
-```
-
-### StartMatch
-
-```typescript
-interface StartMatchInput {
-  matchId: string;
-  templates: {
-    alignment: Alignment;
-    abilities: { id: EffectType }[];
-  }[];
-}
-```
-
-### ListMatches
-
-```typescript
-interface ListMatchesInput {} // No input required
-```
-
-## Domain Entities
-
-Entities live in `src/domain/entity/`:
-
-### Match
-
-- `id: string` - Unique identifier
-- `name: string` - Display name
-- `status: MatchStatus` - LOBBY | STARTED | FINISHED
-- `players: Player[]` - Players in the match
-- `phase: Phase` - Current game phase
-- `actions: Action[]` - Actions taken this round
-- `templates: Template[]` - Role templates assigned to players
-
-### Player
-
-- `id: string` - Unique identifier
-- `name: string` - Display name
-- `status: PlayerStatus` - ALIVE | DEAD | ELIMINATED
-- `templateId?: string` - Assigned role template
-
-### Template
-
-- `id: string` - Unique identifier
-- `alignment: Alignment` - Villain | Hero | Neutral
-- `abilities: Ability[]` - Abilities this role has
-- `winCondition: WinCondition` - default | vote_eliminated
-- `endsGameOnWin: boolean` - Whether this role winning ends the game
-
-### Ability
-
-- `id: EffectType` - Kill | Protect | Roleblock | Investigate
-- `canUseWhenDead: boolean` - Whether dead players can use this
-- `targetCount: number` - Number of targets required
-- `canTargetSelf: boolean` - Whether self-targeting is allowed
-- `requiresAliveTarget: boolean` - Whether targets must be alive
-
-### Phase
-
-- `current: PhaseType` - discussion | voting | action | resolution
-
-### Action
-
-- `actorId: string` - Player who performed the action
-- `EffectType: EffectType` - Ability used
-- `targetIds: string[]` - Targets of the ability
-- `cancelled: boolean` - Whether the action was cancelled
-
-## Adding a New Feature
-
-1. **Domain**: Add business logic in `src/domain/entity/` if needed
-2. **Application**: Create use case in `src/application/`
-3. **Validators**: Add Zod schema in `src/infrastructure/http/validators/`
-4. **Routes**: Register endpoint in `src/infrastructure/http/routes/`
-
-## Notes
-
-- This is NOT Werewolf/Mafia/Among Us - it's a flexible framework
-- Templates define roles (alignment + abilities)
-- Phases control game flow
-- Actions represent player ability usage
+- Domain resolver behavior: `src/__test__/domain/action-resolver.spec.ts`
+- End-to-end flow: `src/__test__/end-to-end/match.e2e.spec.ts`
+- Architecture guardrail: `src/__test__/fitness-functions/architecture-fitness.spec.ts`
