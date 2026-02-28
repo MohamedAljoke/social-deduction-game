@@ -1,11 +1,9 @@
 # Plan: Effect-First Ability Composition & Staged Action Resolution
 
 ## Goal
-
 Ship a scalable ability system where role identity is defined by composed effects, and queued actions are resolved automatically with deterministic staged processing.
 
 ## Scope and Principles
-
 - Effect is identity: roles are compositions of effects (`kill`, `protect`, `roleblock`, `investigate`), not hardcoded role classes.
 - Action snapshots are self-contained: resolver should not need runtime catalog lookups for ordering metadata.
 - Staged resolution over flat sorting: explicit stage ordering first, then per-stage priority.
@@ -13,7 +11,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Open extension model: modifiers/effect result types remain string-based to avoid central registries for every new mechanic.
 
 ## Step 1: Refactor Ability Entity
-
 **File:** `src/domain/entity/ability.ts`
 
 - Rename `AbilityId` to `EffectType` with same string values.
@@ -22,7 +19,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Keep existing `validateUsage` behavior unchanged.
 
 ## Step 2: Action Snapshot for Resolution
-
 **File:** `src/domain/entity/action.ts`
 
 - Replace `abilityId: AbilityId` with `abilityId: EffectType`.
@@ -31,7 +27,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Keep `cancelled` flag for auditability/debugging.
 
 ## Step 3: Template Shape and Lookup
-
 **File:** `src/domain/entity/template.ts`
 
 - Add optional `name?: string`.
@@ -39,7 +34,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Keep alignment/win condition semantics unchanged.
 
 ## Step 4: Match Integration
-
 **File:** `src/domain/entity/match.ts`
 
 - Update `useAbility` to accept `EffectType`.
@@ -53,7 +47,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 ## Step 5: Resolution System
 
 ### 5.1 Resolution Context
-
 **New file:** `src/domain/services/ResolutionContext.ts`
 
 - Store per-round modifiers: `Map<playerId, Set<string>>`.
@@ -61,7 +54,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Store effect results for response/audit.
 
 ### 5.2 Resolution Stages
-
 **New enum:** `ResolutionStage` (in `src/domain/services/EffectHandler.ts`)
 
 - `TARGET_MUTATION = 0`
@@ -71,7 +63,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - `READ = 4`
 
 ### 5.3 Handler Contract
-
 **New file:** `src/domain/services/EffectHandler.ts`
 
 - `effectType: string`
@@ -80,7 +71,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Rule: handlers never mutate player lifecycle directly (`kill`, etc.).
 
 ### 5.4 Built-In Handlers
-
 **New files under:** `src/domain/services/handlers/`
 
 - `RoleblockHandler` (`CANCELLATION`): add `"roleblocked"` modifier.
@@ -89,7 +79,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - `InvestigateHandler` (`READ`): return target alignment.
 
 ### 5.5 Resolver Pipeline + Commit
-
 **New file:** `src/domain/services/ActionResolver.ts`
 
 - Register handlers by effect type.
@@ -100,14 +89,12 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Commit phase applies queued state changes to real entities (e.g. `player.kill()`).
 
 ### 5.6 Result Model
-
 **Types:** `EffectResult`, `ResolutionResult`
 
 - `EffectResult.type` remains open string (`"kill"`, `"kill_blocked"`, etc.).
 - `ResolutionResult.effects` is returned to application layer and API.
 
 ## Step 6: StartMatch Use Case
-
 **File:** `src/application/StartMatch.ts`
 
 - Accept full template ability config:
@@ -117,7 +104,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Apply defaults if optional fields are omitted.
 
 ## Step 7: AdvancePhase Auto-Resolution
-
 **File:** `src/application/AdvancePhase.ts`
 
 - Inject `ActionResolver`.
@@ -126,14 +112,12 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Keep explicit error handling for invalid state transitions.
 
 ## Step 8: UseAbility Use Case
-
 **File:** `src/application/UseAbility.ts`
 
 - Replace input `abilityId` type with `EffectType`.
 - Keep behavior unchanged otherwise.
 
 ## Step 9: HTTP Validation Updates
-
 **File:** `src/infrastructure/http/validators/match.ts`
 
 - Replace enum references to `EffectType` values.
@@ -142,7 +126,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Keep strict validation and descriptive errors.
 
 ## Step 10: Dependency Injection
-
 **File:** `src/container.ts`
 
 - Build a singleton `ActionResolver`.
@@ -151,7 +134,6 @@ Ship a scalable ability system where role identity is defined by composed effect
 - Avoid constructing resolver directly inside use cases.
 
 ## Step 11: Test Migration
-
 **Primary file:** `src/__test__/end-to-end/match.e2e.spec.ts`
 
 - Migrate tests from `AbilityId` to `EffectType`.
@@ -166,19 +148,15 @@ Ship a scalable ability system where role identity is defined by composed effect
 ## Delivery Strategy
 
 ### Phase A (Core Domain)
-
 - Steps 1-5 complete with unit tests for resolver and handlers.
 
 ### Phase B (Application/API)
-
 - Steps 6-10 complete with integration and route tests.
 
 ### Phase C (Regression Hardening)
-
 - Step 11 complete, plus deterministic ordering and edge-case tests.
 
 ## Acceptance Criteria
-
 - Match can start with composed roles and custom ability config.
 - Actions are queued in action phase and auto-resolved when entering resolution phase.
 - Resolution is deterministic and stage-correct.
