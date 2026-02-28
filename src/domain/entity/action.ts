@@ -1,11 +1,14 @@
-import { AbilityId } from "./ability";
+import { EffectType } from "./ability";
+import { ResolutionStage } from "../services/EffectHandler";
 
 export class Action {
   public cancelled: boolean = false;
 
   constructor(
     public readonly actorId: string,
-    public readonly abilityId: AbilityId,
+    public readonly EffectType: EffectType,
+    public readonly priority: number,
+    public readonly stage: ResolutionStage,
     public readonly targetIds: string[],
   ) {}
 }

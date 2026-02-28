@@ -3,11 +3,13 @@
 This folder expands `plan.md` into file-by-file implementation specs.
 
 ## Suggested Execution Order
+
 1. Step 01 to 05 (domain core)
 2. Step 06 to 10 (application and API wiring)
 3. Step 11 (tests and regression hardening)
 
 ## Step Files
+
 - `step-01-ability-entity.md`
 - `step-02-action-snapshot.md`
 - `step-03-template-shape.md`
@@ -21,7 +23,8 @@ This folder expands `plan.md` into file-by-file implementation specs.
 - `step-11-tests.md`
 
 ## Definition of Done
-- `AbilityId` usage fully migrated to `EffectType`
+
+- `EffectType` usage fully migrated to `EffectType`
 - Resolution executed through staged pipeline with commit phase
 - Start payload supports composed abilities with optional config
 - Resolution auto-runs on phase transition to `resolution`

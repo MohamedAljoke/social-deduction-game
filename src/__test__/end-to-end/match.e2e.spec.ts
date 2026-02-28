@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createApp } from "../../app";
 import { MatchResponse, MatchStatus } from "../../domain/entity/match";
 import { Alignment } from "../../domain/entity/template";
-import { AbilityId } from "../../domain/entity/ability";
+import { EffectType } from "../../domain/entity/ability";
 import {
   InsufficientPlayers,
   MatchAlreadyStarted,
@@ -250,10 +250,10 @@ describe("Match E2E", () => {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             templates: [
-              { alignment: "invalid", abilities: [{ id: AbilityId.Kill }] },
+              { alignment: "invalid", abilities: [{ id: EffectType.Kill }] },
               {
                 alignment: Alignment.Hero,
-                abilities: [{ id: AbilityId.Protect }],
+                abilities: [{ id: EffectType.Protect }],
               },
             ],
           }),
@@ -281,7 +281,7 @@ describe("Match E2E", () => {
               },
               {
                 alignment: Alignment.Hero,
-                abilities: [{ id: AbilityId.Protect }],
+                abilities: [{ id: EffectType.Protect }],
               },
             ],
           }),
@@ -306,7 +306,7 @@ describe("Match E2E", () => {
               { alignment: Alignment.Villain, abilities: [] },
               {
                 alignment: Alignment.Hero,
-                abilities: [{ id: AbilityId.Protect }],
+                abilities: [{ id: EffectType.Protect }],
               },
             ],
           }),
@@ -345,7 +345,7 @@ describe("Match E2E", () => {
       expect(body.actions).toHaveLength(1);
       expect(body.actions[0]).toMatchObject({
         actorId: alice!.id,
-        abilityId: abilityToUse,
+        EffectType: abilityToUse,
         targetIds: [bob!.id],
       });
     });
@@ -362,7 +362,7 @@ describe("Match E2E", () => {
       const { response, body } = await useAbilityHelper(
         match.id,
         alice!.id,
-        AbilityId.Kill,
+        EffectType.Kill,
         [bob!.id],
       );
 
@@ -385,7 +385,7 @@ describe("Match E2E", () => {
       const { response, body } = await useAbilityHelper(
         match.id,
         alice!.id,
-        AbilityId.Kill,
+        EffectType.Kill,
         [bob!.id],
       );
 
@@ -400,7 +400,7 @@ describe("Match E2E", () => {
       const { response, body } = await useAbilityHelper(
         "nonexistent",
         "actor",
-        AbilityId.Kill,
+        EffectType.Kill,
         ["target"],
       );
 
@@ -433,7 +433,7 @@ describe("Match E2E", () => {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             actorId: alice!.id,
-            abilityId: "invalid",
+            EffectType: "invalid",
             targetIds: [bob!.id],
           }),
         },
@@ -627,11 +627,11 @@ async function startMatchHelper(matchId: string): Promise<{
         templates: [
           {
             alignment: Alignment.Villain,
-            abilities: [{ id: AbilityId.Kill }],
+            abilities: [{ id: EffectType.Kill }],
           },
           {
             alignment: Alignment.Hero,
-            abilities: [{ id: AbilityId.Protect }],
+            abilities: [{ id: EffectType.Protect }],
           },
         ],
       }),
@@ -646,7 +646,7 @@ async function startMatchHelper(matchId: string): Promise<{
 async function useAbilityHelper(
   matchId: string,
   actorId: string,
-  abilityId: string,
+  EffectType: string,
   targetIds: string[],
 ): Promise<{
   body: MatchResponse;
@@ -661,7 +661,7 @@ async function useAbilityHelper(
       },
       body: JSON.stringify({
         actorId,
-        abilityId,
+        EffectType,
         targetIds,
       }),
     },

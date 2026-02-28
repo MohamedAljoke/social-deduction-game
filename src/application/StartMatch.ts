@@ -6,13 +6,13 @@ import {
 } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
-import { Ability, AbilityId } from "../domain/entity/ability";
+import { Ability, EffectType } from "../domain/entity/ability";
 
 export interface StartMatchInput {
   matchId: string;
   templates: {
     alignment: Alignment;
-    abilities: { id: AbilityId }[];
+    abilities: { id: EffectType }[];
   }[];
 }
 

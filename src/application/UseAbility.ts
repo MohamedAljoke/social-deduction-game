@@ -1,12 +1,12 @@
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
-import { AbilityId } from "../domain/entity/ability";
+import { EffectType } from "../domain/entity/ability";
 
 export interface UseAbilityInput {
   matchId: string;
   actorId: string;
-  abilityId: AbilityId;
+  EffectType: EffectType;
   targetIds: string[];
 }
 
@@ -20,7 +20,7 @@ export class UseAbilityUseCase {
       throw new MatchNotFound();
     }
 
-    match.useAbility(input.actorId, input.abilityId, input.targetIds);
+    match.useAbility(input.actorId, input.EffectType, input.targetIds);
 
     await this.matchRepository.save(match);
 

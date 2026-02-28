@@ -17,13 +17,21 @@ import {
   TargetNotAlive,
   PlayerHasNoTemplate,
 } from "../errors";
-import { AbilityId } from "./ability";
+import { EffectType, EffectType } from "./ability";
+import { ResolutionStage } from "../services/EffectHandler";
 
 export enum MatchStatus {
   LOBBY = "lobby",
   STARTED = "started",
   FINISHED = "finished",
 }
+
+const DEFAULT_STAGE_BY_EFFECT: Record<EffectType, ResolutionStage> = {
+  [EffectType.Kill]: ResolutionStage.OFFENSIVE,
+  [EffectType.Protect]: ResolutionStage.DEFENSIVE,
+  [EffectType.Roleblock]: ResolutionStage.CANCELLATION,
+  [EffectType.Investigate]: ResolutionStage.READ,
+};
 
 export type MatchResponse = ReturnType<Match["toJSON"]>;
 
@@ -124,7 +132,7 @@ export class Match {
 
   public useAbility(
     actorId: string,
-    abilityId: AbilityId,
+    EffectType: EffectType,
     targetIds: string[],
   ): void {
     if (this.status !== MatchStatus.STARTED) {
@@ -154,7 +162,7 @@ export class Match {
       throw new TemplateNotFound();
     }
 
-    const ability = template.getAbility(abilityId);
+    const ability = template.getAbility(EffectType);
     if (!ability) {
       throw new AbilityDoesNotBelongToUser();
     }
@@ -170,7 +178,15 @@ export class Match {
       targets,
     });
 
-    this.actions.push(new Action(actorId, abilityId, uniqueTargetIds));
+    this.actions.push(
+      new Action(
+        actorId,
+        ability.id,
+        ability.priority,
+        DEFAULT_STAGE_BY_EFFECT[ability.id],
+        uniqueTargetIds,
+      ),
+    );
   }
 
   private assignTemplatesToPlayers() {
@@ -223,7 +239,9 @@ export class Match {
       phase: this.phase.getCurrentPhase(),
       actions: this.actions.map((action) => ({
         actorId: action.actorId,
-        abilityId: action.abilityId,
+        EffectType: action.EffectType,
+        priority: action.priority,
+        stage: action.stage,
         targetIds: action.targetIds,
         cancelled: action.cancelled,
       })),

@@ -36,7 +36,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
   server.register("get", "/match/:matchId", async (req, res) => {
     const useCase = container.resolve(TOKENS.GetMatchUseCase);
     const match = await useCase.execute({ matchId: req.params.matchId });
-    
+
     res.status(200).json(match);
   });
 
@@ -88,7 +88,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
       const result = await useCase.execute({
         matchId,
         actorId: body.actorId,
-        abilityId: body.abilityId,
+        EffectType: body.EffectType,
         targetIds: body.targetIds,
       });
 

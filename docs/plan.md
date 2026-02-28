@@ -16,7 +16,7 @@ Ship a scalable ability system where role identity is defined by composed effect
 
 **File:** `src/domain/entity/ability.ts`
 
-- Rename `AbilityId` to `EffectType` with same string values.
+- Rename `EffectType` to `EffectType` with same string values.
 - Add `DEFAULT_PRIORITY` by effect.
 - Extend `Ability` with `priority` (default from map).
 - Keep existing `validateUsage` behavior unchanged.
@@ -25,7 +25,7 @@ Ship a scalable ability system where role identity is defined by composed effect
 
 **File:** `src/domain/entity/action.ts`
 
-- Replace `abilityId: AbilityId` with `abilityId: EffectType`.
+- Replace `EffectType: EffectType` with `EffectType: EffectType`.
 - Add `priority: number` snapshot.
 - Add `stage: ResolutionStage` snapshot.
 - Keep `cancelled` flag for auditability/debugging.
@@ -35,7 +35,7 @@ Ship a scalable ability system where role identity is defined by composed effect
 **File:** `src/domain/entity/template.ts`
 
 - Add optional `name?: string`.
-- Update `getAbility(abilityId)` to use `EffectType`.
+- Update `getAbility(EffectType)` to use `EffectType`.
 - Keep alignment/win condition semantics unchanged.
 
 ## Step 4: Match Integration
@@ -129,7 +129,7 @@ Ship a scalable ability system where role identity is defined by composed effect
 
 **File:** `src/application/UseAbility.ts`
 
-- Replace input `abilityId` type with `EffectType`.
+- Replace input `EffectType` type with `EffectType`.
 - Keep behavior unchanged otherwise.
 
 ## Step 9: HTTP Validation Updates
@@ -154,7 +154,7 @@ Ship a scalable ability system where role identity is defined by composed effect
 
 **Primary file:** `src/__test__/end-to-end/match.e2e.spec.ts`
 
-- Migrate tests from `AbilityId` to `EffectType`.
+- Migrate tests from `EffectType` to `EffectType`.
 - Update start payloads to new composed template schema.
 - Add/verify:
   - roleblock cancels actor action

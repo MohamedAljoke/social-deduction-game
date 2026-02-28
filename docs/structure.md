@@ -106,6 +106,7 @@ websocket.on("use_ability", (data) => {
 Use cases in `src/application/` orchestrate domain logic. They are transport-agnostic and can be called from HTTP, WebSocket, or CLI.
 
 ### CreateMatch
+
 ```typescript
 interface CreateMatchInput {
   name?: string;
@@ -113,6 +114,7 @@ interface CreateMatchInput {
 ```
 
 ### JoinMatch
+
 ```typescript
 interface JoinMatchInput {
   matchId: string;
@@ -121,17 +123,19 @@ interface JoinMatchInput {
 ```
 
 ### StartMatch
+
 ```typescript
 interface StartMatchInput {
   matchId: string;
   templates: {
     alignment: Alignment;
-    abilities: { id: AbilityId }[];
+    abilities: { id: EffectType }[];
   }[];
 }
 ```
 
 ### ListMatches
+
 ```typescript
 interface ListMatchesInput {} // No input required
 ```
@@ -141,6 +145,7 @@ interface ListMatchesInput {} // No input required
 Entities live in `src/domain/entity/`:
 
 ### Match
+
 - `id: string` - Unique identifier
 - `name: string` - Display name
 - `status: MatchStatus` - LOBBY | STARTED | FINISHED
@@ -150,12 +155,14 @@ Entities live in `src/domain/entity/`:
 - `templates: Template[]` - Role templates assigned to players
 
 ### Player
+
 - `id: string` - Unique identifier
 - `name: string` - Display name
 - `status: PlayerStatus` - ALIVE | DEAD | ELIMINATED
 - `templateId?: string` - Assigned role template
 
 ### Template
+
 - `id: string` - Unique identifier
 - `alignment: Alignment` - Villain | Hero | Neutral
 - `abilities: Ability[]` - Abilities this role has
@@ -163,18 +170,21 @@ Entities live in `src/domain/entity/`:
 - `endsGameOnWin: boolean` - Whether this role winning ends the game
 
 ### Ability
-- `id: AbilityId` - Kill | Protect | Roleblock | Investigate
+
+- `id: EffectType` - Kill | Protect | Roleblock | Investigate
 - `canUseWhenDead: boolean` - Whether dead players can use this
 - `targetCount: number` - Number of targets required
 - `canTargetSelf: boolean` - Whether self-targeting is allowed
 - `requiresAliveTarget: boolean` - Whether targets must be alive
 
 ### Phase
+
 - `current: PhaseType` - discussion | voting | action | resolution
 
 ### Action
+
 - `actorId: string` - Player who performed the action
-- `abilityId: AbilityId` - Ability used
+- `EffectType: EffectType` - Ability used
 - `targetIds: string[]` - Targets of the ability
 - `cancelled: boolean` - Whether the action was cancelled
 

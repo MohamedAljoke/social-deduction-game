@@ -1,4 +1,4 @@
-import { Ability, AbilityId } from "./ability";
+import { Ability, EffectType } from "./ability";
 
 export enum Alignment {
   Villain = "villain",
@@ -17,7 +17,7 @@ export class Template {
     public readonly endsGameOnWin: boolean = true,
   ) {}
 
-  public getAbility(abilityId: AbilityId): Ability | undefined {
-    return this.abilities.find((ability) => ability.id == abilityId);
+  public getAbility(EffectType: EffectType): Ability | undefined {
+    return this.abilities.find((ability) => ability.id == EffectType);
   }
 }
