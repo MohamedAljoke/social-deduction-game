@@ -765,6 +765,65 @@ describe("Match E2E", () => {
     });
   });
 
+  describe("Full Game Scenarios", () => {
+    it("should complete multiple night cycles with abilities", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchWithTemplates(match.id, [
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect, canTargetSelf: true }] },
+      ]);
+
+      // --- Night 1 ---
+      await advanceToActionPhase(match.id);
+      
+      let m = await getMatch(match.id);
+      const investigator = findPlayerByAbility(m, EffectType.Investigate);
+      const killer = findPlayerByAbility(m, EffectType.Kill);
+      const protector = findPlayerByAbility(m, EffectType.Protect);
+
+      // Investigator looks for villains
+      await useAbilityHelper(match.id, investigator.id, EffectType.Investigate, [killer.id]);
+      // Protector protects self
+      await useAbilityHelper(match.id, protector.id, EffectType.Protect, [protector.id]);
+
+      let res = await advanceToResolutionPhase(match.id);
+      expect(res.resolution?.effects).toContainEqual(
+        expect.objectContaining({ type: "investigate" }),
+      );
+      expect(res.resolution?.effects).toContainEqual(
+        expect.objectContaining({ type: "protect" }),
+      );
+
+      // --- Day 1 -> Night 2 ---
+      await advanceToActionPhase(match.id);
+
+      // Verify players are still in game
+      m = await getMatch(match.id);
+      expect(m.players).toHaveLength(3);
+      expect(m.phase).toBe("action");
+
+      // --- Night 2: Another action cycle ---
+      // Use abilities again
+      const killerAgain = findPlayerByAbility(m, EffectType.Kill);
+      const investigatorAgain = findPlayerByAbility(m, EffectType.Investigate);
+
+      // Killer attempts to kill investigator
+      await useAbilityHelper(match.id, killerAgain.id, EffectType.Kill, [investigatorAgain.id]);
+
+      res = await advanceToResolutionPhase(match.id);
+      
+      // Verify investigator died
+      m = await getMatch(match.id);
+      const deadPlayers = m.players.filter(p => p.status === "dead");
+      expect(deadPlayers.length).toBeGreaterThan(0);
+    });
+  });
+
   describe("Voting Pipeline", () => {
     it("should cast vote during voting phase", async () => {
       const { body: match } = await createMatchHelper();
