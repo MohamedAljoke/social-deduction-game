@@ -88,7 +88,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
       const result = await useCase.execute({
         matchId,
         actorId: body.actorId,
-        effectType: body.EffectType,
+        effectType: body.effectType,
         targetIds: body.targetIds,
       });
 

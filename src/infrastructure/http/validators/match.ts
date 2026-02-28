@@ -18,9 +18,15 @@ export type JoinMatchBody = z.infer<typeof JoinMatchSchema>;
 
 export const TemplateAbilitySchema = z.object({
   id: z.enum(EffectType),
+  priority: z.number().optional(),
+  canUseWhenDead: z.boolean().optional(),
+  targetCount: z.number().optional(),
+  canTargetSelf: z.boolean().optional(),
+  requiresAliveTarget: z.boolean().optional(),
 });
 
 export const TemplateSchema = z.object({
+  name: z.string().optional(),
   alignment: z.enum(Alignment),
   abilities: z.array(TemplateAbilitySchema).min(1),
 });
@@ -33,7 +39,7 @@ export type StartMatchBody = z.infer<typeof StartMatchSchema>;
 
 export const UseAbilitySchema = z.object({
   actorId: z.string().min(1, "Actor ID is required"),
-  EffectType: z.enum(EffectType),
+  effectType: z.enum(EffectType),
   targetIds: z.array(z.string().min(1, "Target ID is required")),
 });
 

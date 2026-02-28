@@ -433,7 +433,7 @@ describe("Match E2E", () => {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             actorId: alice!.id,
-            EffectType: "invalid",
+            effectType: "invalid",
             targetIds: [bob!.id],
           }),
         },
@@ -560,7 +560,237 @@ describe("Match E2E", () => {
       });
     });
   });
+
+  describe("Resolution pipeline", () => {
+    it("should kill an unprotected target in resolution", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchWithTemplates(match.id, [
+        {
+          alignment: Alignment.Villain,
+          abilities: [{ id: EffectType.Kill }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+      ]);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const killer = findPlayerByAbility(matchInAction, EffectType.Kill);
+      const victim = matchInAction.players.find((p) => p.id !== killer.id);
+      expect(victim).toBeDefined();
+
+      await useAbilityHelper(match.id, killer.id, EffectType.Kill, [victim!.id]);
+
+      const resolution = await advanceToResolutionPhase(match.id);
+
+      expect(resolution.phase).toBe("resolution");
+      expect(resolution.actions).toHaveLength(0);
+      expect(resolution.resolution?.effects).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "kill",
+            actorId: killer.id,
+            targetIds: [victim!.id],
+          }),
+        ]),
+      );
+
+      const afterResolution = await getMatch(match.id);
+      const victimAfterResolution = afterResolution.players.find(
+        (p) => p.id === victim!.id,
+      );
+      expect(victimAfterResolution?.status).toBe("dead");
+    });
+
+    it("should block kill when target is protected", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchWithTemplates(match.id, [
+        {
+          alignment: Alignment.Villain,
+          abilities: [{ id: EffectType.Kill }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Protect, canTargetSelf: true }],
+        },
+      ]);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const killer = findPlayerByAbility(matchInAction, EffectType.Kill);
+      const protector = findPlayerByAbility(matchInAction, EffectType.Protect);
+
+      await useAbilityHelper(match.id, killer.id, EffectType.Kill, [protector.id]);
+      await useAbilityHelper(match.id, protector.id, EffectType.Protect, [
+        protector.id,
+      ]);
+
+      const resolution = await advanceToResolutionPhase(match.id);
+      const effects = resolution.resolution?.effects ?? [];
+
+      expect(effects).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "protect",
+            actorId: protector.id,
+            targetIds: [protector.id],
+          }),
+          expect.objectContaining({
+            type: "kill_blocked",
+            actorId: killer.id,
+            targetIds: [protector.id],
+          }),
+        ]),
+      );
+
+      const afterResolution = await getMatch(match.id);
+      const protectorAfterResolution = afterResolution.players.find(
+        (p) => p.id === protector.id,
+      );
+      expect(protectorAfterResolution?.status).toBe("alive");
+    });
+
+    it("should cancel offensive action when actor is roleblocked", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchWithTemplates(match.id, [
+        {
+          alignment: Alignment.Villain,
+          abilities: [{ id: EffectType.Roleblock }],
+        },
+        {
+          alignment: Alignment.Villain,
+          abilities: [{ id: EffectType.Kill }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+      ]);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const roleblocker = findPlayerByAbility(matchInAction, EffectType.Roleblock);
+      const killer = findPlayerByAbility(matchInAction, EffectType.Kill);
+      const victim = matchInAction.players.find(
+        (p) => p.id !== roleblocker.id && p.id !== killer.id,
+      );
+      expect(victim).toBeDefined();
+
+      await useAbilityHelper(match.id, killer.id, EffectType.Kill, [victim!.id]);
+      await useAbilityHelper(match.id, roleblocker.id, EffectType.Roleblock, [
+        killer.id,
+      ]);
+
+      const resolution = await advanceToResolutionPhase(match.id);
+      const effects = resolution.resolution?.effects ?? [];
+      const effectTypes = effects.map((effect) => effect.type);
+
+      expect(effects).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "roleblock",
+            actorId: roleblocker.id,
+            targetIds: [killer.id],
+          }),
+        ]),
+      );
+      expect(effectTypes).not.toContain("kill");
+
+      const afterResolution = await getMatch(match.id);
+      const victimAfterResolution = afterResolution.players.find(
+        (p) => p.id === victim!.id,
+      );
+      expect(victimAfterResolution?.status).toBe("alive");
+    });
+
+    it("should return target alignment for investigate effect", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchWithTemplates(match.id, [
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+        {
+          alignment: Alignment.Villain,
+          abilities: [{ id: EffectType.Kill }],
+        },
+      ]);
+      await advanceToActionPhase(match.id);
+
+      const matchInAction = await getMatch(match.id);
+      const investigator = findPlayerByAbility(
+        matchInAction,
+        EffectType.Investigate,
+      );
+      const target = matchInAction.players.find((p) => p.id !== investigator.id);
+      expect(target).toBeDefined();
+      const targetTemplate = matchInAction.templates.find(
+        (template) => template.id === target!.templateId,
+      );
+      expect(targetTemplate).toBeDefined();
+
+      await useAbilityHelper(match.id, investigator.id, EffectType.Investigate, [
+        target!.id,
+      ]);
+
+      const resolution = await advanceToResolutionPhase(match.id);
+      const investigateResult = resolution.resolution?.effects.find(
+        (effect) =>
+          effect.type === "investigate" &&
+          effect.actorId === investigator.id &&
+          effect.targetIds[0] === target!.id,
+      );
+
+      expect(investigateResult).toBeDefined();
+      expect(investigateResult?.data).toMatchObject({
+        alignment: targetTemplate!.alignment,
+      });
+    });
+  });
 });
+
+type TemplateAbilityInput = {
+  id: EffectType;
+  priority?: number;
+  canUseWhenDead?: boolean;
+  targetCount?: number;
+  canTargetSelf?: boolean;
+  requiresAliveTarget?: boolean;
+};
+
+type TemplateInput = {
+  name?: string;
+  alignment: Alignment;
+  abilities: TemplateAbilityInput[];
+};
+
+type EffectResultResponse = {
+  type: string;
+  actorId: string;
+  targetIds: string[];
+  data?: Record<string, unknown>;
+};
+
+type AdvancePhaseResponse = MatchResponse & {
+  resolution?: {
+    effects: EffectResultResponse[];
+  };
+};
 
 async function createMatchHelper(name?: string): Promise<{
   body: MatchResponse;
@@ -616,6 +846,25 @@ async function startMatchHelper(matchId: string): Promise<{
   body: MatchResponse;
   response: Response;
 }> {
+  return startMatchWithTemplates(matchId, [
+    {
+      alignment: Alignment.Villain,
+      abilities: [{ id: EffectType.Kill }],
+    },
+    {
+      alignment: Alignment.Hero,
+      abilities: [{ id: EffectType.Protect }],
+    },
+  ]);
+}
+
+async function startMatchWithTemplates(
+  matchId: string,
+  templates: TemplateInput[],
+): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
   const response = await fetch(
     `http://localhost:${port}/match/${matchId}/start`,
     {
@@ -624,16 +873,7 @@ async function startMatchHelper(matchId: string): Promise<{
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        templates: [
-          {
-            alignment: Alignment.Villain,
-            abilities: [{ id: EffectType.Kill }],
-          },
-          {
-            alignment: Alignment.Hero,
-            abilities: [{ id: EffectType.Protect }],
-          },
-        ],
+        templates,
       }),
     },
   );
@@ -646,7 +886,7 @@ async function startMatchHelper(matchId: string): Promise<{
 async function useAbilityHelper(
   matchId: string,
   actorId: string,
-  EffectType: string,
+  effectType: string,
   targetIds: string[],
 ): Promise<{
   body: MatchResponse;
@@ -661,7 +901,7 @@ async function useAbilityHelper(
       },
       body: JSON.stringify({
         actorId,
-        EffectType,
+        effectType,
         targetIds,
       }),
     },
@@ -672,23 +912,65 @@ async function useAbilityHelper(
   return { body, response };
 }
 
+async function advancePhaseHelper(matchId: string): Promise<{
+  body: AdvancePhaseResponse;
+  response: Response;
+}> {
+  const response = await fetch(`http://localhost:${port}/match/${matchId}/phase`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+  });
+  const body = (await response.json()) as AdvancePhaseResponse;
+  return { body, response };
+}
+
 async function advanceToActionPhase(matchId: string): Promise<void> {
   let currentPhase = "discussion";
   while (currentPhase !== "action") {
-    const response = await fetch(
-      `http://localhost:${port}/match/${matchId}/phase`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-      },
-    );
+    const { response, body } = await advancePhaseHelper(matchId);
     if (!response.ok) {
-      const body = await response.json();
       throw new Error(`Failed to advance phase: ${JSON.stringify(body)}`);
     }
-    const match = (await response.json()) as MatchResponse;
-    currentPhase = match.phase;
+    currentPhase = body.phase;
   }
+}
+
+async function advanceToResolutionPhase(
+  matchId: string,
+): Promise<AdvancePhaseResponse> {
+  let currentPhase = (await getMatch(matchId)).phase;
+  let lastResponse: AdvancePhaseResponse | null = null;
+
+  while (currentPhase !== "resolution") {
+    const { response, body } = await advancePhaseHelper(matchId);
+    if (!response.ok) {
+      throw new Error(`Failed to advance phase: ${JSON.stringify(body)}`);
+    }
+    lastResponse = body;
+    currentPhase = body.phase;
+  }
+
+  if (!lastResponse) {
+    throw new Error("Resolution response was not produced");
+  }
+
+  return lastResponse;
+}
+
+function findPlayerByAbility(match: MatchResponse, abilityId: EffectType) {
+  const template = match.templates.find((t) =>
+    t.abilities.some((ability) => ability.id === abilityId),
+  );
+  if (!template) {
+    throw new Error(`Template with ability '${abilityId}' not found`);
+  }
+
+  const player = match.players.find((p) => p.templateId === template.id);
+  if (!player) {
+    throw new Error(`Player with template '${template.id}' not found`);
+  }
+
+  return player;
 }
 
 async function getMatch(matchId: string): Promise<MatchResponse> {
