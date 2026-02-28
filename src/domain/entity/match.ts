@@ -17,8 +17,9 @@ import {
   TargetNotAlive,
   PlayerHasNoTemplate,
 } from "../errors";
-import { EffectType, EffectType } from "./ability";
+import { EffectType } from "./ability";
 import { ResolutionStage } from "../services/EffectHandler";
+import { ActionResolver, ResolutionResult } from "../services/ActionResolver";
 
 export enum MatchStatus {
   LOBBY = "lobby",
@@ -132,7 +133,7 @@ export class Match {
 
   public useAbility(
     actorId: string,
-    EffectType: EffectType,
+    effectType: EffectType,
     targetIds: string[],
   ): void {
     if (this.status !== MatchStatus.STARTED) {
@@ -162,7 +163,7 @@ export class Match {
       throw new TemplateNotFound();
     }
 
-    const ability = template.getAbility(EffectType);
+    const ability = template.getAbility(effectType);
     if (!ability) {
       throw new AbilityDoesNotBelongToUser();
     }
@@ -187,6 +188,20 @@ export class Match {
         uniqueTargetIds,
       ),
     );
+  }
+
+  public resolveActions(resolver: ActionResolver): ResolutionResult {
+    if (this.status !== MatchStatus.STARTED) {
+      throw new MatchNotStarted();
+    }
+
+    if (this.phase.getCurrentPhase() !== "resolution") {
+      throw new InvalidPhase();
+    }
+
+    const result = resolver.resolve(this.actions, this.players, this.templates);
+    this.actions = [];
+    return result;
   }
 
   private assignTemplatesToPlayers() {
@@ -239,7 +254,7 @@ export class Match {
       phase: this.phase.getCurrentPhase(),
       actions: this.actions.map((action) => ({
         actorId: action.actorId,
-        EffectType: action.EffectType,
+        effectType: action.effectType,
         priority: action.priority,
         stage: action.stage,
         targetIds: action.targetIds,
@@ -247,9 +262,16 @@ export class Match {
       })),
       templates: this.templates.map((template) => ({
         id: template.id,
+        name: template.name,
         alignment: template.alignment,
         abilities: template.abilities.map((ability) => ({
           id: ability.id,
+          effectType: ability.id,
+          priority: ability.priority,
+          canUseWhenDead: ability.canUseWhenDead,
+          targetCount: ability.targetCount,
+          canTargetSelf: ability.canTargetSelf,
+          requiresAliveTarget: ability.requiresAliveTarget,
         })),
         winCondition: template.winCondition,
         endsGameOnWin: template.endsGameOnWin,

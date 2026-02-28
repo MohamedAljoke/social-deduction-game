@@ -1,25 +1,46 @@
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
-import { MatchNotFound, MatchNotStarted } from "../domain/errors";
-import { MatchResponse, MatchStatus } from "../domain/entity/match";
+import { MatchNotFound } from "../domain/errors";
+import { MatchResponse } from "../domain/entity/match";
+import { ActionResolver, ResolutionResult } from "../domain/services/ActionResolver";
 
 export interface AdvancePhaseInput {
   matchId: string;
 }
 
-export class AdvancePhaseUseCase {
-  constructor(private readonly matchRepository: MatchRepository) {}
+export interface AdvancePhaseResponse extends MatchResponse {
+  resolution?: ResolutionResult;
+}
 
-  async execute(input: AdvancePhaseInput): Promise<MatchResponse> {
+export class AdvancePhaseUseCase {
+  constructor(
+    private readonly matchRepository: MatchRepository,
+    private readonly actionResolver: ActionResolver,
+  ) {}
+
+  async execute(input: AdvancePhaseInput): Promise<AdvancePhaseResponse> {
     const match = await this.matchRepository.findById(input.matchId);
 
     if (!match) {
       throw new MatchNotFound();
     }
 
-    match.advancePhase();
+    const phase = match.advancePhase();
+    const resolution =
+      phase === "resolution"
+        ? match.resolveActions(this.actionResolver)
+        : undefined;
 
     await this.matchRepository.save(match);
 
-    return match.toJSON();
+    const matchResponse = match.toJSON();
+
+    if (!resolution) {
+      return matchResponse;
+    }
+
+    return {
+      ...matchResponse,
+      resolution,
+    };
   }
 }

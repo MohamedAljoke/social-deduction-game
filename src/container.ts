@@ -6,6 +6,11 @@ import { UseAbilityUseCase } from "./application/UseAbility";
 import { AdvancePhaseUseCase } from "./application/AdvancePhase";
 import { GetMatchUseCase } from "./application/GetMatch";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
+import { ActionResolver } from "./domain/services/ActionResolver";
+import { KillHandler } from "./domain/services/handlers/KillHandler";
+import { ProtectHandler } from "./domain/services/handlers/ProtectHandler";
+import { RoleblockHandler } from "./domain/services/handlers/RoleblockHandler";
+import { InvestigateHandler } from "./domain/services/handlers/InvestigateHandler";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 
 // Branded token type used for type-safe dependency resolution.
@@ -24,6 +29,7 @@ export const TOKENS = {
   UseAbilityUseCase: "UseAbilityUseCase" as Token<UseAbilityUseCase>,
   AdvancePhaseUseCase: "AdvancePhaseUseCase" as Token<AdvancePhaseUseCase>,
   GetMatchUseCase: "GetMatchUseCase" as Token<GetMatchUseCase>,
+  ActionResolver: "ActionResolver" as Token<ActionResolver>,
 };
 
 export class Container {
@@ -91,8 +97,25 @@ export function buildContainer() {
   );
 
   container.register(
+    TOKENS.ActionResolver,
+    () => {
+      const resolver = new ActionResolver();
+      resolver.registerHandler(new RoleblockHandler());
+      resolver.registerHandler(new ProtectHandler());
+      resolver.registerHandler(new KillHandler());
+      resolver.registerHandler(new InvestigateHandler());
+      return resolver;
+    },
+    { singleton: true },
+  );
+
+  container.register(
     TOKENS.AdvancePhaseUseCase,
-    (c) => new AdvancePhaseUseCase(c.resolve(TOKENS.MatchRepository)),
+    (c) =>
+      new AdvancePhaseUseCase(
+        c.resolve(TOKENS.MatchRepository),
+        c.resolve(TOKENS.ActionResolver),
+      ),
   );
 
   container.register(

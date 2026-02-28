@@ -15,9 +15,10 @@ export class Template {
     public readonly abilities: Ability[],
     public readonly winCondition: WinCondition = "default",
     public readonly endsGameOnWin: boolean = true,
+    public readonly name?: string,
   ) {}
 
-  public getAbility(EffectType: EffectType): Ability | undefined {
-    return this.abilities.find((ability) => ability.id == EffectType);
+  public getAbility(effectType: EffectType): Ability | undefined {
+    return this.abilities.find((ability) => ability.id === effectType);
   }
 }

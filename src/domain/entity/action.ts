@@ -6,7 +6,7 @@ export class Action {
 
   constructor(
     public readonly actorId: string,
-    public readonly EffectType: EffectType,
+    public readonly effectType: EffectType,
     public readonly priority: number,
     public readonly stage: ResolutionStage,
     public readonly targetIds: string[],

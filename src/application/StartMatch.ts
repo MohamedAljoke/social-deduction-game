@@ -1,9 +1,5 @@
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
-import {
-  MatchNotFound,
-  TemplateNotFound,
-  TemplatePlayerCountMismatch,
-} from "../domain/errors";
+import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
 import { Ability, EffectType } from "../domain/entity/ability";
@@ -11,8 +7,16 @@ import { Ability, EffectType } from "../domain/entity/ability";
 export interface StartMatchInput {
   matchId: string;
   templates: {
+    name?: string;
     alignment: Alignment;
-    abilities: { id: EffectType }[];
+    abilities: {
+      id: EffectType;
+      priority?: number;
+      canUseWhenDead?: boolean;
+      targetCount?: number;
+      canTargetSelf?: boolean;
+      requiresAliveTarget?: boolean;
+    }[];
   }[];
 }
 
@@ -27,9 +31,26 @@ export class StartMatchUseCase {
     }
 
     const templates = input.templates.map((raw, index) => {
-      const abilities = raw.abilities.map((a) => new Ability(a.id));
+      const abilities = raw.abilities.map(
+        (a) =>
+          new Ability(
+            a.id,
+            a.priority,
+            a.canUseWhenDead ?? false,
+            a.targetCount ?? 1,
+            a.canTargetSelf ?? false,
+            a.requiresAliveTarget ?? true,
+          ),
+      );
 
-      return new Template(`template_${index}`, raw.alignment, abilities);
+      return new Template(
+        `template_${index}`,
+        raw.alignment,
+        abilities,
+        "default",
+        true,
+        raw.name,
+      );
     });
 
     match.startWithTemplates(templates);
