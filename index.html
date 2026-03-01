@@ -449,7 +449,7 @@
               id="gameCode" 
               placeholder="Enter match ID" 
               required 
-              maxlength="50"
+              maxlength="10"
               autocomplete="off"
             >
           </div>
@@ -618,7 +618,7 @@
       joinScreen.classList.add('hidden');
       lobbyScreen.classList.remove('hidden');
 
-      document.getElementById('displayCode').textContent = currentMatchId.substring(0, 8).toUpperCase();
+      document.getElementById('displayCode').textContent = currentMatchId.toUpperCase();
 
       if (!isHost) {
         startGameBtn.classList.add('hidden');

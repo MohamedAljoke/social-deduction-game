@@ -4,17 +4,19 @@ Quick reference guides using examples from this social deduction game project.
 
 ## Guides
 
-| Topic                                                | Description                                                                             |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Testing Basics](./02-testing-basics.md)             | expect, it, describe - testing core concepts                                            |
-| [Dependency Injection](./03-dependency-injection.md) | Decoupling via interfaces - depend on abstractions                                      |
-| [SOLID Principles](./04-solid-principles.md)         | Single Responsibility, Open/Closed, Liskov, Interface Segregation, Dependency Inversion |
+| # | Topic | Description |
+|---|-------|-------------|
+| 02 | [Testing Basics](./02-testing-basics.md) | expect, it, describe - testing core concepts |
+| 03 | [Dependency Injection](./03-dependency-injection.md) | Receiving dependencies via constructor |
+| 04 | [Container & IoC](./04-container-ioc.md) | Managing dependencies with a container |
+| 05 | [SOLID Principles](./05-solid-principles.md) | Five design guidelines |
 
 ## How to Read
 
-- **New to testing?** Start with [Testing Basics](./02-testing-basics.md)
-- **Understand DI first** → makes testing easier to grasp via [Dependency Injection](./03-dependency-injection.md)
-- **SOLID** ties it all together in [SOLID Principles](./04-solid-principles.md)
+1. **Testing** → Start with [Testing Basics](./02-testing-basics.md)
+2. **DI** → [Dependency Injection](./03-dependency-injection.md) explains the concept
+3. **Wiring** → [Container & IoC](./04-container-ioc.md) shows how it all connects
+4. **Theory** → [SOLID Principles](./05-solid-principles.md) ties it together
 
 ## Code References
 

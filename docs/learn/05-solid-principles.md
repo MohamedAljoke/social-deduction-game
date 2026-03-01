@@ -64,6 +64,9 @@ Use cases only depend on what they need.
 
 **Depend on abstractions, not concretions.**
 
+- [Dependency Injection](./03-dependency-injection.md) - The technique
+- [Container & IoC](./04-container-ioc.md) - Managing dependencies
+
 ```typescript
 // src/application/CreateMatch.ts
 export class CreateMatchUseCase {

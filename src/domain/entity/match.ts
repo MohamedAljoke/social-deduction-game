@@ -19,6 +19,15 @@ import {
 } from "../errors";
 import { AbilityId } from "./ability";
 
+function generateShortCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 export enum MatchStatus {
   LOBBY = "lobby",
   STARTED = "started",
@@ -62,7 +71,7 @@ export class Match {
 
   static create(name: string): Match {
     return new Match({
-      id: crypto.randomUUID().toString(),
+      id: generateShortCode(),
       name: name,
       status: MatchStatus.LOBBY,
       createdAt: new Date(),
