@@ -360,6 +360,127 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    .template-builder {
+      display: none;
+    }
+
+    .template-card {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .template-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .template-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .template-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 20px;
+      padding: 4px 8px;
+    }
+
+    .template-remove:hover {
+      color: var(--accent-primary);
+    }
+
+    .template-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .template-row select {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .template-row select:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+
+    .ability-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ability-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ability-chip:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .ability-chip.selected {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .ability-chip .icon {
+      font-size: 14px;
+    }
+
+    .add-template-btn {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .add-template-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    .template-builder-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .template-builder-actions .btn {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -499,9 +620,49 @@
           </div>
         </div>
 
-        <button class="btn" id="startGameBtn">
+        <button class="btn" id="configureTemplatesBtn">
+          Configure Templates
+        </button>
+
+        <button class="btn" id="startGameBtn" style="margin-top: 12px;">
           Start Game
         </button>
+      </div>
+    </div>
+
+    <!-- Template Builder Screen -->
+    <div id="templateBuilderScreen" class="hidden fade-in">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+        </div>
+        <h1>Template Builder</h1>
+        <p>Configure roles for each player</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Player Templates</div>
+        
+        <div id="templatesContainer">
+          <!-- Template cards will be added here -->
+        </div>
+
+        <button class="add-template-btn" id="addTemplateBtn">
+          + Add Template
+        </button>
+
+        <div class="template-builder-actions">
+          <button class="btn btn-secondary" id="backToLobbyBtn">
+            Back to Lobby
+          </button>
+          <button class="btn" id="saveTemplatesBtn">
+            Save & Start
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -512,6 +673,7 @@
     const createScreen = document.getElementById('createScreen');
     const joinScreen = document.getElementById('joinScreen');
     const lobbyScreen = document.getElementById('lobbyScreen');
+    const templateBuilderScreen = document.getElementById('templateBuilderScreen');
     const createForm = document.getElementById('createForm');
     const joinForm = document.getElementById('joinForm');
     const createBtn = document.getElementById('createBtn');
@@ -520,9 +682,12 @@
     const playersContainer = document.getElementById('playersContainer');
     const playerCount = document.getElementById('playerCount');
     const startGameBtn = document.getElementById('startGameBtn');
+    const templatesContainer = document.getElementById('templatesContainer');
 
     let currentMatchId = null;
     let isHost = false;
+    let playerCount_ = 0;
+    let configuredTemplates = [];
 
     document.getElementById('joinBtn').addEventListener('click', () => {
       createScreen.classList.add('hidden');
@@ -617,11 +782,15 @@
       createScreen.classList.add('hidden');
       joinScreen.classList.add('hidden');
       lobbyScreen.classList.remove('hidden');
+      templateBuilderScreen.classList.add('hidden');
 
       document.getElementById('displayCode').textContent = currentMatchId.toUpperCase();
 
+      playerCount_ = players.length;
+
       if (!isHost) {
         startGameBtn.classList.add('hidden');
+        document.getElementById('configureTemplatesBtn').classList.add('hidden');
         document.querySelector('.status-badge').textContent = 'Waiting for host to start';
       } else {
         document.querySelector('.status-badge').textContent = 'Ready to start';
@@ -676,23 +845,141 @@
     }
 
     startGameBtn.addEventListener('click', async () => {
+      const currentPlayerCount = parseInt(playerCount.textContent);
+      if (configuredTemplates.length === 0) {
+        configuredTemplates = Array(currentPlayerCount).fill(null).map((_, i) => ({
+          alignment: i === 0 ? 'villain' : 'hero',
+          abilities: i === 0 ? ['kill'] : ['investigate']
+        }));
+      }
+      if (configuredTemplates.length !== currentPlayerCount) {
+        alert(`You need ${currentPlayerCount} templates (one for each player)`);
+        return;
+      }
+      await startGame();
+    });
+
+    document.getElementById('configureTemplatesBtn').addEventListener('click', () => {
+      lobbyScreen.classList.add('hidden');
+      templateBuilderScreen.classList.remove('hidden');
+      renderTemplates();
+    });
+
+    document.getElementById('backToLobbyBtn').addEventListener('click', () => {
+      templateBuilderScreen.classList.add('hidden');
+      lobbyScreen.classList.remove('hidden');
+    });
+
+    document.getElementById('addTemplateBtn').addEventListener('click', () => {
+      configuredTemplates.push({ alignment: 'hero', abilities: [] });
+      renderTemplates();
+    });
+
+    document.getElementById('saveTemplatesBtn').addEventListener('click', async () => {
+      const currentPlayerCount = parseInt(playerCount.textContent);
+      if (configuredTemplates.length !== currentPlayerCount) {
+        alert(`You need ${currentPlayerCount} templates (one for each player)`);
+        return;
+      }
+      for (const t of configuredTemplates) {
+        if (t.abilities.length === 0) {
+          alert('Each template must have at least one ability');
+          return;
+        }
+      }
+      templateBuilderScreen.classList.add('hidden');
+      lobbyScreen.classList.remove('hidden');
+      await startGame();
+    });
+
+    function renderTemplates() {
+      templatesContainer.innerHTML = '';
+      
+      const abilities = [
+        { id: 'kill', name: 'Kill', icon: '🗡️' },
+        { id: 'protect', name: 'Protect', icon: '🛡️' },
+        { id: 'roleblock', name: 'Roleblock', icon: '🚫' },
+        { id: 'investigate', name: 'Investigate', icon: '🔍' }
+      ];
+
+      configuredTemplates.forEach((template, index) => {
+        const card = document.createElement('div');
+        card.className = 'template-card';
+        card.innerHTML = `
+            <div class="template-card-header">
+            <span class="template-number">Template ${index + 1}</span>
+            ${configuredTemplates.length > 1 ? `<button class="template-remove" data-index="${index}">×</button>` : ''}
+          </div>
+          <div class="template-row">
+            <select class="alignment-select" data-index="${index}">
+              <option value="hero" ${template.alignment === 'hero' ? 'selected' : ''}>Hero</option>
+              <option value="villain" ${template.alignment === 'villain' ? 'selected' : ''}>Villain</option>
+              <option value="neutral" ${template.alignment === 'neutral' ? 'selected' : ''}>Neutral</option>
+            </select>
+          </div>
+          <div class="ability-chips">
+            ${abilities.map(ability => `
+              <div class="ability-chip ${template.abilities.includes(ability.id) ? 'selected' : ''}" 
+                   data-index="${index}" data-ability="${ability.id}">
+                <span class="icon">${ability.icon}</span>
+                ${ability.name}
+              </div>
+            `).join('')}
+          </div>
+        `;
+        templatesContainer.appendChild(card);
+      });
+
+      document.querySelectorAll('.template-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          configuredTemplates.splice(idx, 1);
+          renderTemplates();
+        });
+      });
+
+      document.querySelectorAll('.alignment-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          configuredTemplates[idx].alignment = e.target.value;
+        });
+      });
+
+      document.querySelectorAll('.ability-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          const abilityId = e.target.dataset.ability;
+          const template = configuredTemplates[idx];
+          const abilityIdx = template.abilities.indexOf(abilityId);
+          if (abilityIdx > -1) {
+            template.abilities.splice(abilityIdx, 1);
+          } else {
+            template.abilities.push(abilityId);
+          }
+          renderTemplates();
+        });
+      });
+    }
+
+    async function startGame() {
       startGameBtn.disabled = true;
       startGameBtn.innerHTML = '<span class="spinner"></span>Starting...';
 
       try {
+        const templates = configuredTemplates.map(t => ({
+          alignment: t.alignment,
+          abilities: t.abilities.map(id => ({ id }))
+        }));
+
         const response = await fetch(`${API_URL}/match/${currentMatchId}/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            templates: [
-              { alignment: 'hero', abilities: [{ id: 'investigate' }] },
-              { alignment: 'villain', abilities: [{ id: 'kill' }] }
-            ]
-          })
+          body: JSON.stringify({ templates })
         });
 
         if (!response.ok) {
-          throw new Error('Failed to start game');
+          const err = await response.json();
+          throw new Error(err.message || 'Failed to start game');
         }
 
         const match = await response.json();
@@ -704,7 +991,7 @@
         startGameBtn.disabled = false;
         startGameBtn.textContent = 'Start Game';
       }
-    });
+    }
   </script>
 </body>
 </html>
