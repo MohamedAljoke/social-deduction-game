@@ -15,11 +15,11 @@ export enum AbilityId {
 
 export class Ability {
   constructor(
-    public readonly id: AbilityId,
-    public readonly canUseWhenDead: boolean = false,
-    public readonly targetCount: number = 1,
-    public readonly canTargetSelf: boolean = false,
-    public readonly requiresAliveTarget: boolean = true,
+    readonly id: AbilityId,
+    readonly canUseWhenDead: boolean = false,
+    readonly targetCount: number = 1,
+    readonly canTargetSelf: boolean = false,
+    readonly requiresAliveTarget: boolean = true,
   ) {}
 
   validateUsage(params: { actor: Player; targets: Player[] }): void {

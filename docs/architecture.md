@@ -1,52 +1,118 @@
 # Architecture
 
-This project follows **Clean Architecture** principles with **Hexagonal Ports & Adapters** pattern.
-
 ## Overview
 
 ```mermaid
-graph TB
-    subgraph "Client Layer"
-        HTTP[HTTP Clients]
-        WS[WebSocket]
-    end
+classDiagram
 
-    subgraph "Infrastructure Layer (Adapters)"
-        Hono[Hono Adapter]
-        Express[Express Adapter]
-        InMemoryRepo[InMemory Match Repository]
-    end
+%% =========================
+%% Core Domain
+%% =========================
 
-    subgraph "Application Layer (Use Cases)"
-        CreateMatch[CreateMatch Use Case]
-    end
+class Match {
+  +id
+  +status
+  +phase
+  +players[]
+  +actionsQueue[]
+  +votes[]
+  +start()
+  +advancePhase()
+  +queueAction()
+  +resolveActions()
+  +registerVote()
+  +tallyVotes()
+}
 
-    subgraph "Domain Layer (Core)"
-        subgraph "Entities"
-            Match[Match Entity]
-            Player[Player Entity]
-            Template[Template (Role) Entity]
-            Ability[Ability Entity]
-        end
-        
-        subgraph "Ports (Interfaces)"
-            MatchRepoPort[MatchRepository Port]
-            TemplateRepoPort[TemplateRepository Port]
-        end
-    end
+class Phase {
+  <<enum>>
+  waiting
+  action
+  resolution
+  voting
+  finished
+}
 
-    HTTP --> Hono
-    HTTP --> Express
-    WS --> Hono
+class Player {
+  +id
+  +alive
+  +template
+  +useAbility()
+}
 
-    Hono --> CreateMatch
-    Express --> CreateMatch
+class Template {
+  +name
+  +abilities[]
+  +getAbility(effectType)
+}
 
-    CreateMatch --> MatchRepoPort
-    MatchRepoPort -->|implements| InMemoryRepo
+class Ability {
+  +id
+  +effectType
+  +priority
+  +targetCount
+  +canTargetSelf
+  +requiresAliveTarget
+}
 
-    CreateMatch --> Match
-    Match --> MatchRepoPort
+class Action {
+  +actorId
+  +effectType
+  +priority
+  +stage
+  +targetIds[]
+  +cancelled
+}
+
+class Vote {
+  +voterId
+  +targetId
+}
+
+%% =========================
+%% Resolution Subsystem
+%% =========================
+
+class ActionResolver {
+  +resolve(actions)
+  +registerHandler()
+}
+
+class ResolutionContext {
+  +protectedPlayers[]
+  +blockedPlayers[]
+  +killedPlayers[]
+  +results[]
+}
+
+class EffectHandler {
+  <<interface>>
+  +effectType
+  +stage
+  +handle(action, context)
+}
+
+%% =========================
+%% Relationships
+%% =========================
+
+Match --> Phase
+Match --> Player
+Match --> Action
+Match --> Vote
+
+Player --> Template
+Template --> Ability
+
+Match --> ActionResolver
+ActionResolver --> EffectHandler
+ActionResolver --> ResolutionContext
+ActionResolver --> Action
+
+EffectHandler <|.. KillHandler
+EffectHandler <|.. ProtectHandler
+EffectHandler <|.. RoleblockHandler
+EffectHandler <|.. InvestigateHandler
 ```
 
 ## Layer Diagram
@@ -79,23 +145,3 @@ flowchart LR
     UseCases --> Entities
     Ports -->|implemented by| Persistence
 ```
-
-## Directory Structure
-
-| Layer | Folder | Responsibility |
-|-------|--------|----------------|
-| **Domain** | `src/domain/` | Entities, business rules, port interfaces |
-| **Application** | `src/application/` | Use cases orchestrating domain logic |
-| **Infrastructure** | `src/infrastructure/` | Adapters (HTTP servers, persistence) |
-
-## Dependency Rule
-
-- `application` depends on `domain`
-- `infrastructure` depends on `domain` (via ports)
-- `domain` has **no** external dependencies
-
-## Key Files
-
-- **Domain**: `src/domain/entity/match.ts`, `src/domain/ports/persistance/MatchRepository.ts`
-- **Application**: `src/application/CreateMatch.ts`
-- **Infrastructure**: `src/infrastructure/http/hono_adapter.ts`, `src/infrastructure/persistence/InMemoryMatchRepository.ts`
