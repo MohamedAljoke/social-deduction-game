@@ -20,6 +20,34 @@ This folder expands `plan.md` into file-by-file implementation specs.
 - `step-10-container-di.md`
 - `step-11-tests.md`
 
+## Resolution Pipeline
+
+```mermaid
+flowchart LR
+    subgraph "Domain"
+        Action[Action Entity]
+        Resolver[ActionResolver]
+    end
+
+    subgraph "To Be Implemented"
+        Handler1[KillHandler]
+        Handler2[ProtectHandler]
+        Handler3[RoleblockHandler]
+        Handler4[InvestigateHandler]
+        Commit[Commit Handler]
+    end
+
+    Action --> Resolver
+    Resolver --> Handler1
+    Resolver --> Handler2
+    Resolver --> Handler3
+    Resolver --> Handler4
+    Handler1 -.-> Commit
+    Handler2 -.-> Commit
+    Handler3 -.-> Commit
+    Handler4 -.-> Commit
+```
+
 ## Definition of Done
 - `AbilityId` usage fully migrated to `EffectType`
 - Resolution executed through staged pipeline with commit phase
