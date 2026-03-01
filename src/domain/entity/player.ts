@@ -7,8 +7,8 @@ export enum PlayerStatus {
 export type PlayerResponse = ReturnType<Player["toJSON"]>;
 
 export class Player {
-  public readonly id: string;
-  public readonly name: string;
+  readonly id: string;
+  readonly name: string;
   private status: PlayerStatus;
   private templateId?: string;
 
