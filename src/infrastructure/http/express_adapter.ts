@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
 import {
   HttpHandler,
   HttpMethod,
@@ -15,6 +16,7 @@ export class ExpressServer implements HttpServer {
   private server?: Server;
 
   constructor() {
+    this.app.use(cors());
     this.app.use(express.json());
   }
 
@@ -56,6 +58,7 @@ export class ExpressServer implements HttpServer {
   listen(port: number) {
     return new Promise<void>((resolve, reject) => {
       this.server = this.app.listen(port, () => {
+        console.log("server is on");
         resolve();
       });
 

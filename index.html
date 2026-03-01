@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Deduction Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-card-hover: #1f2b4d;
+      --accent-primary: #e94560;
+      --accent-secondary: #ff6b6b;
+      --accent-glow: rgba(233, 69, 96, 0.4);
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b8;
+      --text-muted: #6b6b80;
+      --border-color: #2a2a4a;
+      --success: #4ade80;
+      --warning: #fbbf24;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(233, 69, 96, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(22, 33, 62, 0.8) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(26, 26, 46, 0.5) 0%, transparent 70%);
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .logo-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 20px 60px var(--accent-glow);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 20px 60px var(--accent-glow); }
+      50% { transform: scale(1.05); box-shadow: 0 25px 80px var(--accent-glow); }
+    }
+
+    .logo-icon svg {
+      width: 40px;
+      height: 40px;
+      fill: white;
+    }
+
+    .logo h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: var(--accent-primary);
+      border-radius: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px var(--accent-glow);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-primary);
+      box-shadow: none;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 24px 0;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    .divider span {
+      padding: 0 16px;
+    }
+
+    .lobby-screen {
+      display: none;
+    }
+
+    .match-code {
+      background: var(--bg-secondary);
+      border: 2px dashed var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .match-code-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .match-code-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent-primary);
+      letter-spacing: 4px;
+      font-family: monospace;
+    }
+
+    .player-list {
+      margin-bottom: 24px;
+    }
+
+    .player-list-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+
+    .player-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .player-name {
+      font-weight: 500;
+    }
+
+    .player-badge {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 4px 10px;
+      background: var(--accent-primary);
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      border-radius: 20px;
+      color: var(--success);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+
+    .status-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="background"></div>
+
+  <div class="container">
+    <!-- Create Game Screen -->
+    <div id="createScreen" class="fade-in">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <h1>Social Deduction</h1>
+        <p>Create or join a game with friends</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Create New Game</div>
+        
+        <form id="createForm">
+          <div class="form-group">
+            <label for="playerName">Your Name</label>
+            <input 
+              type="text" 
+              id="playerName" 
+              placeholder="Enter your name" 
+              required 
+              maxlength="20"
+              autocomplete="off"
+            >
+          </div>
+
+          <button type="submit" class="btn" id="createBtn">
+            Create Game
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <button class="btn btn-secondary" id="joinBtn">
+          Join Existing Game
+        </button>
+      </div>
+    </div>
+
+    <!-- Join Game Screen -->
+    <div id="joinScreen" class="hidden fade-in">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+        </div>
+        <h1>Join Game</h1>
+        <p>Enter a game code to join</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Enter Game Details</div>
+        
+        <form id="joinForm">
+          <div class="form-group">
+            <label for="joinName">Your Name</label>
+            <input 
+              type="text" 
+              id="joinName" 
+              placeholder="Enter your name" 
+              required 
+              maxlength="20"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="gameCode">Match ID</label>
+            <input 
+              type="text" 
+              id="gameCode" 
+              placeholder="Enter match ID" 
+              required 
+              maxlength="50"
+              autocomplete="off"
+            >
+          </div>
+
+          <button type="submit" class="btn" id="joinSubmitBtn">
+            Join Game
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <button class="btn btn-secondary" id="backToCreateBtn">
+          Back to Create
+        </button>
+      </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="hidden fade-in">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <h1>Game Lobby</h1>
+        <p>Waiting for players to join</p>
+      </div>
+
+      <div class="card">
+        <div class="status-badge">
+          Waiting for host to start
+        </div>
+
+        <div class="match-code">
+          <div class="match-code-label">Game Code</div>
+          <div class="match-code-value" id="displayCode">------</div>
+        </div>
+
+        <div class="player-list">
+          <div class="player-list-title">Players (<span id="playerCount">1</span>)</div>
+          <div id="playersContainer">
+            <!-- Players will be added here -->
+          </div>
+        </div>
+
+        <button class="btn" id="startGameBtn">
+          Start Game
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+    
+    const createScreen = document.getElementById('createScreen');
+    const joinScreen = document.getElementById('joinScreen');
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    const createForm = document.getElementById('createForm');
+    const joinForm = document.getElementById('joinForm');
+    const createBtn = document.getElementById('createBtn');
+    const joinSubmitBtn = document.getElementById('joinSubmitBtn');
+    const displayCode = document.getElementById('displayCode');
+    const playersContainer = document.getElementById('playersContainer');
+    const playerCount = document.getElementById('playerCount');
+    const startGameBtn = document.getElementById('startGameBtn');
+
+    let currentMatchId = null;
+    let isHost = false;
+
+    document.getElementById('joinBtn').addEventListener('click', () => {
+      createScreen.classList.add('hidden');
+      joinScreen.classList.remove('hidden');
+    });
+
+    document.getElementById('backToCreateBtn').addEventListener('click', () => {
+      joinScreen.classList.add('hidden');
+      createScreen.classList.remove('hidden');
+    });
+
+    createForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const playerName = document.getElementById('playerName').value.trim();
+      
+      if (!playerName) return;
+
+      createBtn.disabled = true;
+      createBtn.innerHTML = '<span class="spinner"></span>Creating...';
+
+      try {
+        const response = await fetch(`${API_URL}/match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: playerName })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create game');
+        }
+
+        const data = await response.json();
+        
+        const joinResponse = await fetch(`${API_URL}/match/${data.id}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: playerName })
+        });
+
+        if (!joinResponse.ok) {
+          throw new Error('Failed to join game');
+        }
+
+        const match = await joinResponse.json();
+        currentMatchId = match.id;
+        isHost = true;
+
+        showLobby(match.players);
+      } catch (error) {
+        console.error('Error creating game:', error);
+        alert('Failed to create game. Make sure the server is running on port 3000.');
+        createBtn.disabled = false;
+        createBtn.textContent = 'Create Game';
+      }
+    });
+
+    joinForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const playerName = document.getElementById('joinName').value.trim();
+      const matchId = document.getElementById('gameCode').value.trim();
+      
+      if (!playerName || !matchId) return;
+
+      joinSubmitBtn.disabled = true;
+      joinSubmitBtn.innerHTML = '<span class="spinner"></span>Joining...';
+
+      try {
+        const response = await fetch(`${API_URL}/match/${matchId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: playerName })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to join game');
+        }
+
+        const match = await response.json();
+        currentMatchId = matchId;
+        isHost = false;
+
+        showLobby(match.players);
+      } catch (error) {
+        console.error('Error joining game:', error);
+        alert('Failed to join game. Check the ID and try again.');
+        joinSubmitBtn.disabled = false;
+        joinSubmitBtn.textContent = 'Join Game';
+      }
+    });
+
+    function showLobby(players = []) {
+      createScreen.classList.add('hidden');
+      joinScreen.classList.add('hidden');
+      lobbyScreen.classList.remove('hidden');
+
+      document.getElementById('displayCode').textContent = currentMatchId.substring(0, 8).toUpperCase();
+
+      if (!isHost) {
+        startGameBtn.classList.add('hidden');
+        document.querySelector('.status-badge').textContent = 'Waiting for host to start';
+      } else {
+        document.querySelector('.status-badge').textContent = 'Ready to start';
+      }
+
+      updatePlayerList(players);
+
+      if (players.length > 0) {
+        setInterval(fetchMatchState, 3000);
+      }
+    }
+
+    async function fetchMatchState() {
+      try {
+        const response = await fetch(`${API_URL}/match/${currentMatchId}`);
+        if (!response.ok) throw new Error('Failed to fetch match');
+        
+        const match = await response.json();
+        updatePlayerList(match.players || []);
+        
+        if (match.status === 'IN_PROGRESS') {
+          alert('Game has already started! Redirecting to game...');
+        }
+      } catch (error) {
+        console.error('Error fetching match state:', error);
+      }
+    }
+
+    function updatePlayerList(players) {
+      playerCount.textContent = players.length;
+      playersContainer.innerHTML = '';
+
+      players.forEach((player, index) => {
+        const initials = player.name.slice(0, 2).toUpperCase();
+        const colors = [
+          'linear-gradient(135deg, #667eea, #764ba2)',
+          'linear-gradient(135deg, #f093fb, #f5576c)',
+          'linear-gradient(135deg, #4facfe, #00f2fe)',
+          'linear-gradient(135deg, #43e97b, #38f9d7)',
+          'linear-gradient(135deg, #fa709a, #fee140)',
+        ];
+
+        const playerEl = document.createElement('div');
+        playerEl.className = 'player-item';
+        playerEl.innerHTML = `
+          <div class="player-avatar" style="background: ${colors[index % colors.length]}">${initials}</div>
+          <span class="player-name">${player.name}</span>
+          ${index === 0 ? '<span class="player-badge">Host</span>' : ''}
+        `;
+        playersContainer.appendChild(playerEl);
+      });
+    }
+
+    startGameBtn.addEventListener('click', async () => {
+      startGameBtn.disabled = true;
+      startGameBtn.innerHTML = '<span class="spinner"></span>Starting...';
+
+      try {
+        const response = await fetch(`${API_URL}/match/${currentMatchId}/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templates: [
+              { alignment: 'hero', abilities: [{ id: 'investigate' }] },
+              { alignment: 'villain', abilities: [{ id: 'kill' }] }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to start game');
+        }
+
+        const match = await response.json();
+        alert('Game started! (Game screen coming soon)');
+        console.log('Game started:', match);
+      } catch (error) {
+        console.error('Error starting game:', error);
+        alert('Failed to start game: ' + error.message);
+        startGameBtn.disabled = false;
+        startGameBtn.textContent = 'Start Game';
+      }
+    });
+  </script>
+</body>
+</html>
