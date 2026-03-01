@@ -417,6 +417,26 @@
       cursor: pointer;
     }
 
+    .template-row input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .template-row input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+
+    .template-row input::placeholder {
+      color: var(--text-muted);
+    }
+
     .template-row select:focus {
       outline: none;
       border-color: var(--accent-primary);
@@ -481,6 +501,331 @@
     .template-builder-actions .btn {
       flex: 1;
     }
+
+    /* Game Screen */
+    .game-screen {
+      display: none;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .game-back-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .game-back-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .phase-banner {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .phase-title {
+      font-size: 24px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .phase-description {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .game-timer {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .timer-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+
+    .timer-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .player-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .game-player-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .game-player-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+
+    .game-player-card.dead {
+      opacity: 0.5;
+      border-color: var(--text-muted);
+    }
+
+    .game-player-card.selected {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .game-player-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      margin: 0 auto 10px;
+    }
+
+    .game-player-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .game-player-status {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .game-player-status.alive {
+      color: var(--success);
+    }
+
+    .game-player-status.dead {
+      color: var(--accent-primary);
+    }
+
+    .abilities-panel {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .abilities-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-secondary);
+    }
+
+    .abilities-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ability-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ability-btn:hover:not(:disabled) {
+      border-color: var(--accent-primary);
+    }
+
+    .ability-btn.active {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .ability-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-panel {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .action-instruction {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .action-confirm-btn {
+      padding: 12px 32px;
+      background: var(--success);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .action-confirm-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-cancel-btn {
+      padding: 12px 32px;
+      background: transparent;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 14px;
+      cursor: pointer;
+      margin-left: 12px;
+    }
+
+    .vote-panel {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .vote-instruction {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .vote-confirm-btn {
+      padding: 12px 32px;
+      background: var(--accent-primary);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .vote-confirm-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .log-panel {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .log-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .log-entry {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry .actor {
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+
+    .log-entry .target {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .my-role-card {
+      background: var(--bg-card);
+      border: 2px solid var(--accent-primary);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .my-role-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .my-role-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin: 4px 0;
+    }
+
+    .my-role-alignment {
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .my-role-alignment.hero { color: var(--success); }
+    .my-role-alignment.villain { color: var(--accent-primary); }
+    .my-role-alignment.neutral { color: var(--warning); }
   </style>
 </head>
 <body>
@@ -665,6 +1010,70 @@
         </div>
       </div>
     </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="hidden fade-in">
+      <div class="game-header">
+        <button class="game-back-btn" id="gameBackBtn">
+          ← Leave Game
+        </button>
+      </div>
+
+      <div id="myRoleCard" class="my-role-card hidden">
+        <div class="my-role-title">Your Role</div>
+        <div class="my-role-name" id="myRoleName">-</div>
+        <div class="my-role-alignment" id="myRoleAlignment">-</div>
+      </div>
+
+      <div class="phase-banner">
+        <div class="phase-title" id="phaseTitle">Discussion</div>
+        <div class="phase-description" id="phaseDescription">Discuss with other players</div>
+      </div>
+
+      <div class="game-timer">
+        <div class="timer-value" id="timerValue">60</div>
+        <div class="timer-label">Seconds</div>
+      </div>
+
+      <div class="player-grid" id="playerGrid">
+        <!-- Player cards will be rendered here -->
+      </div>
+
+      <div class="abilities-panel" id="abilitiesPanel">
+        <div class="abilities-title">Your Abilities</div>
+        <div class="abilities-list" id="abilitiesList">
+          <!-- Ability buttons will be rendered here -->
+        </div>
+      </div>
+
+      <div class="action-panel hidden" id="actionPanel">
+        <div class="action-instruction" id="actionInstruction">
+          Select a target to use your ability
+        </div>
+        <button class="action-confirm-btn" id="actionConfirmBtn" disabled>
+          Confirm
+        </button>
+        <button class="action-cancel-btn" id="actionCancelBtn">
+          Cancel
+        </button>
+      </div>
+
+      <div class="vote-panel hidden" id="votePanel">
+        <div class="vote-instruction" id="voteInstruction">
+          Vote to eliminate a player
+        </div>
+        <button class="vote-confirm-btn" id="voteConfirmBtn" disabled>
+          Cast Vote
+        </button>
+      </div>
+
+      <div class="log-panel">
+        <div class="log-title">Game Log</div>
+        <div id="logEntries">
+          <!-- Log entries will be rendered here -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -674,6 +1083,7 @@
     const joinScreen = document.getElementById('joinScreen');
     const lobbyScreen = document.getElementById('lobbyScreen');
     const templateBuilderScreen = document.getElementById('templateBuilderScreen');
+    const gameScreen = document.getElementById('gameScreen');
     const createForm = document.getElementById('createForm');
     const joinForm = document.getElementById('joinForm');
     const createBtn = document.getElementById('createBtn');
@@ -688,6 +1098,12 @@
     let isHost = false;
     let playerCount_ = 0;
     let configuredTemplates = [];
+    let gameState = null;
+    let selectedAbility = null;
+    let selectedTarget = null;
+    let selectedVote = null;
+    let gameLoop = null;
+    let currentUserPlayerId = null;
 
     document.getElementById('joinBtn').addEventListener('click', () => {
       createScreen.classList.add('hidden');
@@ -848,6 +1264,7 @@
       const currentPlayerCount = parseInt(playerCount.textContent);
       if (configuredTemplates.length === 0) {
         configuredTemplates = Array(currentPlayerCount).fill(null).map((_, i) => ({
+          name: i === 0 ? 'Infiltrator' : 'Citizen',
           alignment: i === 0 ? 'villain' : 'hero',
           abilities: i === 0 ? ['kill'] : ['investigate']
         }));
@@ -871,7 +1288,7 @@
     });
 
     document.getElementById('addTemplateBtn').addEventListener('click', () => {
-      configuredTemplates.push({ alignment: 'hero', abilities: [] });
+      configuredTemplates.push({ name: '', alignment: 'hero', abilities: [] });
       renderTemplates();
     });
 
@@ -906,9 +1323,13 @@
         const card = document.createElement('div');
         card.className = 'template-card';
         card.innerHTML = `
-            <div class="template-card-header">
+          <div class="template-card-header">
             <span class="template-number">Template ${index + 1}</span>
             ${configuredTemplates.length > 1 ? `<button class="template-remove" data-index="${index}">×</button>` : ''}
+          </div>
+          <div class="template-row">
+            <input type="text" class="template-name-input" data-index="${index}" 
+                   placeholder="Template name (e.g. Infiltrator)" value="${template.name || ''}" maxlength="20">
           </div>
           <div class="template-row">
             <select class="alignment-select" data-index="${index}">
@@ -928,6 +1349,13 @@
           </div>
         `;
         templatesContainer.appendChild(card);
+      });
+
+      document.querySelectorAll('.template-name-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          configuredTemplates[idx].name = e.target.value;
+        });
       });
 
       document.querySelectorAll('.template-remove').forEach(btn => {
@@ -967,6 +1395,7 @@
 
       try {
         const templates = configuredTemplates.map(t => ({
+          name: t.name || undefined,
           alignment: t.alignment,
           abilities: t.abilities.map(id => ({ id }))
         }));
@@ -983,8 +1412,15 @@
         }
 
         const match = await response.json();
-        alert('Game started! (Game screen coming soon)');
-        console.log('Game started:', match);
+        
+        // Find current user's player ID
+        const playerName = document.getElementById('playerName').value.trim() || document.getElementById('joinName').value.trim();
+        const player = match.players.find(p => p.name === playerName);
+        if (player) {
+          currentUserPlayerId = player.id;
+        }
+        
+        showGameScreen(match);
       } catch (error) {
         console.error('Error starting game:', error);
         alert('Failed to start game: ' + error.message);
@@ -992,6 +1428,284 @@
         startGameBtn.textContent = 'Start Game';
       }
     }
+
+    function showGameScreen(match) {
+      lobbyScreen.classList.add('hidden');
+      templateBuilderScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+      
+      gameState = match;
+      
+      // Start polling for game updates
+      if (gameLoop) clearInterval(gameLoop);
+      gameLoop = setInterval(fetchGameState, 2000);
+      
+      renderGame();
+    }
+
+    async function fetchGameState() {
+      try {
+        const response = await fetch(`${API_URL}/match/${currentMatchId}`);
+        if (!response.ok) throw new Error('Failed to fetch game state');
+        
+        gameState = await response.json();
+        renderGame();
+        
+        if (gameState.status === 'finished') {
+          clearInterval(gameLoop);
+          showEndScreen();
+        }
+      } catch (error) {
+        console.error('Error fetching game state:', error);
+      }
+    }
+
+    function renderGame() {
+      if (!gameState) return;
+      
+      renderPhase();
+      renderPlayers();
+      renderAbilities();
+      renderLog();
+    }
+
+    function renderPhase() {
+      const phase = gameState.phase;
+      const phaseConfig = {
+        discussion: { title: 'Discussion', description: 'Discuss with other players' },
+        voting: { title: 'Voting', description: 'Vote to eliminate a player' },
+        action: { title: 'Action', description: 'Use your abilities' },
+        resolution: { title: 'Resolution', description: 'Processing results...' }
+      };
+      
+      const config = phaseConfig[phase] || { title: phase, description: '' };
+      document.getElementById('phaseTitle').textContent = config.title;
+      document.getElementById('phaseDescription').textContent = config.description;
+      
+      // Show/hide panels based on phase
+      const actionPanel = document.getElementById('actionPanel');
+      const votePanel = document.getElementById('votePanel');
+      const abilitiesPanel = document.getElementById('abilitiesPanel');
+      
+      actionPanel.classList.add('hidden');
+      votePanel.classList.add('hidden');
+      
+      if (phase === 'action') {
+        abilitiesPanel.classList.remove('hidden');
+      } else if (phase === 'voting') {
+        abilitiesPanel.classList.add('hidden');
+        votePanel.classList.remove('hidden');
+      } else {
+        abilitiesPanel.classList.add('hidden');
+      }
+    }
+
+    function renderPlayers() {
+      const grid = document.getElementById('playerGrid');
+      grid.innerHTML = '';
+      
+      const colors = [
+        'linear-gradient(135deg, #667eea, #764ba2)',
+        'linear-gradient(135deg, #f093fb, #f5576c)',
+        'linear-gradient(135deg, #4facfe, #00f2fe)',
+        'linear-gradient(135deg, #43e97b, #38f9d7)',
+        'linear-gradient(135deg, #fa709a, #fee140)',
+      ];
+      
+      gameState.players.forEach((player, index) => {
+        const isDead = player.status !== 'alive';
+        const isSelf = player.id === currentUserPlayerId;
+        const isSelected = selectedTarget === player.id || selectedVote === player.id;
+        
+        const card = document.createElement('div');
+        card.className = `game-player-card ${isDead ? 'dead' : ''} ${isSelected ? 'selected' : ''}`;
+        card.dataset.playerId = player.id;
+        
+        if (!isDead) {
+          card.addEventListener('click', () => handlePlayerClick(player.id));
+        }
+        
+        card.innerHTML = `
+          <div class="game-player-avatar" style="background: ${colors[index % colors.length]}">
+            ${player.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div class="game-player-name">${player.name}${isSelf ? ' (You)' : ''}</div>
+          <div class="game-player-status ${player.status}">${player.status}</div>
+        `;
+        
+        grid.appendChild(card);
+      });
+    }
+
+    function renderAbilities() {
+      const list = document.getElementById('abilitiesList');
+      list.innerHTML = '';
+      
+      if (gameState.phase !== 'action') return;
+      
+      // Find current user's template
+      const player = gameState.players.find(p => p.id === currentUserPlayerId);
+      if (!player || !player.templateId) return;
+      
+      const template = gameState.templates.find(t => t.id === player.templateId);
+      if (!template) return;
+      
+      // Show my role
+      const roleCard = document.getElementById('myRoleCard');
+      roleCard.classList.remove('hidden');
+      document.getElementById('myRoleName').textContent = template.name || 'Unknown';
+      document.getElementById('myRoleAlignment').textContent = template.alignment;
+      document.getElementById('myRoleAlignment').className = `my-role-alignment ${template.alignment}`;
+      
+      const abilityLabels = {
+        kill: '🗡️ Kill',
+        protect: '🛡️ Protect',
+        roleblock: '🚫 Roleblock',
+        investigate: '🔍 Investigate'
+      };
+      
+      template.abilities.forEach(ability => {
+        const btn = document.createElement('button');
+        btn.className = `ability-btn ${selectedAbility === ability.id ? 'active' : ''}`;
+        btn.textContent = abilityLabels[ability.id] || ability.id;
+        btn.addEventListener('click', () => selectAbility(ability.id));
+        list.appendChild(btn);
+      });
+    }
+
+    function selectAbility(abilityId) {
+      if (selectedAbility === abilityId) {
+        selectedAbility = null;
+        document.getElementById('actionPanel').classList.add('hidden');
+      } else {
+        selectedAbility = abilityId;
+        selectedTarget = null;
+        document.getElementById('actionPanel').classList.remove('hidden');
+        document.getElementById('actionConfirmBtn').disabled = true;
+      }
+      renderPlayers();
+      renderAbilities();
+    }
+
+    function handlePlayerClick(playerId) {
+      if (gameState.phase === 'action' && selectedAbility) {
+        selectedTarget = playerId;
+        document.getElementById('actionConfirmBtn').disabled = false;
+        renderPlayers();
+      } else if (gameState.phase === 'voting') {
+        selectedVote = playerId;
+        document.getElementById('voteConfirmBtn').disabled = false;
+        renderPlayers();
+      }
+    }
+
+    document.getElementById('actionConfirmBtn').addEventListener('click', async () => {
+      if (!selectedAbility || !selectedTarget) return;
+      
+      document.getElementById('actionConfirmBtn').disabled = true;
+      
+      try {
+        const response = await fetch(`${API_URL}/match/${currentMatchId}/ability`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actorId: currentUserPlayerId,
+            abilityId: selectedAbility,
+            targetIds: [selectedTarget]
+          })
+        });
+        
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || 'Failed to use ability');
+        }
+        
+        selectedAbility = null;
+        selectedTarget = null;
+        document.getElementById('actionPanel').classList.add('hidden');
+      } catch (error) {
+        alert('Failed to use ability: ' + error.message);
+        document.getElementById('actionConfirmBtn').disabled = false;
+      }
+    });
+
+    document.getElementById('actionCancelBtn').addEventListener('click', () => {
+      selectedAbility = null;
+      selectedTarget = null;
+      document.getElementById('actionPanel').classList.add('hidden');
+      renderPlayers();
+      renderAbilities();
+    });
+
+    document.getElementById('voteConfirmBtn').addEventListener('click', async () => {
+      if (!selectedVote) return;
+      
+      document.getElementById('voteConfirmBtn').disabled = true;
+      
+      // Voting via phase advancement (host or automatic)
+      // For now, just advance the phase to simulate voting
+      try {
+        const response = await fetch(`${API_URL}/match/${currentMatchId}/phase`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || 'Failed to process vote');
+        }
+        
+        selectedVote = null;
+        document.getElementById('votePanel').classList.add('hidden');
+      } catch (error) {
+        alert('Failed to cast vote: ' + error.message);
+        document.getElementById('voteConfirmBtn').disabled = false;
+      }
+    });
+
+    function renderLog() {
+      const container = document.getElementById('logEntries');
+      container.innerHTML = '';
+      
+      const actions = gameState.actions || [];
+      
+      if (actions.length === 0) {
+        container.innerHTML = '<div class="log-entry">Game started. Waiting for actions...</div>';
+        return;
+      }
+      
+      const playerMap = {};
+      gameState.players.forEach(p => playerMap[p.id] = p.name);
+      
+      const abilityLabels = {
+        kill: 'killed',
+        protect: 'protected',
+        roleblock: 'roleblocked',
+        investigate: 'investigated'
+      };
+      
+      actions.slice().reverse().forEach(action => {
+        const actorName = playerMap[action.actorId] || 'Unknown';
+        const targetNames = action.targetIds.map(id => playerMap[id] || 'Unknown').join(', ');
+        const verb = abilityLabels[action.abilityId] || action.abilityId;
+        
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<span class="actor">${actorName}</span> ${verb} <span class="target">${targetNames}</span>`;
+        container.appendChild(entry);
+      });
+    }
+
+    function showEndScreen() {
+      alert('Game Over! (End screen coming soon)');
+    }
+
+    document.getElementById('gameBackBtn').addEventListener('click', () => {
+      if (confirm('Leave the game?')) {
+        if (gameLoop) clearInterval(gameLoop);
+        location.reload();
+      }
+    });
   </script>
 </body>
 </html>
