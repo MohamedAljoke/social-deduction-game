@@ -1,147 +1,141 @@
 # Architecture
 
-## Overview
+## Domain Model
 
 ```mermaid
 classDiagram
+    class Match {
+        <<entity>>
+        +id: string
+        +name: string
+        +status: MatchStatus
+        +phase: PhaseType
+        +players: Player[]
+        +templates: Template[]
+        +actions: Action[]
+    }
 
-%% =========================
-%% Core Domain
-%% =========================
+    class MatchStatus {
+        <<enum>>
+        lobby
+        started
+        finished
+    }
 
-class Match {
-  +id
-  +status
-  +phase
-  +players[]
-  +actionsQueue[]
-  +votes[]
-  +start()
-  +advancePhase()
-  +queueAction()
-  +resolveActions()
-  +registerVote()
-  +tallyVotes()
-}
+    class PhaseType {
+        <<enum>>
+        discussion
+        voting
+        action
+        resolution
+    }
 
-class Phase {
-  <<enum>>
-  waiting
-  action
-  resolution
-  voting
-  finished
-}
+    class Player {
+        <<entity>>
+        +id: string
+        +name: string
+        +status: PlayerStatus
+        +templateId?: string
+    }
 
-class Player {
-  +id
-  +alive
-  +template
-  +useAbility()
-}
+    class PlayerStatus {
+        <<enum>>
+        alive
+        dead
+        eliminated
+    }
 
-class Template {
-  +name
-  +abilities[]
-  +getAbility(effectType)
-}
+    class Template {
+        <<entity>>
+        +id: string
+        +alignment: Alignment
+        +abilities: Ability[]
+        +winCondition: WinCondition
+        +endsGameOnWin: boolean
+    }
 
-class Ability {
-  +id
-  +effectType
-  +priority
-  +targetCount
-  +canTargetSelf
-  +requiresAliveTarget
-}
+    class Alignment {
+        <<enum>>
+        hero
+        villain
+        neutral
+    }
 
-class Action {
-  +actorId
-  +effectType
-  +priority
-  +stage
-  +targetIds[]
-  +cancelled
-}
+    class Ability {
+        <<entity>>
+        +id: AbilityId
+        +canUseWhenDead: boolean
+        +targetCount: number
+        +canTargetSelf: boolean
+        +requiresAliveTarget: boolean
+    }
 
-class Vote {
-  +voterId
-  +targetId
-}
+    class AbilityId {
+        <<enum>>
+        kill
+        protect
+        roleblock
+        investigate
+    }
 
-%% =========================
-%% Resolution Subsystem
-%% =========================
+    class Action {
+        <<value object>>
+        +actorId: string
+        +abilityId: AbilityId
+        +targetIds: string[]
+        +cancelled: boolean
+    }
 
-class ActionResolver {
-  +resolve(actions)
-  +registerHandler()
-}
-
-class ResolutionContext {
-  +protectedPlayers[]
-  +blockedPlayers[]
-  +killedPlayers[]
-  +results[]
-}
-
-class EffectHandler {
-  <<interface>>
-  +effectType
-  +stage
-  +handle(action, context)
-}
-
-%% =========================
-%% Relationships
-%% =========================
-
-Match --> Phase
-Match --> Player
-Match --> Action
-Match --> Vote
-
-Player --> Template
-Template --> Ability
-
-Match --> ActionResolver
-ActionResolver --> EffectHandler
-ActionResolver --> ResolutionContext
-ActionResolver --> Action
-
-EffectHandler <|.. KillHandler
-EffectHandler <|.. ProtectHandler
-EffectHandler <|.. RoleblockHandler
-EffectHandler <|.. InvestigateHandler
+    Match --> MatchStatus
+    Match --> PhaseType
+    Match --> Player
+    Match --> Template
+    Match --> Action
+    Player --> PlayerStatus
+    Player --> Template
+    Template --> Alignment
+    Template --> Ability
+    Ability --> AbilityId
 ```
 
-## Layer Diagram
+## Layer Structure
 
 ```mermaid
 flowchart LR
     subgraph "Outside"
-        Client[HTTP/WebSocket Clients]
+        Client[HTTP Clients]
     end
 
     subgraph "src/"
-        subgraph "infrastructure (Adapters)"
-            HTTP[HTTP Servers<br/>hono_adapter.ts<br/>express_adapter.ts]
-            Persistence[Persistence<br/>InMemoryMatchRepository]
+        subgraph "infrastructure"
+            HTTP[HTTP Servers<br/>Express / Hono]
+            Persistence[In-Memory<br/>Repositories]
         end
 
-        subgraph "application (Use Cases)"
-            UseCases[CreateMatch.ts<br/>Use Cases]
+        subgraph "application"
+            UseCases[Use Cases]
+            DTOs[Zod DTOs]
+            Container[DI Container]
         end
 
-        subgraph "domain (Core)"
-            Entities[Entities<br/>match.ts<br/>player.ts<br/>template.ts<br/>ability.ts]
-            Ports[Ports/Interfaces<br/>MatchRepository.ts<br/>TemplateRepository.ts]
+        subgraph "domain"
+            Entities[Entities]
+            Ports[Ports]
         end
     end
 
     Client --> HTTP
-    HTTP --> UseCases
+    HTTP --> DTOs
+    DTOs --> UseCases
     UseCases --> Ports
     UseCases --> Entities
-    Ports -->|implemented by| Persistence
+    Ports --> Persistence
 ```
+
+## Key Patterns
+
+- **Domain Entities**: Pure business logic with no external dependencies
+- **Ports**: Repository interfaces define data access contracts
+- **Use Cases**: Orchestrate domain logic, depend on ports (not implementations)
+- **DI Container**: Wires dependencies, enables easy swapping of implementations
+- **Zod DTOs**: Validate all input at the API boundary
