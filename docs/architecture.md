@@ -107,16 +107,16 @@ flowchart LR
     end
 
     subgraph "src/"
-        subgraph "infrastructure"
-            HTTP[HTTP Servers<br/>Express / Hono]
-            Persistence[In-Memory<br/>Repositories]
-        end
+    subgraph "infrastructure"
+        HTTP[HTTP Servers<br/>Express / Hono]
+        Validators[Zod Validators]
+        Persistence[In-Memory<br/>Repositories]
+    end
 
-        subgraph "application"
-            UseCases[Use Cases]
-            DTOs[Zod DTOs]
-            Container[DI Container]
-        end
+    subgraph "application"
+        UseCases[Use Cases]
+        Container[DI Container]
+    end
 
         subgraph "domain"
             Entities[Entities]
@@ -125,8 +125,8 @@ flowchart LR
     end
 
     Client --> HTTP
-    HTTP --> DTOs
-    DTOs --> UseCases
+    HTTP --> Validators
+    Validators --> UseCases
     UseCases --> Ports
     UseCases --> Entities
     Ports --> Persistence
@@ -138,4 +138,4 @@ flowchart LR
 - **Ports**: Repository interfaces define data access contracts
 - **Use Cases**: Orchestrate domain logic, depend on ports (not implementations)
 - **DI Container**: Wires dependencies, enables easy swapping of implementations
-- **Zod DTOs**: Validate all input at the API boundary
+- **Zod Validators**: Validate request data at the HTTP layer (infrastructure)
