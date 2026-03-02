@@ -13,7 +13,7 @@ export function Button({
   className = '',
   ...props 
 }: ButtonProps) {
-  const baseStyles = "w-full py-4 px-6 rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none";
+  const baseStyles = "w-full py-5 px-8 rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none";
   
   const variantStyles = variant === 'primary' 
     ? "text-white hover:-translate-y-0.5"

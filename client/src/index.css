@@ -27,6 +27,8 @@ body {
   color: #ffffff;
   min-height: 100vh;
   overflow-x: hidden;
+  display: flex;
+  justify-content: center;
 }
 
 .fade-in {

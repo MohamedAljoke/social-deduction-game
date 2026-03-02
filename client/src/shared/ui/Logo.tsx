@@ -5,7 +5,7 @@ interface LogoProps {
 
 export function Logo({ title, subtitle }: LogoProps) {
   return (
-    <div className="text-center mb-12">
+    <div className="text-center mb-8 w-full">
       <div 
         className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 animate-[pulse_3s_ease-in-out_infinite]"
         style={{ 
