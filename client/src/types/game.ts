@@ -2,13 +2,13 @@ export interface Player {
   id: string;
   name: string;
   templateId?: string;
-  status: 'alive' | 'dead';
+  status: "alive" | "dead";
 }
 
 export interface Template {
   id: string;
   name: string;
-  alignment: 'hero' | 'villain' | 'neutral';
+  alignment: "hero" | "villain" | "neutral";
   abilities: Ability[];
 }
 
@@ -23,9 +23,9 @@ export interface Action {
   abilityId: string;
 }
 
-export type PhaseType = 'discussion' | 'action' | 'voting' | 'resolution';
+export type PhaseType = "discussion" | "action" | "voting" | "resolution";
 
-export type MatchStatus = 'LOBBY' | 'IN_PROGRESS' | 'FINISHED';
+export type MatchStatus = "LOBBY" | "IN_PROGRESS" | "FINISHED";
 
 export interface Match {
   id: string;
@@ -40,7 +40,7 @@ export interface Match {
 
 export interface TemplateInput {
   name?: string;
-  alignment: 'hero' | 'villain' | 'neutral';
+  alignment: "hero" | "villain" | "neutral";
   abilities: { id: string }[];
 }
 
