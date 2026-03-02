@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import type { Match } from '../../../types/game';
 import { api } from '../../../services/api';
+import { GAME_ACTIONS } from './gameActions';
 
 interface TemplateConfig {
   name: string;
@@ -21,18 +22,18 @@ interface GameState {
 }
 
 type GameAction =
-  | { type: 'SET_MATCH'; payload: { matchId: string; playerId: string; playerName: string; isHost: boolean; match: Match } }
-  | { type: 'UPDATE_MATCH'; payload: Match }
-  | { type: 'SET_PHASE'; payload: string }
-  | { type: 'SET_PLAYERS'; payload: Match['players'] }
-  | { type: 'SELECT_ABILITY'; payload: string | null }
-  | { type: 'SELECT_TARGET'; payload: string | null }
-  | { type: 'SELECT_VOTE'; payload: string | null }
-  | { type: 'SET_TEMPLATES'; payload: TemplateConfig[] }
-  | { type: 'ADD_TEMPLATE'; payload: TemplateConfig }
-  | { type: 'UPDATE_TEMPLATE'; payload: { index: number; template: TemplateConfig } }
-  | { type: 'REMOVE_TEMPLATE'; payload: number }
-  | { type: 'RESET' };
+  | { type: typeof GAME_ACTIONS.SET_MATCH; payload: { matchId: string; playerId: string; playerName: string; isHost: boolean; match: Match } }
+  | { type: typeof GAME_ACTIONS.UPDATE_MATCH; payload: Match }
+  | { type: typeof GAME_ACTIONS.SET_PHASE; payload: string }
+  | { type: typeof GAME_ACTIONS.SET_PLAYERS; payload: Match['players'] }
+  | { type: typeof GAME_ACTIONS.SELECT_ABILITY; payload: string | null }
+  | { type: typeof GAME_ACTIONS.SELECT_TARGET; payload: string | null }
+  | { type: typeof GAME_ACTIONS.SELECT_VOTE; payload: string | null }
+  | { type: typeof GAME_ACTIONS.SET_TEMPLATES; payload: TemplateConfig[] }
+  | { type: typeof GAME_ACTIONS.ADD_TEMPLATE; payload: TemplateConfig }
+  | { type: typeof GAME_ACTIONS.UPDATE_TEMPLATE; payload: { index: number; template: TemplateConfig } }
+  | { type: typeof GAME_ACTIONS.REMOVE_TEMPLATE; payload: number }
+  | { type: typeof GAME_ACTIONS.RESET };
 
 const initialState: GameState = {
   matchId: null,
@@ -48,7 +49,7 @@ const initialState: GameState = {
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'SET_MATCH':
+    case GAME_ACTIONS.SET_MATCH:
       return {
         ...state,
         matchId: action.payload.matchId,
@@ -57,34 +58,34 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         isHost: action.payload.isHost,
         match: action.payload.match,
       };
-    case 'UPDATE_MATCH':
+    case GAME_ACTIONS.UPDATE_MATCH:
       return { ...state, match: action.payload };
-    case 'SET_PHASE':
+    case GAME_ACTIONS.SET_PHASE:
       if (!state.match) return state;
       return { ...state, match: { ...state.match, phase: action.payload as Match['phase'] } };
-    case 'SET_PLAYERS':
+    case GAME_ACTIONS.SET_PLAYERS:
       if (!state.match) return state;
       return { ...state, match: { ...state.match, players: action.payload } };
-    case 'SELECT_ABILITY':
+    case GAME_ACTIONS.SELECT_ABILITY:
       return { ...state, selectedAbility: action.payload, selectedTarget: null };
-    case 'SELECT_TARGET':
+    case GAME_ACTIONS.SELECT_TARGET:
       return { ...state, selectedTarget: action.payload };
-    case 'SELECT_VOTE':
+    case GAME_ACTIONS.SELECT_VOTE:
       return { ...state, selectedVote: action.payload };
-    case 'SET_TEMPLATES':
+    case GAME_ACTIONS.SET_TEMPLATES:
       return { ...state, configuredTemplates: action.payload };
-    case 'ADD_TEMPLATE':
+    case GAME_ACTIONS.ADD_TEMPLATE:
       return { ...state, configuredTemplates: [...state.configuredTemplates, action.payload] };
-    case 'UPDATE_TEMPLATE':
+    case GAME_ACTIONS.UPDATE_TEMPLATE:
       const templates = [...state.configuredTemplates];
       templates[action.payload.index] = action.payload.template;
       return { ...state, configuredTemplates: templates };
-    case 'REMOVE_TEMPLATE':
+    case GAME_ACTIONS.REMOVE_TEMPLATE:
       return {
         ...state,
         configuredTemplates: state.configuredTemplates.filter((_, i) => i !== action.payload),
       };
-    case 'RESET':
+    case GAME_ACTIONS.RESET:
       return initialState;
     default:
       return state;
@@ -112,7 +113,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const joined = await api.joinMatch(created.id, name);
     const player = joined.players.find((p: { name: string }) => p.name === name);
     dispatch({
-      type: 'SET_MATCH',
+      type: GAME_ACTIONS.SET_MATCH,
       payload: {
         matchId: joined.id,
         playerId: player.id,
@@ -127,7 +128,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const joined = await api.joinMatch(matchId, name);
     const player = joined.players.find((p: { name: string }) => p.name === name);
     dispatch({
-      type: 'SET_MATCH',
+      type: GAME_ACTIONS.SET_MATCH,
       payload: {
         matchId: joined.id,
         playerId: player.id,
@@ -146,26 +147,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       abilities: t.abilities.map(id => ({ id })),
     }));
     const match = await api.startMatch(state.matchId, templates);
-    dispatch({ type: 'UPDATE_MATCH', payload: match });
+    dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: match });
   }, [state.matchId, state.configuredTemplates]);
 
   const useAbility = useCallback(async (abilityId: string, targetId: string) => {
     if (!state.matchId || !state.playerId) return;
     await api.useAbility(state.matchId, state.playerId, abilityId, [targetId]);
-    dispatch({ type: 'SELECT_ABILITY', payload: null });
-    dispatch({ type: 'SELECT_TARGET', payload: null });
+    dispatch({ type: GAME_ACTIONS.SELECT_ABILITY, payload: null });
+    dispatch({ type: GAME_ACTIONS.SELECT_TARGET, payload: null });
   }, [state.matchId, state.playerId]);
 
   const castVote = useCallback(async () => {
     if (!state.matchId) return;
     await api.advancePhase(state.matchId);
-    dispatch({ type: 'SELECT_VOTE', payload: null });
+    dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: null });
   }, [state.matchId]);
 
   const fetchMatch = useCallback(async () => {
     if (!state.matchId) return;
     const match = await api.getMatch(state.matchId);
-    dispatch({ type: 'UPDATE_MATCH', payload: match });
+    dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: match });
   }, [state.matchId]);
 
   return (

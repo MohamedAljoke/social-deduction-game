@@ -1,41 +1,16 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Avatar, Badge } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
 import { useGame } from '../session/context/GameContext';
-import { useSocket } from '../session/hooks/useSocket';
-import { useLobby } from './hooks';
-import type { ServerEvent } from '../../types/events';
-import type { Match } from '../../types/game';
+import { useLobby, useLobbySocket } from './hooks';
 import './LobbyScreen.css';
 
 export function LobbyScreen() {
   const navigate = useNavigate();
-  const { state, dispatch, fetchMatch } = useGame();
+  const { state } = useGame();
   const { match, isHost, loading, handleStartGame } = useLobby();
-
-  const handleSocketEvent = async (event: ServerEvent) => {
-    switch (event.type) {
-      case 'player_joined':
-      case 'player_left':
-        await fetchMatch();
-        break;
-      case 'match_started':
-      case 'match_updated':
-        if (event.type === 'match_updated') {
-          dispatch({ type: 'UPDATE_MATCH', payload: event.state as Match });
-        }
-        navigate('/game');
-        break;
-    }
-  };
-
-  useSocket({
-    matchId: state.matchId,
-    playerId: state.playerId,
-    onEvent: handleSocketEvent,
-  });
+  useLobbySocket();
 
   if (!match) {
     return <div>Loading...</div>;

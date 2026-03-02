@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../session/context/GameContext';
+import { GAME_ACTIONS } from '../../session/context/gameActions';
 
 export function useLobby() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export function useLobby() {
       abilities: i === 0 ? ['kill'] : ['investigate'],
     }));
     
-    dispatch({ type: 'SET_TEMPLATES', payload: templates });
+    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: templates });
     
     setLoading(true);
     try {
