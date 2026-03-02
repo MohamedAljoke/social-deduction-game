@@ -1,5 +1,4 @@
 import React from 'react';
-import './Card.css';
 
 interface CardProps {
   children: React.ReactNode;
@@ -8,7 +7,7 @@ interface CardProps {
 
 export function Card({ children, className = '' }: CardProps) {
   return (
-    <div className={`card ${className}`}>
+    <div className={`bg-bg-card border border-border rounded-3xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.3)] ${className}`}>
       {children}
     </div>
   );

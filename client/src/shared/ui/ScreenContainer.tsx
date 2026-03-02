@@ -1,4 +1,4 @@
-import './ScreenContainer.css';
+import React from 'react';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -6,7 +6,7 @@ interface ScreenContainerProps {
 
 export function ScreenContainer({ children }: ScreenContainerProps) {
   return (
-    <div className="container">
+    <div className="max-w-[480px] mx-auto px-5 py-10 min-h-screen flex flex-col justify-center">
       {children}
     </div>
   );

@@ -5,7 +5,6 @@ import { LobbyScreen } from './features/lobby/LobbyScreen';
 import { TemplateBuilderScreen } from './features/lobby/TemplateBuilder/TemplateBuilderScreen';
 import { GameScreen } from './features/game/GameScreen';
 import { EndScreen } from './features/end/EndScreen';
-import './shared/styles/variables.css';
 
 export function App() {
   return (

@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Input } from '../../../shared/components';
+import { Card, Button } from '../../../shared/components';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { Logo } from '../../../shared/ui/Logo';
 import { useGame } from '../../session/context/GameContext';
-import './TemplateBuilderScreen.css';
 
 const ABILITIES = [
   { id: 'kill', name: 'Kill', icon: '🗡️' },
@@ -61,27 +60,30 @@ export function TemplateBuilderScreen() {
         <Logo title="Template Builder" subtitle="Configure roles for each player" />
         
         <Card>
-          <div className="card-title">Player Templates</div>
+          <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
+            <span className="w-1 h-5 bg-accent-primary rounded-sm"></span>
+            Player Templates
+          </div>
           
-          <div className="templates-container">
+          <div className="mb-5">
             {templates.map((template, index) => (
-              <div key={index} className="template-card">
-                <div className="template-card-header">
-                  <span className="template-number">Template {index + 1}</span>
+              <div key={index} className="bg-bg-secondary border-2 border-border rounded-2xl p-5 mb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-semibold text-text-secondary">Template {index + 1}</span>
                 </div>
-                <div className="template-row">
+                <div className="flex gap-3 mb-3">
                   <input
                     type="text"
-                    className="template-name-input"
+                    className="flex-1 py-3 px-4 bg-bg-secondary border-2 border-border rounded-lg text-text-primary text-sm font-inherit focus:outline-none focus:border-accent-primary placeholder:text-text-muted"
                     placeholder="Template name"
                     value={template.name}
                     onChange={(e) => updateTemplate(index, 'name', e.target.value)}
                     maxLength={20}
                   />
                 </div>
-                <div className="template-row">
+                <div className="flex gap-3 mb-3">
                   <select
-                    className="alignment-select"
+                    className="flex-1 py-3 px-4 bg-bg-secondary border-2 border-border rounded-lg text-text-primary text-sm font-inherit cursor-pointer focus:outline-none focus:border-accent-primary"
                     value={template.alignment}
                     onChange={(e) => updateTemplate(index, 'alignment', e.target.value)}
                   >
@@ -90,14 +92,16 @@ export function TemplateBuilderScreen() {
                     <option value="neutral">Neutral</option>
                   </select>
                 </div>
-                <div className="ability-chips">
+                <div className="flex flex-wrap gap-2">
                   {ABILITIES.map(ability => (
                     <div
                       key={ability.id}
-                      className={`ability-chip ${template.abilities.includes(ability.id) ? 'selected' : ''}`}
+                      className={`inline-flex items-center gap-1.5 py-2 px-3.5 bg-bg-card border-2 border-border rounded-full text-[13px] cursor-pointer transition-all duration-200 ${
+                        template.abilities.includes(ability.id) ? 'bg-accent-primary border-accent-primary' : 'hover:border-accent-primary'
+                      }`}
                       onClick={() => toggleAbility(index, ability.id)}
                     >
-                      <span className="icon">{ability.icon}</span>
+                      <span className="text-sm">{ability.icon}</span>
                       {ability.name}
                     </div>
                   ))}
@@ -106,11 +110,11 @@ export function TemplateBuilderScreen() {
             ))}
           </div>
 
-          <div className="template-builder-actions">
-            <Button variant="secondary" onClick={() => navigate('/lobby')}>
+          <div className="flex gap-3 mt-5">
+            <Button variant="secondary" onClick={() => navigate('/lobby')} className="flex-1">
               Back to Lobby
             </Button>
-            <Button onClick={handleSave} loading={loading}>
+            <Button onClick={handleSave} loading={loading} className="flex-1">
               Save & Start
             </Button>
           </div>

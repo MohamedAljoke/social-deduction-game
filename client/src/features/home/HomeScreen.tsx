@@ -3,7 +3,6 @@ import { Card, Button, Input } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
 import { useCreateMatch, useJoinMatch } from './hooks';
-import './HomeScreen.css';
 
 export function HomeScreen() {
   const [mode, setMode] = useState<'create' | 'join'>('create');
@@ -36,7 +35,10 @@ export function HomeScreen() {
         <Card>
           {mode === 'create' ? (
             <form onSubmit={handleCreate}>
-              <div className="card-title">Create New Game</div>
+              <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
+                <span className="w-1 h-5 bg-accent-primary rounded-sm"></span>
+                Create New Game
+              </div>
               <Input
                 id="playerName"
                 label="Your Name"
@@ -52,7 +54,10 @@ export function HomeScreen() {
             </form>
           ) : (
             <form onSubmit={handleJoin}>
-              <div className="card-title">Enter Game Details</div>
+              <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
+                <span className="w-1 h-5 bg-accent-primary rounded-sm"></span>
+                Enter Game Details
+              </div>
               <Input
                 id="joinName"
                 label="Your Name"
@@ -77,10 +82,16 @@ export function HomeScreen() {
             </form>
           )}
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="bg-accent-primary/10 border border-accent-primary/30 text-accent-primary px-3 py-3 rounded-lg mb-4 text-sm">
+              {error}
+            </div>
+          )}
 
-          <div className="divider">
-            <span>or</span>
+          <div className="flex items-center my-6 text-text-muted text-xs">
+            <div className="flex-1 h-px bg-border"></div>
+            <span className="px-4">or</span>
+            <div className="flex-1 h-px bg-border"></div>
           </div>
 
           <Button
