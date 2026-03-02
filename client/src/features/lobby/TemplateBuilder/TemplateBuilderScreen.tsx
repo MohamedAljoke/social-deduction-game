@@ -61,20 +61,29 @@ export function TemplateBuilderScreen() {
         
         <Card>
           <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-            <span className="w-1 h-5 bg-accent-primary rounded-sm"></span>
+            <span className="w-1 h-5 rounded-sm" style={{ backgroundColor: '#e94560' }}></span>
             Player Templates
           </div>
           
           <div className="mb-5">
             {templates.map((template, index) => (
-              <div key={index} className="bg-bg-secondary border-2 border-border rounded-2xl p-5 mb-4">
+              <div 
+                key={index} 
+                className="rounded-2xl p-5 mb-4"
+                style={{ backgroundColor: '#1a1a2e', border: '2px solid #2a2a4a' }}
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-semibold text-text-secondary">Template {index + 1}</span>
+                  <span className="text-sm font-semibold" style={{ color: '#a0a0b8' }}>Template {index + 1}</span>
                 </div>
                 <div className="flex gap-3 mb-3">
                   <input
                     type="text"
-                    className="flex-1 py-3 px-4 bg-bg-secondary border-2 border-border rounded-lg text-text-primary text-sm font-inherit focus:outline-none focus:border-accent-primary placeholder:text-text-muted"
+                    className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit focus:outline-none"
+                    style={{ 
+                      backgroundColor: '#1a1a2e', 
+                      border: '2px solid #2a2a4a', 
+                      color: '#ffffff' 
+                    }}
                     placeholder="Template name"
                     value={template.name}
                     onChange={(e) => updateTemplate(index, 'name', e.target.value)}
@@ -83,7 +92,12 @@ export function TemplateBuilderScreen() {
                 </div>
                 <div className="flex gap-3 mb-3">
                   <select
-                    className="flex-1 py-3 px-4 bg-bg-secondary border-2 border-border rounded-lg text-text-primary text-sm font-inherit cursor-pointer focus:outline-none focus:border-accent-primary"
+                    className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
+                    style={{ 
+                      backgroundColor: '#1a1a2e', 
+                      border: '2px solid #2a2a4a', 
+                      color: '#ffffff' 
+                    }}
                     value={template.alignment}
                     onChange={(e) => updateTemplate(index, 'alignment', e.target.value)}
                   >
@@ -96,9 +110,15 @@ export function TemplateBuilderScreen() {
                   {ABILITIES.map(ability => (
                     <div
                       key={ability.id}
-                      className={`inline-flex items-center gap-1.5 py-2 px-3.5 bg-bg-card border-2 border-border rounded-full text-[13px] cursor-pointer transition-all duration-200 ${
-                        template.abilities.includes(ability.id) ? 'bg-accent-primary border-accent-primary' : 'hover:border-accent-primary'
+                      className={`inline-flex items-center gap-1.5 py-2 px-3.5 rounded-full text-[13px] cursor-pointer transition-all duration-200 ${
+                        template.abilities.includes(ability.id) ? '' : 'hover:border-[#e94560]'
                       }`}
+                      style={{ 
+                        backgroundColor: template.abilities.includes(ability.id) ? '#e94560' : '#16213e',
+                        border: '2px solid',
+                        borderColor: template.abilities.includes(ability.id) ? '#e94560' : '#2a2a4a',
+                        color: '#ffffff'
+                      }}
                       onClick={() => toggleAbility(index, ability.id)}
                     >
                       <span className="text-sm">{ability.icon}</span>

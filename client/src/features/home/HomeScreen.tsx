@@ -36,7 +36,7 @@ export function HomeScreen() {
           {mode === 'create' ? (
             <form onSubmit={handleCreate}>
               <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-                <span className="w-1 h-5 bg-accent-primary rounded-sm"></span>
+                <span className="w-1 h-5 rounded-sm" style={{ backgroundColor: '#e94560' }}></span>
                 Create New Game
               </div>
               <Input
@@ -55,7 +55,7 @@ export function HomeScreen() {
           ) : (
             <form onSubmit={handleJoin}>
               <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-                <span className="w-1 h-5 bg-accent-primary rounded-sm"></span>
+                <span className="w-1 h-5 rounded-sm" style={{ backgroundColor: '#e94560' }}></span>
                 Enter Game Details
               </div>
               <Input
@@ -83,15 +83,18 @@ export function HomeScreen() {
           )}
 
           {error && (
-            <div className="bg-accent-primary/10 border border-accent-primary/30 text-accent-primary px-3 py-3 rounded-lg mb-4 text-sm">
+            <div 
+              className="px-3 py-3 rounded-lg mb-4 text-sm"
+              style={{ backgroundColor: 'rgba(233, 69, 96, 0.1)', border: '1px solid rgba(233, 69, 96, 0.3)', color: '#e94560' }}
+            >
               {error}
             </div>
           )}
 
-          <div className="flex items-center my-6 text-text-muted text-xs">
-            <div className="flex-1 h-px bg-border"></div>
+          <div className="flex items-center my-6 text-xs" style={{ color: '#6b6b80' }}>
+            <div className="flex-1 h-px" style={{ backgroundColor: '#2a2a4a' }}></div>
             <span className="px-4">or</span>
-            <div className="flex-1 h-px bg-border"></div>
+            <div className="flex-1 h-px" style={{ backgroundColor: '#2a2a4a' }}></div>
           </div>
 
           <Button

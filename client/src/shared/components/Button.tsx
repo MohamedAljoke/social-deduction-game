@@ -16,12 +16,16 @@ export function Button({
   const baseStyles = "w-full py-4 px-6 rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none";
   
   const variantStyles = variant === 'primary' 
-    ? "bg-gradient-to-br from-accent-primary to-accent-secondary text-white border-none hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(233,69,96,0.4)]"
-    : "bg-bg-secondary border-2 border-border text-text-primary hover:border-accent-primary hover:shadow-none";
+    ? "text-white hover:-translate-y-0.5"
+    : "text-white border-2 hover:border-[#e94560]";
   
   return (
     <button 
       className={`${baseStyles} ${variantStyles} ${loading ? 'pointer-events-none' : ''} ${className}`}
+      style={{ 
+        background: variant === 'primary' ? 'linear-gradient(135deg, #e94560, #ff6b6b)' : '#1a1a2e',
+        borderColor: variant === 'secondary' ? '#2a2a4a' : 'transparent',
+      }}
       disabled={disabled || loading}
       {...props}
     >

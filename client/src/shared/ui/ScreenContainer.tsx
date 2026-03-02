@@ -6,7 +6,10 @@ interface ScreenContainerProps {
 
 export function ScreenContainer({ children }: ScreenContainerProps) {
   return (
-    <div className="max-w-[480px] mx-auto px-5 py-10 min-h-screen flex flex-col justify-center">
+    <div 
+      className="max-w-[480px] mx-auto px-5 py-10 min-h-screen flex flex-col justify-center"
+      style={{ backgroundColor: '#0f0f1a' }}
+    >
       {children}
     </div>
   );
