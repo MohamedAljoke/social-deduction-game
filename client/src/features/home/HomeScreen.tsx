@@ -1,35 +1,24 @@
-import { useState } from "react";
-import { Card, Button, Input } from "../../shared/components";
-import { ScreenContainer } from "../../shared/ui/ScreenContainer";
-import { Logo } from "../../shared/ui/Logo";
-import { useCreateMatch, useJoinMatch } from "./hooks";
+import { Button, Card, Input } from "@/shared/components";
+import { ErrorMessage } from "@/shared/components/error";
+import { Logo } from "@/shared/ui/Logo";
+import { ScreenContainer } from "@/shared/ui/ScreenContainer";
+import { useHomeScreen } from "./hooks/useHomeScreen";
+import { Divider } from "@/shared/components/divider";
 
 export function HomeScreen() {
-  const [mode, setMode] = useState<"create" | "join">("create");
-  const [playerName, setPlayerName] = useState("");
-  const [matchCode, setMatchCode] = useState("");
-
   const {
-    create,
-    loading: createLoading,
-    error: createError,
-  } = useCreateMatch();
-  const { join, loading: joinLoading, error: joinError } = useJoinMatch();
+    mode,
+    playerName,
+    matchCode,
+    loading,
+    error,
+    setPlayerName,
+    setMatchCode,
+    toggleMode,
+    submit,
+  } = useHomeScreen();
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!playerName.trim()) return;
-    create(playerName.trim());
-  };
-
-  const handleJoin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!playerName.trim() || !matchCode.trim()) return;
-    join(matchCode.trim(), playerName.trim());
-  };
-
-  const loading = createLoading || joinLoading;
-  const error = mode === "create" ? createError : joinError;
+  const isCreate = mode === "create";
 
   return (
     <ScreenContainer>
@@ -40,43 +29,26 @@ export function HomeScreen() {
         />
 
         <Card>
-          {mode === "create" ? (
-            <form onSubmit={handleCreate}>
-              <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-                <span className="w-1 h-5 rounded-sm"></span>
-                Create New Game
-              </div>
-              <Input
-                id="playerName"
-                label="Your Name"
-                placeholder="Enter your name"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                maxLength={20}
-                required
+          <form onSubmit={submit}>
+            <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
+              <span
+                className="w-1 h-5 rounded-sm"
+                style={!isCreate ? { backgroundColor: "#e94560" } : undefined}
               />
-              <Button type="submit" loading={loading}>
-                Create Game
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleJoin}>
-              <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-                <span
-                  className="w-1 h-5 rounded-sm"
-                  style={{ backgroundColor: "#e94560" }}
-                ></span>
-                Enter Game Details
-              </div>
-              <Input
-                id="joinName"
-                label="Your Name"
-                placeholder="Enter your name"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                maxLength={20}
-                required
-              />
+              {isCreate ? "Create New Game" : "Enter Game Details"}
+            </div>
+
+            <Input
+              id="playerName"
+              label="Your Name"
+              placeholder="Enter your name"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              maxLength={20}
+              required
+            />
+
+            {!isCreate && (
               <Input
                 id="gameCode"
                 label="Match ID"
@@ -86,45 +58,19 @@ export function HomeScreen() {
                 maxLength={10}
                 required
               />
-              <Button type="submit" loading={loading}>
-                Join Game
-              </Button>
-            </form>
-          )}
+            )}
 
-          {error && (
-            <div
-              className="px-3 py-3 rounded-lg mb-4 text-sm"
-              style={{
-                backgroundColor: "rgba(233, 69, 96, 0.1)",
-                border: "1px solid rgba(233, 69, 96, 0.3)",
-                color: "#e94560",
-              }}
-            >
-              {error}
-            </div>
-          )}
+            <Button type="submit" loading={loading}>
+              {isCreate ? "Create Game" : "Join Game"}
+            </Button>
+          </form>
 
-          <div
-            className="flex items-center my-6 text-xs"
-            style={{ color: "#6b6b80" }}
-          >
-            <div
-              className="flex-1 h-px"
-              style={{ backgroundColor: "#2a2a4a" }}
-            ></div>
-            <span className="px-4">or</span>
-            <div
-              className="flex-1 h-px"
-              style={{ backgroundColor: "#2a2a4a" }}
-            ></div>
-          </div>
+          {error && <ErrorMessage message={error} />}
 
-          <Button
-            variant="secondary"
-            onClick={() => setMode(mode === "create" ? "join" : "create")}
-          >
-            {mode === "create" ? "Join Existing Game" : "Back to Create"}
+          <Divider />
+
+          <Button variant="secondary" onClick={toggleMode}>
+            {isCreate ? "Join Existing Game" : "Back to Create"}
           </Button>
         </Card>
       </div>
