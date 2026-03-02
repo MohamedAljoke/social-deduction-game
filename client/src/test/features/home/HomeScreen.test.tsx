@@ -1,7 +1,8 @@
+import { renderWithProviders, mockNavigate } from "@/test/test-utils"; // IMPORTANT: import helper FIRST
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+
 import { HomeScreen } from "@/features/home/HomeScreen";
 
 const mockCreateMatch = vi.fn();
@@ -14,51 +15,28 @@ vi.mock("@/features/session/context/GameContext", () => ({
   }),
 }));
 
-const mockNavigate = vi.fn();
-
-vi.mock("react-router-dom", async () => {
-  const actual =
-    await vi.importActual<typeof import("react-router-dom")>(
-      "react-router-dom",
-    );
-
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-function renderWithRouter() {
-  return render(
-    <MemoryRouter>
-      <HomeScreen />
-    </MemoryRouter>,
-  );
-}
-
 describe("HomeScreen integration", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockCreateMatch.mockReset();
+    mockJoinMatch.mockReset();
+    mockNavigate.mockReset();
   });
 
   it("renders create mode by default", () => {
-    renderWithRouter();
+    renderWithProviders(<HomeScreen />);
 
     expect(screen.getByText("Create New Game")).toBeInTheDocument();
-
     expect(
       screen.getByRole("button", { name: /create game/i }),
     ).toBeInTheDocument();
   });
 
   it("toggles to join mode", async () => {
-    renderWithRouter();
+    renderWithProviders(<HomeScreen />);
 
-    const toggleButton = screen.getByRole("button", {
-      name: /join existing game/i,
-    });
-
-    await userEvent.click(toggleButton);
+    await userEvent.click(
+      screen.getByRole("button", { name: /join existing game/i }),
+    );
 
     expect(screen.getByText(/enter game details/i)).toBeInTheDocument();
   });
@@ -66,15 +44,11 @@ describe("HomeScreen integration", () => {
   it("creates a match and navigates to lobby", async () => {
     mockCreateMatch.mockResolvedValue(undefined);
 
-    renderWithRouter();
+    renderWithProviders(<HomeScreen />);
 
-    const nameInput = screen.getByLabelText(/your name/i);
-    const submitButton = screen.getByRole("button", {
-      name: /create game/i,
-    });
+    await userEvent.type(screen.getByLabelText(/your name/i), "Mohamed");
 
-    await userEvent.type(nameInput, "Mohamed");
-    await userEvent.click(submitButton);
+    await userEvent.click(screen.getByRole("button", { name: /create game/i }));
 
     await waitFor(() => {
       expect(mockCreateMatch).toHaveBeenCalledWith("Mohamed");
@@ -85,15 +59,11 @@ describe("HomeScreen integration", () => {
   it("shows error when create fails", async () => {
     mockCreateMatch.mockRejectedValue(new Error("fail"));
 
-    renderWithRouter();
+    renderWithProviders(<HomeScreen />);
 
-    const nameInput = screen.getByLabelText(/your name/i);
-    const submitButton = screen.getByRole("button", {
-      name: /create game/i,
-    });
+    await userEvent.type(screen.getByLabelText(/your name/i), "Mohamed");
 
-    await userEvent.type(nameInput, "Mohamed");
-    await userEvent.click(submitButton);
+    await userEvent.click(screen.getByRole("button", { name: /create game/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/failed to create game/i)).toBeInTheDocument();
@@ -103,24 +73,19 @@ describe("HomeScreen integration", () => {
   it("joins a match successfully", async () => {
     mockJoinMatch.mockResolvedValue(undefined);
 
-    renderWithRouter();
+    renderWithProviders(<HomeScreen />);
 
-    // switch to join mode
     await userEvent.click(
       screen.getByRole("button", {
         name: /join existing game/i,
       }),
     );
 
-    const nameInput = screen.getByLabelText(/your name/i);
-    const matchInput = screen.getByLabelText(/match id/i);
-    const submitButton = screen.getByRole("button", {
-      name: /join game/i,
-    });
+    await userEvent.type(screen.getByLabelText(/your name/i), "Mohamed");
 
-    await userEvent.type(nameInput, "Mohamed");
-    await userEvent.type(matchInput, "ABC123");
-    await userEvent.click(submitButton);
+    await userEvent.type(screen.getByLabelText(/match id/i), "ABC123");
+
+    await userEvent.click(screen.getByRole("button", { name: /join game/i }));
 
     await waitFor(() => {
       expect(mockJoinMatch).toHaveBeenCalledWith("ABC123", "Mohamed");
