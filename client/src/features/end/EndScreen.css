@@ -1,0 +1,68 @@
+.winner-banner {
+  background: linear-gradient(135deg, var(--success), #22c55e);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.winner-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.9;
+}
+
+.winner-value {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.role-reveal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.role-list {
+  margin-bottom: 24px;
+}
+
+.role-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.role-info {
+  flex: 1;
+}
+
+.role-name {
+  font-weight: 500;
+}
+
+.role-template {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.role-template.hero { color: var(--success); }
+.role-template.villain { color: var(--accent-primary); }
+.role-template.neutral { color: var(--warning); }
+
+.role-status {
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.role-status.alive { color: var(--success); }
+.role-status.dead { color: var(--accent-primary); }
