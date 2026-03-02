@@ -1,0 +1,32 @@
+{
+  "name": "social-deduction-game",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev:client-install": "npm run install --prefix ./client",
+    "dev:server-install": "npm run install --prefix ./backend",
+    "dev:client-test": "npm run test --prefix ./client",
+    "dev:server-test": "npm run test --prefix ./backend",
+    "dev:client": "npm run dev --prefix ./client",
+    "dev:server": "npm run dev --prefix ./backend",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MohamedAljoke/social-deduction-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MohamedAljoke/social-deduction-game/issues"
+  },
+  "homepage": "https://github.com/MohamedAljoke/social-deduction-game#readme",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
