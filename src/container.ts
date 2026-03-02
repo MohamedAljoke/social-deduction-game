@@ -6,7 +6,11 @@ import { UseAbilityUseCase } from "./application/UseAbility";
 import { AdvancePhaseUseCase } from "./application/AdvancePhase";
 import { GetMatchUseCase } from "./application/GetMatch";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
+import { RealtimePublisher } from "./domain/ports/RealtimePublisher";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
+import { WebSocketPublisher } from "./infrastructure/websocket/WebSocketPublisher";
+
+const wsPublisher = new WebSocketPublisher();
 
 // Branded token type used for type-safe dependency resolution.
 // At runtime this is just a string, but at compile time it carries
@@ -77,12 +81,20 @@ export function buildContainer() {
 
   container.register(
     TOKENS.JoinMatchUseCase,
-    (c) => new JoinMatchUseCase(c.resolve(TOKENS.MatchRepository)),
+    (c) =>
+      new JoinMatchUseCase(
+        c.resolve(TOKENS.MatchRepository),
+        wsPublisher,
+      ),
   );
 
   container.register(
     TOKENS.StartMatchUseCase,
-    (c) => new StartMatchUseCase(c.resolve(TOKENS.MatchRepository)),
+    (c) =>
+      new StartMatchUseCase(
+        c.resolve(TOKENS.MatchRepository),
+        wsPublisher,
+      ),
   );
 
   container.register(

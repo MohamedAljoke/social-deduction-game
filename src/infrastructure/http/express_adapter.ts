@@ -10,6 +10,7 @@ import {
   normalizeQuery,
 } from "./server";
 import { Server } from "http";
+import { wsManager } from "../websocket/mod";
 
 export class ExpressServer implements HttpServer {
   private app = express();
@@ -59,6 +60,7 @@ export class ExpressServer implements HttpServer {
     return new Promise<void>((resolve, reject) => {
       this.server = this.app.listen(port, () => {
         console.log("server is on");
+        wsManager.attach(this.server!);
         resolve();
       });
 

@@ -1078,6 +1078,7 @@
 
   <script>
     const API_URL = 'http://localhost:3000';
+    const WS_URL = 'ws://localhost:3000/ws';
     
     const createScreen = document.getElementById('createScreen');
     const joinScreen = document.getElementById('joinScreen');
@@ -1104,6 +1105,118 @@
     let selectedVote = null;
     let gameLoop = null;
     let currentUserPlayerId = null;
+    let ws = null;
+    let clientId = null;
+
+    function connectWebSocket(matchId) {
+      if (ws) {
+        ws.close();
+      }
+      
+      ws = new WebSocket(WS_URL);
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        ws.send(JSON.stringify({
+          type: 'join_match',
+          matchId: matchId,
+          playerId: currentUserPlayerId
+        }));
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWsEvent(data);
+        } catch (e) {
+          console.error('Failed to parse WS message:', e);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket closed');
+        if (gameState && gameState.status !== 'finished') {
+          setTimeout(() => connectWebSocket(matchId), 3000);
+        }
+      };
+    }
+
+    function handleWsEvent(data) {
+      switch (data.type) {
+        case 'connected':
+          clientId = data.clientId;
+          console.log('WS client ID:', clientId);
+          break;
+          
+        case 'match_started':
+          console.log('Match started:', data);
+          fetchGameState().then(() => {
+            if (gameState && gameState.status === 'IN_PROGRESS') {
+              showGameScreen(gameState);
+            }
+          });
+          break;
+          
+        case 'match_updated':
+          console.log('Match updated via WS');
+          gameState = data.state;
+          if (gameState.status === 'IN_PROGRESS' && lobbyScreen.classList.contains('hidden') === false) {
+            showGameScreen(gameState);
+          } else {
+            renderGame();
+          }
+          if (gameState.status === 'finished') {
+            showEndScreen();
+          }
+          break;
+          
+        case 'phase_changed':
+          console.log('Phase changed:', data.phase);
+          gameState.phase = data.phase;
+          renderGame();
+          break;
+          
+        case 'player_joined':
+          console.log('Player joined:', data.player);
+          fetchMatchState();
+          break;
+          
+        case 'player_left':
+          console.log('Player left:', data.playerId);
+          fetchMatchState();
+          break;
+          
+        case 'action_submitted':
+          console.log('Action submitted:', data);
+          fetchGameState();
+          break;
+          
+        case 'player_killed':
+          console.log('Player killed:', data.playerId);
+          fetchGameState();
+          break;
+          
+        case 'match_ended':
+          console.log('Match ended, winner:', data.winner);
+          fetchGameState();
+          break;
+          
+        case 'error':
+          console.error('WS error:', data.code, data.message);
+          alert('Error: ' + data.message);
+          break;
+      }
+    }
+
+    function ensureWsConnected() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connectWebSocket(currentMatchId);
+      }
+    }
 
     document.getElementById('joinBtn').addEventListener('click', () => {
       createScreen.classList.add('hidden');
@@ -1150,6 +1263,11 @@
         const match = await joinResponse.json();
         currentMatchId = match.id;
         isHost = true;
+        
+        const player = match.players.find(p => p.name === playerName);
+        if (player) {
+          currentUserPlayerId = player.id;
+        }
 
         showLobby(match.players);
       } catch (error) {
@@ -1182,8 +1300,13 @@
         }
 
         const match = await response.json();
-        currentMatchId = matchId;
+        currentMatchId = match.id;
         isHost = false;
+        
+        const player = match.players.find(p => p.name === playerName);
+        if (player) {
+          currentUserPlayerId = player.id;
+        }
 
         showLobby(match.players);
       } catch (error) {
@@ -1214,8 +1337,8 @@
 
       updatePlayerList(players);
 
-      if (players.length > 0) {
-        setInterval(fetchMatchState, 3000);
+      if (players.length > 0 && currentUserPlayerId) {
+        connectWebSocket(currentMatchId);
       }
     }
 
@@ -1436,9 +1559,7 @@
       
       gameState = match;
       
-      // Start polling for game updates
-      if (gameLoop) clearInterval(gameLoop);
-      gameLoop = setInterval(fetchGameState, 2000);
+      connectWebSocket(currentMatchId);
       
       renderGame();
     }
@@ -1702,7 +1823,15 @@
 
     document.getElementById('gameBackBtn').addEventListener('click', () => {
       if (confirm('Leave the game?')) {
-        if (gameLoop) clearInterval(gameLoop);
+        if (ws) {
+          ws.send(JSON.stringify({
+            type: 'leave_match',
+            matchId: currentMatchId,
+            playerId: currentUserPlayerId
+          }));
+          ws.close();
+          ws = null;
+        }
         location.reload();
       }
     });

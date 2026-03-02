@@ -3,6 +3,7 @@ import { MatchNotFound, MatchAlreadyStarted } from "../domain/errors";
 import { Match, MatchResponse, MatchStatus } from "../domain/entity/match";
 import { Player } from "../domain/entity/player";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
+import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 
 export interface JoinMatchInput {
   matchId: string;
@@ -10,7 +11,10 @@ export interface JoinMatchInput {
 }
 
 export class JoinMatchUseCase {
-  constructor(private readonly repository: MatchRepository) {}
+  constructor(
+    private readonly repository: MatchRepository,
+    private readonly publisher: RealtimePublisher,
+  ) {}
 
   async execute(input: JoinMatchInput): Promise<MatchResponse> {
     const match = await this.repository.findById(input.matchId);
@@ -21,6 +25,9 @@ export class JoinMatchUseCase {
 
     match.addPlayer(Player.create(input.playerName));
     await this.repository.save(match);
+
+    const newPlayer = match.getPlayers()[match.getPlayers().length - 1];
+    this.publisher.playerJoined(input.matchId, newPlayer);
 
     return match.toJSON();
   }

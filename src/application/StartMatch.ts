@@ -7,6 +7,7 @@ import {
 import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
 import { Ability, AbilityId } from "../domain/entity/ability";
+import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 
 export interface StartMatchInput {
   matchId: string;
@@ -17,7 +18,10 @@ export interface StartMatchInput {
 }
 
 export class StartMatchUseCase {
-  constructor(private readonly matchRepository: MatchRepository) {}
+  constructor(
+    private readonly matchRepository: MatchRepository,
+    private readonly publisher: RealtimePublisher,
+  ) {}
 
   async execute(input: StartMatchInput): Promise<MatchResponse> {
     const match = await this.matchRepository.findById(input.matchId);
@@ -36,6 +40,19 @@ export class StartMatchUseCase {
 
     await this.matchRepository.save(match);
 
-    return match.toJSON();
+    const result = match.toJSON();
+
+    const playerAssignments = result.players.map((p) => ({
+      playerId: p.id,
+      templateId: p.templateId!,
+      alignment:
+        result.templates.find((t) => t.id === p.templateId)?.alignment ??
+        "unknown",
+    }));
+
+    this.publisher.matchStarted(input.matchId, { playerAssignments });
+    this.publisher.matchUpdated(input.matchId, result);
+
+    return result;
   }
 }
