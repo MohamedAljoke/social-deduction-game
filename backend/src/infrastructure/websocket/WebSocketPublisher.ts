@@ -3,7 +3,7 @@ import {
   MatchStartedPayload,
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../../domain/entity/match";
-import { wsManager } from "../websocket/mod";
+import { wsManager } from "./mod";
 
 export class WebSocketPublisher implements RealtimePublisher {
   matchStarted(matchId: string, payload: MatchStartedPayload): void {
