@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { GameProvider } from './features/session/context/GameContext';
-import { HomeScreen } from './features/home/HomeScreen';
-import { LobbyScreen } from './features/lobby/LobbyScreen';
-import { TemplateBuilderScreen } from './features/lobby/TemplateBuilder/TemplateBuilderScreen';
-import { GameScreen } from './features/game/GameScreen';
-import { EndScreen } from './features/end/EndScreen';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { GameProvider } from "./features/session/context/GameContext";
+import { HomeScreen } from "./features/home/HomeScreen";
+import { LobbyScreen } from "./features/lobby/LobbyScreen";
+import { TemplateBuilderScreen } from "./features/lobby/TemplateBuilder/TemplateBuilderScreen";
+import { GameScreen } from "./features/game/GameScreen";
+import { EndScreen } from "./features/end/EndScreen";
 
 export function App() {
   return (

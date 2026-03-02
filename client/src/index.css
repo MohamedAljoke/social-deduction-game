@@ -13,16 +13,11 @@
   --color-border: #2a2a4a;
   --color-success: #4ade80;
   --color-warning: #fbbf24;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  --font-family-outfit: "Outfit", sans-serif;
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   background-color: #0f0f1a;
   color: #ffffff;
   min-height: 100vh;
@@ -36,6 +31,12 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

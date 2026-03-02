@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import { Card, Button, Input } from '../../shared/components';
-import { ScreenContainer } from '../../shared/ui/ScreenContainer';
-import { Logo } from '../../shared/ui/Logo';
-import { useCreateMatch, useJoinMatch } from './hooks';
+import { useState } from "react";
+import { Card, Button, Input } from "../../shared/components";
+import { ScreenContainer } from "../../shared/ui/ScreenContainer";
+import { Logo } from "../../shared/ui/Logo";
+import { useCreateMatch, useJoinMatch } from "./hooks";
 
 export function HomeScreen() {
-  const [mode, setMode] = useState<'create' | 'join'>('create');
-  const [playerName, setPlayerName] = useState('');
-  const [matchCode, setMatchCode] = useState('');
+  const [mode, setMode] = useState<"create" | "join">("create");
+  const [playerName, setPlayerName] = useState("");
+  const [matchCode, setMatchCode] = useState("");
 
-  const { create, loading: createLoading, error: createError } = useCreateMatch();
+  const {
+    create,
+    loading: createLoading,
+    error: createError,
+  } = useCreateMatch();
   const { join, loading: joinLoading, error: joinError } = useJoinMatch();
 
   const handleCreate = (e: React.FormEvent) => {
@@ -25,18 +29,21 @@ export function HomeScreen() {
   };
 
   const loading = createLoading || joinLoading;
-  const error = mode === 'create' ? createError : joinError;
+  const error = mode === "create" ? createError : joinError;
 
   return (
     <ScreenContainer>
       <div className="fade-in">
-        <Logo title="Social Deduction" subtitle="Create or join a game with friends" />
-        
+        <Logo
+          title="Social Deduction"
+          subtitle="Create or join a game with friends"
+        />
+
         <Card>
-          {mode === 'create' ? (
+          {mode === "create" ? (
             <form onSubmit={handleCreate}>
               <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-                <span className="w-1 h-5 rounded-sm" style={{ backgroundColor: '#e94560' }}></span>
+                <span className="w-1 h-5 rounded-sm"></span>
                 Create New Game
               </div>
               <Input
@@ -55,7 +62,10 @@ export function HomeScreen() {
           ) : (
             <form onSubmit={handleJoin}>
               <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-                <span className="w-1 h-5 rounded-sm" style={{ backgroundColor: '#e94560' }}></span>
+                <span
+                  className="w-1 h-5 rounded-sm"
+                  style={{ backgroundColor: "#e94560" }}
+                ></span>
                 Enter Game Details
               </div>
               <Input
@@ -83,25 +93,38 @@ export function HomeScreen() {
           )}
 
           {error && (
-            <div 
+            <div
               className="px-3 py-3 rounded-lg mb-4 text-sm"
-              style={{ backgroundColor: 'rgba(233, 69, 96, 0.1)', border: '1px solid rgba(233, 69, 96, 0.3)', color: '#e94560' }}
+              style={{
+                backgroundColor: "rgba(233, 69, 96, 0.1)",
+                border: "1px solid rgba(233, 69, 96, 0.3)",
+                color: "#e94560",
+              }}
             >
               {error}
             </div>
           )}
 
-          <div className="flex items-center my-6 text-xs" style={{ color: '#6b6b80' }}>
-            <div className="flex-1 h-px" style={{ backgroundColor: '#2a2a4a' }}></div>
+          <div
+            className="flex items-center my-6 text-xs"
+            style={{ color: "#6b6b80" }}
+          >
+            <div
+              className="flex-1 h-px"
+              style={{ backgroundColor: "#2a2a4a" }}
+            ></div>
             <span className="px-4">or</span>
-            <div className="flex-1 h-px" style={{ backgroundColor: '#2a2a4a' }}></div>
+            <div
+              className="flex-1 h-px"
+              style={{ backgroundColor: "#2a2a4a" }}
+            ></div>
           </div>
 
           <Button
             variant="secondary"
-            onClick={() => setMode(mode === 'create' ? 'join' : 'create')}
+            onClick={() => setMode(mode === "create" ? "join" : "create")}
           >
-            {mode === 'create' ? 'Join Existing Game' : 'Back to Create'}
+            {mode === "create" ? "Join Existing Game" : "Back to Create"}
           </Button>
         </Card>
       </div>
