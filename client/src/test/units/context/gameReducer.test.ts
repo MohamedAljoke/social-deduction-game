@@ -1,0 +1,98 @@
+import { describe, it, expect } from "vitest";
+import { gameReducer } from "@/context/GameContext";
+import type { GameState } from "@/context/GameContext";
+import { GAME_ACTIONS } from "@/types/gameActions";
+import type { Match, Player } from "@/types/match";
+
+const baseMatch: Match = {
+  id: "match-1",
+  name: "Test Match",
+  status: "lobby",
+  phase: "discussion",
+  players: [],
+  templates: [],
+  actions: [],
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
+
+const baseState: GameState = {
+  matchId: "match-1",
+  playerId: "player-1",
+  playerName: "Alice",
+  isHost: true,
+  match: { ...baseMatch, players: [{ id: "player-1", name: "Alice", status: "alive" }] },
+  selectedAbility: null,
+  selectedTarget: null,
+  selectedVote: null,
+  configuredTemplates: [],
+};
+
+const newPlayer: Player = { id: "player-2", name: "Bob", status: "alive" };
+
+describe("gameReducer — ADD_PLAYER", () => {
+  it("appends the player to the list", () => {
+    const next = gameReducer(baseState, {
+      type: GAME_ACTIONS.ADD_PLAYER,
+      payload: newPlayer,
+    });
+
+    expect(next.match?.players).toHaveLength(2);
+    expect(next.match?.players[1]).toEqual(newPlayer);
+  });
+
+  it("does not mutate the original players array", () => {
+    const original = baseState.match!.players;
+    gameReducer(baseState, { type: GAME_ACTIONS.ADD_PLAYER, payload: newPlayer });
+    expect(original).toHaveLength(1);
+  });
+
+  it("is a no-op when match is null", () => {
+    const noMatch = { ...baseState, match: null };
+    const next = gameReducer(noMatch, {
+      type: GAME_ACTIONS.ADD_PLAYER,
+      payload: newPlayer,
+    });
+    expect(next).toBe(noMatch);
+  });
+});
+
+describe("gameReducer — REMOVE_PLAYER", () => {
+  const stateWithTwo: GameState = {
+    ...baseState,
+    match: {
+      ...baseMatch,
+      players: [
+        { id: "player-1", name: "Alice", status: "alive" },
+        { id: "player-2", name: "Bob", status: "alive" },
+      ],
+    },
+  };
+
+  it("removes the player with the given id", () => {
+    const next = gameReducer(stateWithTwo, {
+      type: GAME_ACTIONS.REMOVE_PLAYER,
+      payload: "player-2",
+    });
+
+    expect(next.match?.players).toHaveLength(1);
+    expect(next.match?.players[0].id).toBe("player-1");
+  });
+
+  it("leaves the list unchanged when id is not found", () => {
+    const next = gameReducer(stateWithTwo, {
+      type: GAME_ACTIONS.REMOVE_PLAYER,
+      payload: "unknown-id",
+    });
+
+    expect(next.match?.players).toHaveLength(2);
+  });
+
+  it("is a no-op when match is null", () => {
+    const noMatch = { ...baseState, match: null };
+    const next = gameReducer(noMatch, {
+      type: GAME_ACTIONS.REMOVE_PLAYER,
+      payload: "player-1",
+    });
+    expect(next).toBe(noMatch);
+  });
+});

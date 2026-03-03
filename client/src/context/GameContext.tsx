@@ -12,7 +12,7 @@ import { GameGateway } from "../infrastructure/ws/GameGateway";
 import { ApiClient } from "../infrastructure/http/ApiClient";
 import { GameSessionService } from "./GameSessionService";
 import { GAME_ACTIONS } from "../types/gameActions";
-import type { Match } from "../types/match";
+import type { Match, Player } from "../types/match";
 
 interface TemplateConfig {
   name: string;
@@ -56,6 +56,8 @@ export type GameAction =
       payload: { index: number; template: TemplateConfig };
     }
   | { type: typeof GAME_ACTIONS.REMOVE_TEMPLATE; payload: number }
+  | { type: typeof GAME_ACTIONS.ADD_PLAYER; payload: Player }
+  | { type: typeof GAME_ACTIONS.REMOVE_PLAYER; payload: string }
   | { type: typeof GAME_ACTIONS.RESET };
 
 const initialState: GameState = {
@@ -89,7 +91,7 @@ function loadSession(): Partial<GameState> {
   }
 }
 
-function gameReducer(state: GameState, action: GameAction): GameState {
+export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case GAME_ACTIONS.SET_MATCH:
       return {
@@ -140,6 +142,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           (_, i) => i !== action.payload,
         ),
       };
+    case GAME_ACTIONS.ADD_PLAYER:
+      if (!state.match) return state;
+      return { ...state, match: { ...state.match, players: [...state.match.players, action.payload] } };
+    case GAME_ACTIONS.REMOVE_PLAYER:
+      if (!state.match) return state;
+      return { ...state, match: { ...state.match, players: state.match.players.filter(p => p.id !== action.payload) } };
     case GAME_ACTIONS.RESET:
       return initialState;
     default:

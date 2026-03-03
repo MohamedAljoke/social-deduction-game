@@ -42,11 +42,11 @@ export class GameSessionService {
       this.gateway.onPhaseChanged((_matchId, phase) => {
         this.dispatch({ type: GAME_ACTIONS.SET_PHASE, payload: phase });
       }),
-      this.gateway.onPlayerJoined(() => {
-        void this.fetchMatch();
+      this.gateway.onPlayerJoined((_matchId, player) => {
+        this.dispatch({ type: GAME_ACTIONS.ADD_PLAYER, payload: player });
       }),
-      this.gateway.onPlayerLeft(() => {
-        void this.fetchMatch();
+      this.gateway.onPlayerLeft((_matchId, playerId) => {
+        this.dispatch({ type: GAME_ACTIONS.REMOVE_PLAYER, payload: playerId });
       }),
       this.gateway.onMatchStarted(() => {
         this.navigate("/game");

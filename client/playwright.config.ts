@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./src/test/e2e",
-  fullyParallel: false, // match creation must be serial across tests
+  fullyParallel: true,
   retries: 0,
   reporter: "list",
   use: {
