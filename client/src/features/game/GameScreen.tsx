@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useGame } from "../session/context/GameContext";
+import { useGame } from "../../application/game/GameContext";
 import {
-  useGameSocket,
   useGameActions,
   useGamePlayer,
   useGameLog,
@@ -24,8 +23,6 @@ export function GameScreen() {
     handleCancelAbility,
   } = useGameActions();
   const { actions } = useGameLog();
-
-  useGameSocket();
 
   const handleLeave = () => {
     if (confirm("Leave the game?")) {

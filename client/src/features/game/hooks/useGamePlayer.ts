@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useGame } from "../../session/context/GameContext";
+import { useGame } from "../../../application/game/GameContext";
 
 export const PHASE_CONFIG: Record<
   string,

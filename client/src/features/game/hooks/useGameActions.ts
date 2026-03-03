@@ -1,9 +1,9 @@
 import { useCallback } from "react";
-import { useGame } from "../../session/context/GameContext";
+import { useGame } from "../../../application/game/GameContext";
 import { GAME_ACTIONS } from "../../session/context/gameActions";
 
 export function useGameActions() {
-  const { state, dispatch, useAbility, castVote } = useGame();
+  const { state, dispatch, service } = useGame();
   const { selectedAbility, selectedTarget, selectedVote } = state;
 
   const handleAbilityClick = useCallback(
@@ -31,12 +31,13 @@ export function useGameActions() {
   );
 
   const handleConfirm = useCallback(async () => {
+    if (!state.matchId || !state.playerId) return;
     if (selectedAbility && selectedTarget) {
-      await useAbility(selectedAbility, selectedTarget);
+      await service.useAbility(state.matchId, state.playerId, selectedAbility, selectedTarget);
     } else if (selectedVote) {
-      await castVote(selectedVote);
+      await service.castVote(state.matchId);
     }
-  }, [selectedAbility, selectedTarget, selectedVote, useAbility, castVote]);
+  }, [selectedAbility, selectedTarget, selectedVote, service, state.matchId, state.playerId]);
 
   const handleCancelAbility = useCallback(() => {
     dispatch({ type: GAME_ACTIONS.SELECT_ABILITY, payload: null });

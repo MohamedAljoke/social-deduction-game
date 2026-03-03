@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Card, Button } from "../../../shared/components";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { Logo } from "../../../shared/ui/Logo";
-import { useGame } from "../../session/context/GameContext";
+import { useGame } from "../../../application/game/GameContext";
+import { GAME_ACTIONS } from "../../session/context/gameActions";
 
 const ABILITIES = [
   { id: "kill", name: "Kill", icon: "🗡️" },
@@ -14,7 +15,7 @@ const ABILITIES = [
 
 export function TemplateBuilderScreen() {
   const navigate = useNavigate();
-  const { state, dispatch, startMatch } = useGame();
+  const { state, dispatch, service } = useGame();
   const [loading, setLoading] = useState(false);
 
   const playerCount = state.match?.players.length || 0;
@@ -35,7 +36,7 @@ export function TemplateBuilderScreen() {
     value: string | string[],
   ) => {
     dispatch({
-      type: "UPDATE_TEMPLATE",
+      type: GAME_ACTIONS.UPDATE_TEMPLATE,
       payload: { index, template: { ...templates[index], [field]: value } },
     });
   };
@@ -49,10 +50,16 @@ export function TemplateBuilderScreen() {
   };
 
   const handleSave = async () => {
-    dispatch({ type: "SET_TEMPLATES", payload: templates });
+    if (!state.matchId) return;
+    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: templates });
     setLoading(true);
     try {
-      await startMatch();
+      const apiTemplates = templates.map((t) => ({
+        name: t.name,
+        alignment: t.alignment,
+        abilities: t.abilities.map((id) => ({ id })),
+      }));
+      await service.startMatch(state.matchId, apiTemplates);
       navigate("/game");
     } catch (err) {
       alert("Failed to start game");

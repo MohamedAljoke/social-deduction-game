@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Button, Avatar } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
-import { useGame } from '../session/context/GameContext';
+import { useGame } from '../../application/game/GameContext';
 
 export function EndScreen() {
   const navigate = useNavigate();

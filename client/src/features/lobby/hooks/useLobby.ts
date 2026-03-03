@@ -1,15 +1,13 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { useGame } from "../../session/context/GameContext";
+import { useGame } from "../../../application/game/GameContext";
 import { GAME_ACTIONS } from "../../session/context/gameActions";
 
 export function useLobby() {
-  const navigate = useNavigate();
-  const { state, dispatch, startMatch, fetchMatch } = useGame();
+  const { state, dispatch, service } = useGame();
   const [loading, setLoading] = useState(false);
 
   const handleStartGame = useCallback(async () => {
-    if (!state.match) return;
+    if (!state.match || !state.matchId) return;
 
     const playerCount = state.match.players.length;
     const templates = Array(playerCount)
@@ -17,25 +15,24 @@ export function useLobby() {
       .map((_, i) => ({
         name: i === 0 ? "Infiltrator" : "Citizen",
         alignment: i === 0 ? ("villain" as const) : ("hero" as const),
-        abilities: i === 0 ? ["kill"] : ["investigate"],
+        abilities: [{ id: i === 0 ? "kill" : "investigate" }],
       }));
 
-    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: templates });
+    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: templates.map(t => ({ ...t, abilities: t.abilities.map(a => a.id) })) });
 
     setLoading(true);
     try {
-      await startMatch();
-      navigate("/game");
+      await service.startMatch(state.matchId, templates);
     } catch (err) {
       alert("Failed to start game");
     } finally {
       setLoading(false);
     }
-  }, [state.match, dispatch, startMatch, navigate]);
+  }, [state.match, state.matchId, dispatch, service]);
 
   const refreshMatch = useCallback(async () => {
-    await fetchMatch();
-  }, [fetchMatch]);
+    await service.fetchMatch(state.matchId ?? undefined);
+  }, [service, state.matchId]);
 
   return {
     match: state.match,

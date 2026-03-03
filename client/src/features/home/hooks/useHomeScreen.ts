@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGame } from "@/features/session/context/GameContext";
+import { useGame } from "@/application/game/GameContext";
 
 type Mode = "create" | "join";
 
 export function useHomeScreen() {
   const navigate = useNavigate();
-  const { createMatch, joinMatch } = useGame();
+  const { service } = useGame();
 
   const [mode, setMode] = useState<Mode>("create");
   const [playerName, setPlayerName] = useState("");
@@ -25,7 +25,6 @@ export function useHomeScreen() {
       e.preventDefault();
 
       if (!playerName.trim()) return;
-
       if (mode === "join" && !matchCode.trim()) return;
 
       setLoading(true);
@@ -33,11 +32,10 @@ export function useHomeScreen() {
 
       try {
         if (mode === "create") {
-          await createMatch(playerName.trim());
+          await service.createMatch(playerName.trim());
         } else {
-          await joinMatch(matchCode.trim(), playerName.trim());
+          await service.joinMatch(matchCode.trim(), playerName.trim());
         }
-
         navigate("/lobby");
       } catch (err) {
         setError(
@@ -49,7 +47,7 @@ export function useHomeScreen() {
         setLoading(false);
       }
     },
-    [mode, playerName, matchCode, createMatch, joinMatch, navigate],
+    [mode, playerName, matchCode, service, navigate],
   );
 
   return {
