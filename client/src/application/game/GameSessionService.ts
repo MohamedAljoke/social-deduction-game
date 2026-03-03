@@ -2,7 +2,7 @@ import type { Dispatch } from "react";
 import type { GameGateway } from "../../infrastructure/ws/GameGateway";
 import type { ApiClient } from "../../infrastructure/http/ApiClient";
 import type { GameAction } from "./GameContext";
-import { GAME_ACTIONS } from "../../features/session/context/gameActions";
+import { GAME_ACTIONS } from "../../types/gameActions";
 import type { TemplateInput } from "../../types/match";
 
 export class GameSessionService {
@@ -30,7 +30,6 @@ export class GameSessionService {
 
     this.gateway.connect();
 
-    // Join match once connected
     const offConnected = this.gateway.onConnected(() => {
       this.gateway.joinMatch(matchId, playerId);
       offConnected();

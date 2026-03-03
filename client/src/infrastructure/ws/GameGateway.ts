@@ -18,7 +18,6 @@ export class GameGateway {
     this.ws.disconnect();
   }
 
-  // Commands (client → server)
   joinMatch(matchId: string, playerId: string): void {
     this.ws.send("join_match", { matchId, playerId });
   }
@@ -40,7 +39,6 @@ export class GameGateway {
     this.ws.send("submit_vote", { matchId, voterId, targetId });
   }
 
-  // Event subscriptions (server → client)
   onConnected(handler: (clientId: string) => void): () => void {
     return this.ws.on<{ clientId: string }>("connected", (msg) =>
       handler(msg.clientId),

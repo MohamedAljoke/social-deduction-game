@@ -4,7 +4,7 @@ import { Card, Button } from "../../../shared/components";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { Logo } from "../../../shared/ui/Logo";
 import { useGame } from "../../../application/game/GameContext";
-import { GAME_ACTIONS } from "../../session/context/gameActions";
+import { GAME_ACTIONS } from "../../../types/gameActions";
 
 const ABILITIES = [
   { id: "kill", name: "Kill", icon: "🗡️" },

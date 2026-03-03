@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useGame } from "../../../application/game/GameContext";
-import { GAME_ACTIONS } from "../../session/context/gameActions";
+import { GAME_ACTIONS } from "../../../types/gameActions";
 
 export function useLobby() {
   const { state, dispatch, service } = useGame();
@@ -18,7 +18,13 @@ export function useLobby() {
         abilities: [{ id: i === 0 ? "kill" : "investigate" }],
       }));
 
-    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: templates.map(t => ({ ...t, abilities: t.abilities.map(a => a.id) })) });
+    dispatch({
+      type: GAME_ACTIONS.SET_TEMPLATES,
+      payload: templates.map((t) => ({
+        ...t,
+        abilities: t.abilities.map((a) => a.id),
+      })),
+    });
 
     setLoading(true);
     try {

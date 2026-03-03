@@ -11,7 +11,7 @@ import { WebSocketClient } from "../../infrastructure/ws/WebSocketClient";
 import { GameGateway } from "../../infrastructure/ws/GameGateway";
 import { ApiClient } from "../../infrastructure/http/ApiClient";
 import { GameSessionService } from "./GameSessionService";
-import { GAME_ACTIONS } from "../../features/session/context/gameActions";
+import { GAME_ACTIONS } from "../../types/gameActions";
 import type { Match } from "../../types/match";
 
 interface TemplateConfig {
@@ -140,7 +140,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // Stable ref so service callback always has current navigate
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
@@ -179,5 +178,4 @@ export function useGameContext(): GameContextValue {
   return context;
 }
 
-// Alias for backward compatibility
 export const useGame = useGameContext;
