@@ -2,12 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, Button, Avatar, Badge } from "../../shared/components";
 import { ScreenContainer } from "../../shared/ui/ScreenContainer";
 import { Logo } from "../../shared/ui/Logo";
-import { useGame } from "../../application/game/GameContext";
 import { useLobby } from "./hooks";
 
 export function LobbyScreen() {
   const navigate = useNavigate();
-  const { state } = useGame();
   const { match, isHost, loading, handleStartGame } = useLobby();
 
   if (!match) {
@@ -16,7 +14,7 @@ export function LobbyScreen() {
 
   return (
     <ScreenContainer>
-      <div className="fade-in min-w-[400px]">
+      <div className="fade-in min-w-100">
         <Logo title="Game Lobby" subtitle="Waiting for players to join" />
 
         <Card>

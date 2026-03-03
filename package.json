@@ -6,10 +6,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "dev:client-install": "npm run install --prefix ./client",
-    "dev:server-install": "npm run install --prefix ./backend",
-    "dev:client-test": "npm run test --prefix ./client",
-    "dev:server-test": "npm run test --prefix ./backend",
+    "install:client": "npm run install --prefix ./client",
+    "install:server": "npm run install --prefix ./backend",
+    "test:client": "npm run test --prefix ./client",
+    "test:server": "npm run test --prefix ./backend",
     "dev:client": "npm run dev --prefix ./client",
     "dev:server": "npm run dev --prefix ./backend",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
