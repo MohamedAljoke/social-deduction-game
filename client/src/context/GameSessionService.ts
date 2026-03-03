@@ -1,9 +1,9 @@
 import type { Dispatch } from "react";
-import type { GameGateway } from "../../infrastructure/ws/GameGateway";
-import type { ApiClient } from "../../infrastructure/http/ApiClient";
+import type { GameGateway } from "../infrastructure/ws/GameGateway";
+import type { ApiClient } from "../infrastructure/http/ApiClient";
 import type { GameAction } from "./GameContext";
-import { GAME_ACTIONS } from "../../types/gameActions";
-import type { TemplateInput } from "../../types/match";
+import { GAME_ACTIONS } from "../types/gameActions";
+import type { TemplateInput } from "../types/match";
 
 export class GameSessionService {
   private gateway: GameGateway;

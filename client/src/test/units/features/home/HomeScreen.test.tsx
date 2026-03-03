@@ -8,7 +8,7 @@ import { HomeScreen } from "@/features/home/HomeScreen";
 const mockCreateMatch = vi.fn();
 const mockJoinMatch = vi.fn();
 
-vi.mock("@/application/game/GameContext", () => ({
+vi.mock("@/context/GameContext", () => ({
   useGame: () => ({
     service: {
       createMatch: mockCreateMatch,

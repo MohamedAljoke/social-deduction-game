@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, Button } from "../../../shared/components";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { Logo } from "../../../shared/ui/Logo";
-import { useGame } from "../../../application/game/GameContext";
+import { useGame } from "../../../context/GameContext";
 import { GAME_ACTIONS } from "../../../types/gameActions";
 
 const ABILITIES = [

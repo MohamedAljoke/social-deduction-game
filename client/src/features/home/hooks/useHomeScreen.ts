@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGame } from "@/application/game/GameContext";
+import { useGame } from "@/context/GameContext";
 
 type Mode = "create" | "join";
 

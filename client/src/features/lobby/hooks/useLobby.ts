@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useGame } from "../../../application/game/GameContext";
+import { useGame } from "../../../context/GameContext";
 import { GAME_ACTIONS } from "../../../types/gameActions";
 
 export function useLobby() {

@@ -1,73 +1,170 @@
-# React + TypeScript + Vite
+# 🎮 Social Deduction Game --- Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend client for the Social Deduction Game.
 
-Currently, two official plugins are available:
+This application is responsible for:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Rendering game state
+- Managing WebSocket connection
+- Handling user interactions (actions, votes, templates)
+- Synchronizing real-time updates from the backend
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🏗 Architecture Overview
 
-## Expanding the ESLint configuration
+The frontend follows a layered architecture inspired by the backend
+structure.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+    src/
+    ├── context/                # React context + orchestration service
+    │   ├── GameContext.tsx       # GameProvider, useGame, reducer
+    │   └── GameSessionService.ts # Orchestrates gateway + api + dispatch
+    │
+    ├── infrastructure/         # External adapters (no React)
+    │   ├── http/
+    │   │   └── ApiClient.ts      # Typed REST client
+    │   └── ws/
+    │       ├── WebSocketClient.ts  # Low-level WS transport
+    │       └── GameGateway.ts      # Domain-aware WS bridge
+    │
+    ├── types/                  # Shared domain types (pure TS)
+    │   ├── match.ts
+    │   └── gameActions.ts
+    │
+    ├── features/               # Feature-based UI modules
+    │   ├── home/
+    │   ├── lobby/
+    │   ├── game/
+    │   └── end/
+    │
+    ├── shared/                 # Reusable components & utilities
+    └── App.tsx
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🔌 WebSocket & API Communication
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Connection lifecycle
+
+```mermaid
+sequenceDiagram
+    participant UI as UI / Hook
+    participant Svc as GameSessionService
+    participant GW as GameGateway
+    participant WS as WebSocketClient
+    participant API as ApiClient (REST)
+    participant BE as Backend :3000
+
+    Note over UI,BE: ── Create or Join ──
+    UI->>Svc: createMatch(name)
+    Svc->>API: POST /match
+    API-->>Svc: Match
+    Svc->>API: POST /match/:id/join
+    API-->>Svc: Match (with playerId)
+    Svc->>UI: dispatch SET_MATCH
+
+    UI->>Svc: joinMatch(matchId, name)
+    Svc->>API: POST /match/:id/join
+    API-->>Svc: Match (with playerId)
+    Svc->>UI: dispatch SET_MATCH
+
+    Note over UI,BE: ── WS connection (triggered by matchId+playerId in context) ──
+    UI->>Svc: connect(matchId, playerId)
+    Svc->>GW: connect()
+    GW->>WS: connect(ws://localhost:3000/ws)
+    WS-->>GW: connected {clientId}
+    GW->>WS: send join_match {matchId, playerId}
+
+    Note over UI,BE: ── Lobby: player events ──
+    BE-->>GW: player_joined / player_left
+    GW->>Svc: onPlayerJoined / onPlayerLeft
+    Svc->>API: GET /match/:id
+    API-->>Svc: Match
+    Svc->>UI: dispatch UPDATE_MATCH
+
+    Note over UI,BE: ── Host starts the game ──
+    UI->>Svc: startMatch(matchId, templates)
+    Svc->>API: POST /match/:id/start {templates}
+    API-->>Svc: Match
+    Svc->>UI: dispatch UPDATE_MATCH
+    BE-->>GW: match_started {playerAssignments}
+    GW->>Svc: onMatchStarted
+    Svc->>UI: navigate("/game")
+
+    Note over UI,BE: ── In-game: ability & phase ──
+    UI->>Svc: useAbility(matchId, playerId, abilityId, targetId)
+    Svc->>API: POST /match/:id/ability {actorId, abilityId, targetIds}
+    BE-->>GW: match_updated {matchId, state}
+    GW->>Svc: onMatchUpdated
+    Svc->>UI: dispatch UPDATE_MATCH
+
+    UI->>Svc: castVote(matchId)
+    Svc->>API: POST /match/:id/phase
+    BE-->>GW: phase_changed {matchId, phase}
+    GW->>Svc: onPhaseChanged
+    Svc->>UI: dispatch SET_PHASE
+
+    Note over UI,BE: ── Game ends ──
+    BE-->>GW: match_ended {matchId, winner}
+    GW->>Svc: onMatchEnded
+    Svc->>UI: navigate("/end")
+
+    Note over UI,BE: ── Disconnect ──
+    UI->>Svc: disconnect(matchId, playerId)
+    Svc->>GW: leaveMatch → send leave_match
+    Svc->>GW: disconnect()
+    GW->>WS: disconnect()
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Development
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Install dependencies:
+
+```bash
+npm install
 ```
+
+Run development server:
+
+```bash
+npm run dev
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+npm run test
+```
+
+---
+
+## 🧠 Design Principles
+
+- UI components are pure and declarative
+- No direct WebSocket usage inside components
+- All side-effects live in hooks
+- Transport layer is isolated
+- Message contracts mirror backend events
+
+---
+
+## 📡 Communication Strategy
+
+- REST for initial match/session creation
+- WebSocket for real-time game updates
+- Optimistic UI updates (future enhancement)
+- Reconnection strategy (future enhancement)
+
+---
+
+## 🏆 Long-Term Goals
+
+- Shared TypeScript types with backend
+- Message schema validation
+- Event-driven client architecture
+- Phase-based rendering system

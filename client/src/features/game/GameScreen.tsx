@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useGame } from "../../application/game/GameContext";
+import { useGame } from "../../context/GameContext";
 import {
   useGameActions,
   useGamePlayer,

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { GameProvider } from "./application/game/GameContext";
+import { GameProvider } from "./context/GameContext";
 import { HomeScreen } from "./features/home/HomeScreen";
 import { LobbyScreen } from "./features/lobby/LobbyScreen";
 import { TemplateBuilderScreen } from "./features/lobby/TemplateBuilder/TemplateBuilderScreen";

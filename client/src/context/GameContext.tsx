@@ -7,12 +7,12 @@ import React, {
   useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { WebSocketClient } from "../../infrastructure/ws/WebSocketClient";
-import { GameGateway } from "../../infrastructure/ws/GameGateway";
-import { ApiClient } from "../../infrastructure/http/ApiClient";
+import { WebSocketClient } from "../infrastructure/ws/WebSocketClient";
+import { GameGateway } from "../infrastructure/ws/GameGateway";
+import { ApiClient } from "../infrastructure/http/ApiClient";
 import { GameSessionService } from "./GameSessionService";
-import { GAME_ACTIONS } from "../../types/gameActions";
-import type { Match } from "../../types/match";
+import { GAME_ACTIONS } from "../types/gameActions";
+import type { Match } from "../types/match";
 
 interface TemplateConfig {
   name: string;
