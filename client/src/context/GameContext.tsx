@@ -70,6 +70,25 @@ const initialState: GameState = {
   configuredTemplates: [],
 };
 
+const STORAGE_KEY = "game_session";
+
+interface SessionData {
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  isHost: boolean;
+}
+
+function loadSession(): Partial<GameState> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as SessionData;
+  } catch {
+    return {};
+  }
+}
+
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case GAME_ACTIONS.SET_MATCH:
@@ -138,7 +157,10 @@ const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [state, dispatch] = useReducer(gameReducer, {
+    ...initialState,
+    ...loadSession(),
+  });
 
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
@@ -162,6 +184,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.matchId, state.playerId]);
+
+  // Persist session identity so a page refresh can reconnect
+  useEffect(() => {
+    if (state.matchId && state.playerId) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          matchId: state.matchId,
+          playerId: state.playerId,
+          playerName: state.playerName,
+          isHost: state.isHost,
+        }),
+      );
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [state.matchId, state.playerId, state.playerName, state.isHost]);
+
+  // On hydration from storage: match data is not persisted, fetch it once
+  useEffect(() => {
+    if (state.matchId && !state.match) {
+      void service.fetchMatch(state.matchId).catch(() => {
+        dispatch({ type: GAME_ACTIONS.RESET });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <GameContext.Provider value={{ state, dispatch, service }}>
