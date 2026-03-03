@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Avatar, Badge } from "../../shared/components";
 import { ScreenContainer } from "../../shared/ui/ScreenContainer";
@@ -7,6 +8,15 @@ import { useLobby } from "./hooks";
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { match, isHost, loading, handleStartGame } = useLobby();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!match) return;
+    void navigator.clipboard.writeText(match.id.toUpperCase()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   if (!match) {
     return <div>Loading...</div>;
@@ -33,9 +43,13 @@ export function LobbyScreen() {
             {isHost ? "Ready to start" : "Waiting for host to start"}
           </div>
 
-          <div
-            className="border-2 border-dashed rounded-2xl p-6 text-center mb-6"
-            style={{ borderColor: "#2a2a4a", backgroundColor: "#1a1a2e" }}
+          <button
+            onClick={handleCopy}
+            className="w-full border-2 border-dashed rounded-2xl p-6 text-center mb-6 cursor-pointer transition-colors duration-150"
+            style={{
+              borderColor: copied ? "#4ade80" : "#2a2a4a",
+              backgroundColor: "#1a1a2e",
+            }}
           >
             <div
               className="text-xs uppercase tracking-widest mb-2"
@@ -44,12 +58,19 @@ export function LobbyScreen() {
               Game Code
             </div>
             <div
+              data-testid="match-id"
               className="text-[36px] font-bold tracking-widest font-mono"
-              style={{ color: "#e94560" }}
+              style={{ color: copied ? "#4ade80" : "#e94560" }}
             >
               {match.id.toUpperCase()}
             </div>
-          </div>
+            <div
+              className="text-xs mt-2 transition-opacity duration-150"
+              style={{ color: "#6b6b80", opacity: copied ? 1 : 0.5 }}
+            >
+              {copied ? "Copied!" : "Click to copy"}
+            </div>
+          </button>
 
           <div className="mb-6">
             <div
