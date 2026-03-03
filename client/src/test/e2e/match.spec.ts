@@ -49,6 +49,72 @@ test.describe("Join match", () => {
     }
   });
 
+  test("existing players see new player appear in real-time without refresh", async ({
+    browser,
+  }) => {
+    const hostCtx = await browser.newContext();
+    const aliceCtx = await browser.newContext();
+    const bobCtx = await browser.newContext();
+    const charlieCtx = await browser.newContext();
+
+    const hostPage = await hostCtx.newPage();
+    const alicePage = await aliceCtx.newPage();
+    const bobPage = await bobCtx.newPage();
+    const charliePage = await charlieCtx.newPage();
+
+    try {
+      // Host creates match
+      const code = await createMatch(hostPage, "Host");
+
+      // Alice joins
+      await joinMatch(alicePage, code, "Alice");
+
+      // Host sees Host and Alice in player list (use first() to avoid strict mode violation)
+      await expect(hostPage.getByText("Host").first()).toBeVisible();
+      await expect(hostPage.getByText("Alice").first()).toBeVisible();
+
+      // Alice sees Host and Alice in player list
+      await expect(alicePage.getByText("Host").first()).toBeVisible();
+      await expect(alicePage.getByText("Alice").first()).toBeVisible();
+
+      // Bob joins
+      await joinMatch(bobPage, code, "Bob");
+
+      // Host sees Bob appear without refresh
+      await expect(hostPage.getByText("Bob").first()).toBeVisible({ timeout: 5000 });
+      // Verify all 3 players visible on host
+      await expect(hostPage.getByText("Host").first()).toBeVisible();
+      await expect(hostPage.getByText("Alice").first()).toBeVisible();
+      await expect(hostPage.getByText("Bob").first()).toBeVisible();
+
+      // Alice also sees Bob appear
+      await expect(alicePage.getByText("Bob").first()).toBeVisible({ timeout: 5000 });
+      // Verify all 3 players visible on Alice
+      await expect(alicePage.getByText("Host").first()).toBeVisible();
+      await expect(alicePage.getByText("Alice").first()).toBeVisible();
+      await expect(alicePage.getByText("Bob").first()).toBeVisible();
+
+      // Charlie joins
+      await joinMatch(charliePage, code, "Charlie");
+
+      // All existing players see Charlie appear in real-time
+      await expect(hostPage.getByText("Charlie").first()).toBeVisible({ timeout: 5000 });
+      await expect(alicePage.getByText("Charlie").first()).toBeVisible({ timeout: 5000 });
+      await expect(bobPage.getByText("Charlie").first()).toBeVisible({ timeout: 5000 });
+
+      // Verify all 4 players visible on host
+      await expect(hostPage.getByText("Host").first()).toBeVisible();
+      await expect(hostPage.getByText("Alice").first()).toBeVisible();
+      await expect(hostPage.getByText("Bob").first()).toBeVisible();
+      await expect(hostPage.getByText("Charlie").first()).toBeVisible();
+    } finally {
+      await hostCtx.close();
+      await aliceCtx.close();
+      await bobCtx.close();
+      await charlieCtx.close();
+    }
+  });
+
   test("guest does not see Start Game button", async ({ browser }) => {
     const hostCtx = await browser.newContext();
     const guestCtx = await browser.newContext();
@@ -77,6 +143,42 @@ test.describe("Join match", () => {
     await page.getByRole("button", { name: /join game/i }).click();
 
     await expect(page.getByText(/failed to join/i)).toBeVisible();
+  });
+
+  test("player leaving is propagated to other players in lobby", async ({
+    browser,
+  }) => {
+    const hostCtx = await browser.newContext();
+    const guestCtx = await browser.newContext();
+
+    const hostPage = await hostCtx.newPage();
+    const guestPage = await guestCtx.newPage();
+
+    try {
+      const code = await createMatch(hostPage, "Alice");
+      await joinMatch(guestPage, code, "Bob");
+
+      // Both see Alice and Bob
+      await expect(hostPage.getByText("Alice")).toBeVisible();
+      await expect(hostPage.getByText("Bob")).toBeVisible();
+      await expect(guestPage.getByText("Bob")).toBeVisible();
+
+      // Set up dialog handler before clicking leave
+      guestPage.on("dialog", async (dialog) => {
+        await dialog.accept();
+      });
+
+      // Bob leaves the game
+      await guestPage.getByRole("button", { name: /leave game/i }).click();
+      await guestPage.waitForURL("**/", { timeout: 5000 });
+
+      // Alice sees Bob removed from the lobby
+      await expect(hostPage.getByText("Bob")).not.toBeVisible({ timeout: 5000 });
+      await expect(hostPage.getByText("Alice")).toBeVisible();
+    } finally {
+      await hostCtx.close();
+      await guestCtx.close();
+    }
   });
 });
 

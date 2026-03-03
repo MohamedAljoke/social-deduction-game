@@ -127,6 +127,10 @@ class WebSocketManager {
       case "leave_match": {
         const room = this.rooms.get(event.matchId);
         if (room) {
+          room.broadcast(
+            { type: "player_left", matchId: event.matchId, playerId: event.playerId },
+            event.playerId,
+          );
           room.leave(event.playerId);
           if (room.getClientCount() === 0) {
             this.rooms.delete(event.matchId);

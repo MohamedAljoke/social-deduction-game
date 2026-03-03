@@ -12,6 +12,7 @@ export class GameSessionService {
   private navigate: (path: string) => void;
   private cleanups: Array<() => void> = [];
   private currentMatchId: string | null = null;
+  private currentPlayerId: string | null = null;
 
   constructor(
     gateway: GameGateway,
@@ -27,6 +28,7 @@ export class GameSessionService {
 
   connect(matchId: string, playerId: string): void {
     this.currentMatchId = matchId;
+    this.currentPlayerId = playerId;
 
     this.gateway.connect();
 
@@ -67,6 +69,7 @@ export class GameSessionService {
     this.cleanups.forEach((fn) => fn());
     this.cleanups = [];
     this.currentMatchId = null;
+    this.currentPlayerId = null;
     this.gateway.disconnect();
   }
 
@@ -125,6 +128,9 @@ export class GameSessionService {
   }
 
   leave(): void {
+    if (this.currentMatchId && this.currentPlayerId) {
+      this.disconnect(this.currentMatchId, this.currentPlayerId);
+    }
     this.dispatch({ type: GAME_ACTIONS.RESET });
     this.navigate("/");
   }
