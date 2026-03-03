@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useGame } from "../../context/GameContext";
 import {
   useGameActions,
@@ -9,8 +8,7 @@ import {
 } from "./hooks";
 
 export function GameScreen() {
-  const navigate = useNavigate();
-  const { state, dispatch } = useGame();
+  const { service } = useGame();
   const { match, playerId, currentPlayer, currentTemplate, phaseConfig } =
     useGamePlayer();
   const {
@@ -26,7 +24,7 @@ export function GameScreen() {
 
   const handleLeave = () => {
     if (confirm("Leave the game?")) {
-      navigate("/");
+      service.leave();
     }
   };
 

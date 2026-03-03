@@ -4,10 +4,12 @@ import { Card, Button, Avatar, Badge } from "../../shared/components";
 import { ScreenContainer } from "../../shared/ui/ScreenContainer";
 import { Logo } from "../../shared/ui/Logo";
 import { useLobby } from "./hooks";
+import { useGame } from "../../context/GameContext";
 
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { match, isHost, loading, handleStartGame } = useLobby();
+  const { service } = useGame();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -109,6 +111,15 @@ export function LobbyScreen() {
               </Button>
             </>
           )}
+          <Button
+            onClick={() => {
+              if (confirm("Leave the lobby?")) service.leave();
+            }}
+            variant="secondary"
+            className="mt-3"
+          >
+            Leave Game
+          </Button>
         </Card>
       </div>
     </ScreenContainer>

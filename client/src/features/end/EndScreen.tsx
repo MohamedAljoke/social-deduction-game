@@ -1,16 +1,14 @@
-import { useNavigate } from 'react-router-dom';
 import { Card, Button, Avatar } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
 import { useGame } from '../../context/GameContext';
 
 export function EndScreen() {
-  const navigate = useNavigate();
-  const { state } = useGame();
+  const { state, service } = useGame();
   const { match } = state;
 
   const handlePlayAgain = () => {
-    navigate('/');
+    service.leave();
   };
 
   if (!match) {

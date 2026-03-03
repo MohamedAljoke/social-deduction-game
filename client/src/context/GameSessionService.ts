@@ -124,6 +124,11 @@ export class GameSessionService {
     this.dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: null });
   }
 
+  leave(): void {
+    this.dispatch({ type: GAME_ACTIONS.RESET });
+    this.navigate("/");
+  }
+
   async fetchMatch(matchId?: string): Promise<void> {
     const id = matchId ?? this.currentMatchId;
     if (!id) return;

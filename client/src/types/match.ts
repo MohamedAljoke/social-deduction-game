@@ -1,52 +1,52 @@
-export type Alignment = "hero" | "villain" | "neutral"
-export type PhaseType = "discussion" | "action" | "voting" | "resolution"
-export type MatchStatus = "LOBBY" | "IN_PROGRESS" | "FINISHED"
+export type Alignment = "hero" | "villain" | "neutral";
+export type PhaseType = "discussion" | "action" | "voting" | "resolution";
+export type MatchStatus = "lobby" | "started" | "finished";
 
 export interface Player {
-  id: string
-  name: string
-  templateId?: string
-  status: "alive" | "dead"
+  id: string;
+  name: string;
+  templateId?: string;
+  status: "alive" | "dead";
 }
 
 export interface Ability {
-  id: string
-  name?: string
+  id: string;
+  name?: string;
 }
 
 export interface Template {
-  id: string
-  name: string
-  alignment: Alignment
-  abilities: Ability[]
+  id: string;
+  name: string;
+  alignment: Alignment;
+  abilities: Ability[];
 }
 
 export interface Action {
-  id: string
-  actorId: string
-  targetIds: string[]
-  abilityId: string
+  id: string;
+  actorId: string;
+  targetIds: string[];
+  abilityId: string;
 }
 
 export interface Match {
-  id: string
-  name: string
-  status: MatchStatus
-  phase: PhaseType
-  players: Player[]
-  templates: Template[]
-  actions: Action[]
-  createdAt: string
+  id: string;
+  name: string;
+  status: MatchStatus;
+  phase: PhaseType;
+  players: Player[];
+  templates: Template[];
+  actions: Action[];
+  createdAt: string;
 }
 
 export interface PlayerAssignment {
-  playerId: string
-  templateId: string
-  alignment: string
+  playerId: string;
+  templateId: string;
+  alignment: string;
 }
 
 export interface TemplateInput {
-  name?: string
-  alignment: Alignment
-  abilities: { id: string }[]
+  name?: string;
+  alignment: Alignment;
+  abilities: { id: string }[];
 }
