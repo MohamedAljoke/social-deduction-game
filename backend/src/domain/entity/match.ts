@@ -57,6 +57,7 @@ export class Match {
   private phase: Phase;
   private actions: Action[];
   private templates: Template[];
+  private votes: Array<{ voterId: string; targetId: string }> = [];
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -128,9 +129,44 @@ export class Match {
     return this.phase.getCurrentPhase();
   }
 
+  public submitVote(voterId: string, targetId: string): void {
+    if (this.phase.getCurrentPhase() !== "voting") {
+      throw new InvalidPhase();
+    }
+
+    const playerIds = new Set(this.players.map((p) => p.id));
+    if (!playerIds.has(voterId) || !playerIds.has(targetId)) {
+      throw new PlayerNotInMatch();
+    }
+
+    const existing = this.votes.findIndex((v) => v.voterId === voterId);
+    if (existing !== -1) {
+      this.votes[existing] = { voterId, targetId };
+    } else {
+      this.votes.push({ voterId, targetId });
+    }
+  }
+
   public advancePhase(): PhaseType {
     if (this.status !== MatchStatus.STARTED) {
       throw new MatchNotStarted();
+    }
+
+    if (this.phase.getCurrentPhase() === "voting") {
+      const tally = new Map<string, number>();
+      for (const { targetId } of this.votes) {
+        tally.set(targetId, (tally.get(targetId) ?? 0) + 1);
+      }
+
+      if (tally.size > 0) {
+        const topTarget = [...tally.entries()].reduce((a, b) =>
+          b[1] > a[1] ? b : a,
+        )[0];
+        const player = this.players.find((p) => p.id === topTarget);
+        player?.eliminate();
+      }
+
+      this.votes = [];
     }
 
     return this.phase.nextPhase();
@@ -247,6 +283,7 @@ export class Match {
       })),
       templates: this.templates.map((template) => ({
         id: template.id,
+        name: template.name,
         alignment: template.alignment,
         abilities: template.abilities.map((ability) => ({
           id: ability.id,
@@ -254,6 +291,7 @@ export class Match {
         winCondition: template.winCondition,
         endsGameOnWin: template.endsGameOnWin,
       })),
+      votes: this.votes,
     };
   }
 }

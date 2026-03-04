@@ -5,8 +5,8 @@ export class InMemoryTemplateRepository implements TemplateRepository {
   private templates = new Map<string, Template>();
 
   constructor() {
-    const hero = new Template("hero", Alignment.Hero, []);
-    const villain = new Template("villain", Alignment.Villain, []);
+    const hero = new Template("Hero", "hero", Alignment.Hero, []);
+    const villain = new Template("Villain", "villain", Alignment.Villain, []);
 
     this.templates.set(hero.id, hero);
     this.templates.set(villain.id, villain);

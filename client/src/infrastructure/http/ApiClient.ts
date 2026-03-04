@@ -62,6 +62,16 @@ export class ApiClient {
     if (!response.ok) throw new Error("Failed to use ability");
   }
 
+  async submitVote(matchId: string, voterId: string, targetId: string): Promise<Match> {
+    const response = await fetch(`${this.baseUrl}/match/${matchId}/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ voterId, targetId }),
+    });
+    if (!response.ok) throw new Error("Failed to submit vote");
+    return response.json();
+  }
+
   async advancePhase(matchId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/match/${matchId}/phase`, {
       method: "POST",

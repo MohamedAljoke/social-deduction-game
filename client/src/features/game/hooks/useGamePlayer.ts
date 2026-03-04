@@ -50,10 +50,7 @@ export function useGamePlayer() {
     return PHASE_CONFIG[match.phase] || { title: match.phase, description: "" };
   }, [match]);
 
-  const isHost = useMemo(() => {
-    if (!match || !playerId) return false;
-    return match.players[0]?.id === playerId;
-  }, [match, playerId]);
+  const isHost = state.isHost;
 
   return {
     match,

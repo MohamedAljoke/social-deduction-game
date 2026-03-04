@@ -83,6 +83,13 @@ export async function startGameViaTemplateBuilder(
   return code;
 }
 
+/** Host clicks "Next Phase" and waits for the phase banner to update. */
+export async function advancePhase(hostPage: Page): Promise<void> {
+  await hostPage.getByRole("button", { name: /next phase/i }).click();
+  // Wait briefly for the WS broadcast to propagate
+  await hostPage.waitForTimeout(500);
+}
+
 export async function focus(page: Page, label?: string) {
   await page.bringToFront();
 

@@ -3,31 +3,32 @@ import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 
-export interface AdvancePhaseInput {
+export interface SubmitVoteInput {
   matchId: string;
+  voterId: string;
+  targetId: string;
 }
 
-export class AdvancePhaseUseCase {
+export class SubmitVoteUseCase {
   constructor(
     private readonly matchRepository: MatchRepository,
     private readonly publisher: RealtimePublisher,
   ) {}
 
-  async execute(input: AdvancePhaseInput): Promise<MatchResponse> {
+  async execute(input: SubmitVoteInput): Promise<MatchResponse> {
     const match = await this.matchRepository.findById(input.matchId);
 
     if (!match) {
       throw new MatchNotFound();
     }
 
-    const newPhase = match.advancePhase();
+    match.submitVote(input.voterId, input.targetId);
 
     await this.matchRepository.save(match);
 
-    const result = match.toJSON();
-    this.publisher.phaseChanged(input.matchId, newPhase);
-    this.publisher.matchUpdated(input.matchId, result);
+    this.publisher.voteSubmitted(input.matchId, input.voterId, input.targetId);
+    this.publisher.matchUpdated(input.matchId, match.toJSON());
 
-    return result;
+    return match.toJSON();
   }
 }

@@ -8,8 +8,8 @@ import {
 } from "./hooks";
 
 export function GameScreen() {
-  const { service } = useGame();
-  const { match, playerId, currentPlayer, currentTemplate, phaseConfig } =
+  const { service, state } = useGame();
+  const { match, playerId, currentPlayer, currentTemplate, phaseConfig, isHost } =
     useGamePlayer();
   const {
     selectedAbility,
@@ -25,6 +25,12 @@ export function GameScreen() {
   const handleLeave = () => {
     if (confirm("Leave the game?")) {
       service.leave();
+    }
+  };
+
+  const handleAdvancePhase = () => {
+    if (state.matchId) {
+      service.advancePhase(state.matchId);
     }
   };
 
@@ -87,12 +93,26 @@ export function GameScreen() {
         <div className="text-sm opacity-90 mt-1">{phaseConfig.description}</div>
       </div>
 
+      {isHost && match.status === "started" && (
+        <div className="mb-5 text-center">
+          <button
+            className="py-2 px-6 border-none rounded-lg text-white text-sm font-semibold cursor-pointer"
+            style={{ backgroundColor: "#6b6b80" }}
+            onClick={handleAdvancePhase}
+          >
+            Next Phase →
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 mb-5">
         {match.players.map((player, index) => {
           const isDead = player.status !== "alive";
           const isSelf = player.id === playerId;
           const isSelected =
             selectedTarget === player.id || selectedVote === player.id;
+          const voteCount =
+            match.votes?.filter((v) => v.targetId === player.id).length ?? 0;
 
           return (
             <div
@@ -130,6 +150,14 @@ export function GameScreen() {
               >
                 {player.status}
               </div>
+              {match.phase === "voting" && voteCount > 0 && (
+                <div
+                  className="mt-1 text-[11px] font-bold rounded-full px-2 py-0.5 inline-block"
+                  style={{ backgroundColor: "#e94560", color: "#fff" }}
+                >
+                  {voteCount} vote{voteCount !== 1 ? "s" : ""}
+                </div>
+              )}
             </div>
           );
         })}

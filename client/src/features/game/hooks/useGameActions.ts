@@ -40,7 +40,7 @@ export function useGameActions() {
         selectedTarget,
       );
     } else if (selectedVote) {
-      await service.castVote(state.matchId);
+      await service.castVote(state.matchId, state.playerId, selectedVote);
     }
   }, [
     selectedAbility,

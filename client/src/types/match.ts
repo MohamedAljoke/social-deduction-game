@@ -37,6 +37,7 @@ export interface Match {
   templates: Template[];
   actions: Action[];
   createdAt: string;
+  votes?: Array<{ voterId: string; targetId: string }>;
 }
 
 export interface PlayerAssignment {

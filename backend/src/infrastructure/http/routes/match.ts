@@ -96,6 +96,28 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     },
   );
 
+  server.register("post", "/match/:matchId/vote", async (req, res) => {
+    const schema = z.object({
+      voterId: z.string(),
+      targetId: z.string(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid vote body" });
+      return;
+    }
+
+    const useCase = container.resolve(TOKENS.SubmitVoteUseCase);
+    const { matchId } = req.params;
+    const result = await useCase.execute({
+      matchId,
+      voterId: parsed.data.voterId,
+      targetId: parsed.data.targetId,
+    });
+
+    res.status(200).json(result);
+  });
+
   server.register("post", "/match/:matchId/phase", async (req, res) => {
     const useCase = container.resolve(TOKENS.AdvancePhaseUseCase);
     const { matchId } = req.params;

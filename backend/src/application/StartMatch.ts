@@ -12,6 +12,7 @@ import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 export interface StartMatchInput {
   matchId: string;
   templates: {
+    name?: string;
     alignment: Alignment;
     abilities: { id: AbilityId }[];
   }[];
@@ -33,7 +34,7 @@ export class StartMatchUseCase {
     const templates = input.templates.map((raw, index) => {
       const abilities = raw.abilities.map((a) => new Ability(a.id));
 
-      return new Template(`template_${index}`, raw.alignment, abilities);
+      return new Template(raw.name ?? "", `template_${index}`, raw.alignment, abilities);
     });
 
     match.startWithTemplates(templates);

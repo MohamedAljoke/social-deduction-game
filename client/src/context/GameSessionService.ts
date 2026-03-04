@@ -127,9 +127,14 @@ export class GameSessionService {
     this.dispatch({ type: GAME_ACTIONS.SELECT_TARGET, payload: null });
   }
 
-  async castVote(matchId: string): Promise<void> {
-    await this.api.advancePhase(matchId);
+  async castVote(matchId: string, playerId: string, targetId: string): Promise<void> {
+    const match = await this.api.submitVote(matchId, playerId, targetId);
+    this.dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: match });
     this.dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: null });
+  }
+
+  async advancePhase(matchId: string): Promise<void> {
+    await this.api.advancePhase(matchId);
   }
 
   leave(): void {
