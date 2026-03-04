@@ -22,11 +22,11 @@ export const TemplateAbilitySchema = z.object({
 
 export const TemplateSchema = z.object({
   alignment: z.enum(Alignment),
-  abilities: z.array(TemplateAbilitySchema).min(1),
+  abilities: z.array(TemplateAbilitySchema),
 });
 
 export const StartMatchSchema = z.object({
-  templates: z.array(TemplateSchema).min(1),
+  templates: z.array(TemplateSchema).optional().default([]),
 });
 
 export type StartMatchBody = z.infer<typeof StartMatchSchema>;

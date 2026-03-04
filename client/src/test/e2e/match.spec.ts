@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { createMatch, joinMatch, startGame } from "./helpers";
+import { createMatch, joinMatch, startGame, startGameViaTemplateBuilder } from "./helpers";
 
 test.describe("Create match", () => {
   test("navigates to lobby and shows match code", async ({ page }) => {
@@ -168,6 +168,73 @@ test.describe("Start game", () => {
   }) => {
     const [hostPage, guestPage] = await createPlayers(2);
     await startGame(hostPage, [guestPage]);
+
+    await expect(hostPage).toHaveURL(/\/game/);
+    await expect(guestPage).toHaveURL(/\/game/);
+  });
+});
+
+test.describe("Default template / no abilities", () => {
+  test("quick-start (no templates) → all players navigate to /game", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
+
+    await expect(hostPage).toHaveURL(/\/game/);
+    await expect(guestPage).toHaveURL(/\/game/);
+  });
+
+  test("template builder seeds exactly 2 templates regardless of player count", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage1, guestPage2] = await createPlayers(3);
+    const code = await createMatch(hostPage, "Alice");
+    await joinMatch(guestPage1, code, "Bob");
+    await joinMatch(guestPage2, code, "Charlie");
+
+    await expect(hostPage.getByText("Charlie").first()).toBeVisible({
+      timeout: 5000,
+    });
+    await hostPage.getByRole("button", { name: /configure templates/i }).click();
+    await hostPage.waitForURL("**/templates");
+
+    const templateLabels = hostPage.locator("span").filter({ hasText: /^Template \d+$/ });
+    await expect(templateLabels).toHaveCount(2);
+  });
+
+  test("template builder → save with 2 templates for 2-player game → all navigate to /game", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGameViaTemplateBuilder(hostPage, [guestPage]);
+
+    await expect(hostPage).toHaveURL(/\/game/);
+    await expect(guestPage).toHaveURL(/\/game/);
+  });
+
+  test("2 templates for 3-player game → backend pads with default → all navigate to /game", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage1, guestPage2] = await createPlayers(3);
+    await startGameViaTemplateBuilder(hostPage, [guestPage1, guestPage2]);
+
+    await expect(hostPage).toHaveURL(/\/game/);
+    await expect(guestPage1).toHaveURL(/\/game/);
+    await expect(guestPage2).toHaveURL(/\/game/);
+  });
+
+  test("templates with all abilities cleared → game still starts", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGameViaTemplateBuilder(hostPage, [guestPage], async (host) => {
+      // Deselect every active ability chip (active chips have the accent background colour)
+      const activeChips = host.locator("[style*='background-color: rgb(233, 69, 96)']");
+      while ((await activeChips.count()) > 0) {
+        await activeChips.first().click();
+      }
+    });
 
     await expect(hostPage).toHaveURL(/\/game/);
     await expect(guestPage).toHaveURL(/\/game/);

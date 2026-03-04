@@ -97,7 +97,16 @@ export class Match {
   public startWithTemplates(templates: Template[]): void {
     this.validateStart(templates);
 
-    this.templates = templates;
+    const missing = this.players.length - templates.length;
+
+    const padded = [
+      ...templates,
+      ...Array.from({ length: Math.max(0, missing) }, (_, i) =>
+        Template.default(`default_template_${templates.length + i}`),
+      ),
+    ];
+
+    this.templates = padded;
     this.assignTemplatesToPlayers();
 
     this.status = MatchStatus.STARTED;
@@ -203,11 +212,7 @@ export class Match {
       throw new InsufficientPlayers();
     }
 
-    if (!templates || templates.length === 0) {
-      throw new TemplateNotFound();
-    }
-
-    if (templates.length !== this.players.length) {
+    if (templates.length > this.players.length) {
       throw new TemplatePlayerCountMismatch(
         templates.length,
         this.players.length,

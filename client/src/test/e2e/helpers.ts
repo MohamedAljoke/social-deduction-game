@@ -54,3 +54,31 @@ export async function startGame(
   }
   return code;
 }
+
+/**
+ * Like startGame but navigates through the Template Builder ("Configure Templates" → "Save & Start").
+ * Optionally runs `configureTemplates` to mutate the builder UI before saving.
+ */
+export async function startGameViaTemplateBuilder(
+  hostPage: Page,
+  guestPages: Page[],
+  configureTemplates?: (hostPage: Page) => Promise<void>,
+): Promise<string> {
+  const code = await createMatch(hostPage, "Alice");
+  for (const [i, page] of guestPages.entries()) {
+    await joinMatch(page, code, GUEST_NAMES[i]);
+  }
+  await expect(hostPage.getByText(GUEST_NAMES[0]).first()).toBeVisible({
+    timeout: 5000,
+  });
+  await hostPage.getByRole("button", { name: /configure templates/i }).click();
+  await hostPage.waitForURL("**/templates");
+  if (configureTemplates) {
+    await configureTemplates(hostPage);
+  }
+  await hostPage.getByRole("button", { name: /save & start/i }).click();
+  for (const page of [hostPage, ...guestPages]) {
+    await expect(page).toHaveURL(/\/game/, { timeout: 8000 });
+  }
+  return code;
+}

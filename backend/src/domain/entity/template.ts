@@ -17,6 +17,10 @@ export class Template {
     readonly endsGameOnWin: boolean = true,
   ) {}
 
+  static default(id: string): Template {
+    return new Template(id, Alignment.Hero, []);
+  }
+
   public getAbility(abilityId: AbilityId): Ability | undefined {
     return this.abilities.find((ability) => ability.id == abilityId);
   }

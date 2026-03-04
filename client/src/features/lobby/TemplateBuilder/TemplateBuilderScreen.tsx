@@ -18,17 +18,15 @@ export function TemplateBuilderScreen() {
   const { state, dispatch, service } = useGame();
   const [loading, setLoading] = useState(false);
 
-  const playerCount = state.match?.players.length || 0;
+  const DEFAULT_TEMPLATES = [
+    { name: "Killer", alignment: "villain" as const, abilities: ["kill"] },
+    { name: "Detective", alignment: "hero" as const, abilities: ["investigate"] },
+  ];
+
   const templates =
     state.configuredTemplates.length > 0
       ? state.configuredTemplates
-      : Array(playerCount)
-          .fill(null)
-          .map((_, i) => ({
-            name: i === 0 ? "Infiltrator" : "Citizen",
-            alignment: i === 0 ? ("villain" as const) : ("hero" as const),
-            abilities: i === 0 ? ["kill"] : ["investigate"],
-          }));
+      : DEFAULT_TEMPLATES;
 
   const updateTemplate = (
     index: number,
