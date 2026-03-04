@@ -83,6 +83,12 @@ npm run dev:server-test   # Backend (Vitest)
 npm run dev:client-test   # Frontend (Playwright e2e)
 ```
 
+### E2E scenario flag
+
+- `ENABLE_ABILITIES_IN_REAL_SCENARIO` in `client/src/test/e2e/real-game-scenario.spec.ts` is currently `false`.
+- This keeps the 8-player full-flow e2e scenario focused on join/phase/voting/end-game without action abilities.
+- Flip it to `true` when extending that scenario to include ability usage assertions.
+
 ---
 
 ## Architecture at a Glance
