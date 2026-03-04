@@ -1,23 +1,16 @@
-import { test as base, chromium } from "@playwright/test";
+import { test as base } from "@playwright/test";
 import type { BrowserContext, Page } from "@playwright/test";
-
-const IS_HEADLESS = true;
-const SHOW_ALL_PLAYERS = false;
 
 export const test = base.extend<{
   createPlayers: (n: number) => Promise<Page[]>;
 }>({
-  createPlayers: async ({}, use) => {
+  createPlayers: async ({ browser }, use) => {
     const contexts: BrowserContext[] = [];
 
     const factory = async (n: number): Promise<Page[]> => {
       const pages: Page[] = [];
 
       for (let i = 0; i < n; i++) {
-        const browser = await chromium.launch({
-          headless: IS_HEADLESS || (!SHOW_ALL_PLAYERS && i !== 0),
-        });
-
         const context = await browser.newContext();
         contexts.push(context);
 

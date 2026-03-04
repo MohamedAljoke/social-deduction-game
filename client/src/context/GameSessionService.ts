@@ -26,18 +26,25 @@ export class GameSessionService {
     this.navigate = navigate;
   }
 
-  connect(matchId: string, playerId: string, player?: { name: string; isHost: boolean }): void {
+  connect(
+    matchId: string,
+    playerId: string,
+    player?: { name: string; isHost: boolean },
+  ): void {
     this.currentMatchId = matchId;
     this.currentPlayerId = playerId;
 
-    this.gateway.connect();
-
     const offConnected = this.gateway.onConnected(() => {
-      this.gateway.joinMatch(matchId, playerId, player ? { id: playerId, ...player } : undefined);
+      this.gateway.joinMatch(
+        matchId,
+        playerId,
+        player ? { id: playerId, ...player } : undefined,
+      );
       offConnected();
     });
 
     this.cleanups.push(
+      offConnected,
       this.gateway.onMatchUpdated((_matchId, state) => {
         this.dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: state });
       }),
@@ -65,6 +72,8 @@ export class GameSessionService {
         console.error(`WS error [${code}]: ${message}`);
       }),
     );
+
+    this.gateway.connect();
   }
 
   disconnect(matchId?: string, playerId?: string): void {
