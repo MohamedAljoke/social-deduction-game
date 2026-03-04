@@ -3,6 +3,7 @@ import {
   MatchStartedPayload,
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../../domain/entity/match";
+import { Alignment } from "../../domain/entity/template";
 import { getWsManager } from "./mod";
 
 export class WebSocketPublisher implements RealtimePublisher {
@@ -65,7 +66,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     });
   }
 
-  matchEnded(matchId: string, winner: string): void {
+  matchEnded(matchId: string, winner: Alignment): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "match_ended",
       matchId,

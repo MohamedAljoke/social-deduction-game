@@ -1,7 +1,7 @@
 import { Player, PlayerResponse } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
-import { Template } from "./template";
+import { Alignment, Template } from "./template";
 import {
   InsufficientPlayers,
   MatchAlreadyStarted,
@@ -50,6 +50,8 @@ interface MatchProps {
   templates?: Template[];
   status: MatchStatus;
   config?: MatchConfig;
+  winnerAlignment?: Alignment | null;
+  endedAt?: Date | null;
 }
 
 export class Match {
@@ -64,6 +66,8 @@ export class Match {
   private templates: Template[];
   private votes: Array<{ voterId: string; targetId: string | null }> = [];
   private config: MatchConfig;
+  private winnerAlignment: Alignment | null;
+  private endedAt: Date | null;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -75,6 +79,8 @@ export class Match {
     this.actions = props.actions ?? [];
     this.templates = props.templates ?? [];
     this.config = props.config ?? { showVotingTransparency: true };
+    this.winnerAlignment = props.winnerAlignment ?? null;
+    this.endedAt = props.endedAt ?? null;
   }
 
   static create(name: string, config?: Partial<MatchConfig>): Match {
@@ -101,6 +107,10 @@ export class Match {
     return this.templates;
   }
 
+  public getWinnerAlignment(): Alignment | null {
+    return this.winnerAlignment;
+  }
+
   public setTemplates(templates: Template[]): void {
     this.templates = templates;
   }
@@ -121,6 +131,8 @@ export class Match {
     this.assignTemplatesToPlayers();
 
     this.status = MatchStatus.STARTED;
+    this.winnerAlignment = null;
+    this.endedAt = null;
   }
 
   public addPlayer(player: Player): void {
@@ -162,7 +174,9 @@ export class Match {
       throw new MatchNotStarted();
     }
 
-    if (this.phase.getCurrentPhase() === "voting") {
+    const isVotingPhase = this.phase.getCurrentPhase() === "voting";
+    let playerEliminatedThisRound = false;
+    if (isVotingPhase) {
       const skipCount = this.votes.filter((v) => v.targetId === null).length;
       const tally = new Map<string, number>();
       for (const { targetId } of this.votes) {
@@ -178,14 +192,22 @@ export class Match {
         const isTied = [...tally.values()].filter((v) => v === topCount).length > 1;
         if (!isTied && topCount > skipCount) {
           const player = this.players.find((p) => p.id === topTarget);
-          player?.eliminate();
+          if (player) {
+            player.eliminate();
+            playerEliminatedThisRound = true;
+          }
         }
       }
 
       this.votes = [];
     }
 
-    return this.phase.nextPhase();
+    const nextPhase = this.phase.nextPhase();
+    if (isVotingPhase && playerEliminatedThisRound) {
+      this.finishIfWinnerExists();
+    }
+
+    return nextPhase;
   }
 
   public getActions(): Action[] {
@@ -281,6 +303,67 @@ export class Match {
     return copy;
   }
 
+  private finishIfWinnerExists(): void {
+    if (this.status !== MatchStatus.STARTED) {
+      return;
+    }
+
+    const winner = this.evaluateWinCondition();
+    if (!winner) {
+      return;
+    }
+
+    this.status = MatchStatus.FINISHED;
+    this.winnerAlignment = winner;
+    this.endedAt ??= new Date();
+  }
+
+  private evaluateWinCondition(): Alignment | null {
+    const counts = this.getAliveAlignmentCounts();
+    const aliveHeroes = counts[Alignment.Hero];
+    const aliveVillains = counts[Alignment.Villain];
+
+    if (aliveHeroes > 0 && aliveVillains === 0) {
+      return Alignment.Hero;
+    }
+
+    if (aliveVillains > 0 && aliveVillains >= aliveHeroes) {
+      return Alignment.Villain;
+    }
+
+    return null;
+  }
+
+  private getAliveAlignmentCounts(): Record<Alignment, number> {
+    const counts: Record<Alignment, number> = {
+      [Alignment.Hero]: 0,
+      [Alignment.Villain]: 0,
+      [Alignment.Neutral]: 0,
+    };
+
+    const templatesById = new Map(this.templates.map((template) => [template.id, template]));
+
+    for (const player of this.players) {
+      if (!player.isAlive()) {
+        continue;
+      }
+
+      const templateId = player.getTemplateId();
+      if (!templateId) {
+        continue;
+      }
+
+      const template = templatesById.get(templateId);
+      if (!template) {
+        continue;
+      }
+
+      counts[template.alignment] += 1;
+    }
+
+    return counts;
+  }
+
   toJSON() {
     return {
       id: this.id,
@@ -309,6 +392,8 @@ export class Match {
       })),
       votes: this.votes,
       config: this.config,
+      winnerAlignment: this.winnerAlignment,
+      endedAt: this.endedAt,
     };
   }
 }

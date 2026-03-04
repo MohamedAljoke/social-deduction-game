@@ -6,7 +6,7 @@ export interface Player {
   id: string;
   name: string;
   templateId?: string;
-  status: "alive" | "dead";
+  status: "alive" | "dead" | "eliminated";
 }
 
 export interface Ability {
@@ -41,6 +41,8 @@ export interface Match {
   config: {
     showVotingTransparency: boolean;
   };
+  winnerAlignment?: Alignment | null;
+  endedAt?: string | null;
 }
 
 export interface PlayerAssignment {

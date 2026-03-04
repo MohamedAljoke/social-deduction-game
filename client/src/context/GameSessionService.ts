@@ -65,8 +65,8 @@ export class GameSessionService {
       this.gateway.onMatchStarted(() => {
         this.navigate("/game");
       }),
-      this.gateway.onMatchEnded(() => {
-        this.navigate("/end");
+      this.gateway.onMatchEnded((matchId) => {
+        void this.fetchMatch(matchId);
       }),
       this.gateway.onError((code, message) => {
         console.error(`WS error [${code}]: ${message}`);

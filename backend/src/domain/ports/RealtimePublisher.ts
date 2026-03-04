@@ -1,4 +1,5 @@
 import { MatchResponse } from "../entity/match";
+import { Alignment } from "../entity/template";
 
 export interface MatchStartedPayload {
   playerAssignments: {
@@ -21,6 +22,6 @@ export interface RealtimePublisher {
     targetIds: string[],
   ): void;
   playerKilled(matchId: string, playerId: string): void;
-  matchEnded(matchId: string, winner: string): void;
+  matchEnded(matchId: string, winner: Alignment): void;
   voteSubmitted(matchId: string, voterId: string, targetId: string | null): void;
 }

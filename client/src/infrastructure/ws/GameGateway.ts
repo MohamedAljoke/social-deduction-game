@@ -1,5 +1,10 @@
 import type { WebSocketClient } from "./WebSocketClient";
-import type { Match, Player, PlayerAssignment } from "../../types/match";
+import type {
+  Alignment,
+  Match,
+  Player,
+  PlayerAssignment,
+} from "../../types/match";
 
 const WS_URL = "ws://localhost:3000/ws";
 
@@ -97,8 +102,10 @@ export class GameGateway {
     }>("match_started", (msg) => handler(msg.matchId, msg.playerAssignments));
   }
 
-  onMatchEnded(handler: (matchId: string, winner: string) => void): () => void {
-    return this.ws.on<{ matchId: string; winner: string }>(
+  onMatchEnded(
+    handler: (matchId: string, winner: Alignment) => void,
+  ): () => void {
+    return this.ws.on<{ matchId: string; winner: Alignment }>(
       "match_ended",
       (msg) => handler(msg.matchId, msg.winner),
     );

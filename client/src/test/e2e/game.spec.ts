@@ -1,5 +1,52 @@
 import { test, expect } from "./fixtures";
-import { startGame, advancePhase } from "./helpers";
+import { startGame, advancePhase, startGameViaTemplateBuilder } from "./helpers";
+import type { Page } from "@playwright/test";
+
+type MatchAlignment = "hero" | "villain" | "neutral";
+
+interface MatchPlayerSnapshot {
+  id: string;
+  name: string;
+  templateId?: string;
+}
+
+interface MatchTemplateSnapshot {
+  id: string;
+  alignment: MatchAlignment;
+}
+
+interface MatchSnapshot {
+  players: MatchPlayerSnapshot[];
+  templates: MatchTemplateSnapshot[];
+}
+
+async function getMatchSnapshot(page: Page, matchId: string): Promise<MatchSnapshot> {
+  const response = await page.request.get(`http://localhost:3000/match/${matchId}`);
+  if (!response.ok()) {
+    throw new Error(`Failed to fetch match ${matchId}`);
+  }
+  return (await response.json()) as MatchSnapshot;
+}
+
+function getAlignmentByName(match: MatchSnapshot, playerName: string): MatchAlignment | null {
+  const player = match.players.find((p) => p.name === playerName);
+  if (!player?.templateId) return null;
+  const template = match.templates.find((t) => t.id === player.templateId);
+  return template?.alignment ?? null;
+}
+
+function findHeroTarget(match: MatchSnapshot, candidates: string[]): string {
+  const hero = candidates.find((name) => getAlignmentByName(match, name) === "hero");
+  if (!hero) {
+    throw new Error(`No hero target found in candidates: ${candidates.join(", ")}`);
+  }
+  return hero;
+}
+
+async function voteForTarget(page: Page, targetName: string): Promise<void> {
+  await page.getByText(targetName).first().click();
+  await page.getByRole("button", { name: /cast vote/i }).click();
+}
 
 test.describe("Game screen", () => {
   test("all players see the game screen with phase banner after game starts", async ({
@@ -112,31 +159,44 @@ test.describe("Voting", () => {
   test("advancing phase from voting eliminates the most-voted player", async ({
     createPlayers,
   }) => {
-    const [hostPage, guestPage] = await createPlayers(2);
-    await startGame(hostPage, [guestPage]);
+    const [hostPage, guest1Page, guest2Page, guest3Page] = await createPlayers(4);
+    const code = await startGameViaTemplateBuilder(hostPage, [
+      guest1Page,
+      guest2Page,
+      guest3Page,
+    ]);
+    const match = await getMatchSnapshot(hostPage, code);
+    const targetName = findHeroTarget(match, ["Bob", "Charlie", "Diana"]);
+    const pagesByName: Record<string, Page> = {
+      Alice: hostPage,
+      Bob: guest1Page,
+      Charlie: guest2Page,
+      Diana: guest3Page,
+    };
 
     // Advance to voting
     await advancePhase(hostPage);
-    await expect(guestPage.getByText(/voting/i).first()).toBeVisible({
+    await expect(guest1Page.getByText(/voting/i).first()).toBeVisible({
       timeout: 5000,
     });
 
-    // Guest votes for Alice (host)
-    await guestPage.getByText("Alice").first().click();
-    await guestPage.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guestPage.getByText(/1 vote/i)).toBeVisible({ timeout: 5000 });
+    for (const [name, page] of Object.entries(pagesByName)) {
+      if (name === targetName) continue;
+      await voteForTarget(page, targetName);
+    }
 
-    // Host advances phase — Alice should be eliminated
+    // Host advances phase — target should be eliminated
     await advancePhase(hostPage);
 
-    for (const page of [hostPage, guestPage]) {
+    for (const page of [hostPage, guest1Page, guest2Page, guest3Page]) {
       await expect(page.getByText(/action/i).first()).toBeVisible({
         timeout: 5000,
       });
     }
 
-    // Alice's card should show eliminated status
-    await expect(hostPage.getByText(/dead|eliminated/i).first()).toBeVisible({
+    await expect(
+      pagesByName[targetName].getByText(/dead|eliminated/i).first(),
+    ).toBeVisible({
       timeout: 5000,
     });
   });
@@ -144,25 +204,38 @@ test.describe("Voting", () => {
   test("eliminated player shows as eliminated status", async ({
     createPlayers,
   }) => {
-    const [hostPage, guestPage] = await createPlayers(2);
-    await startGame(hostPage, [guestPage]);
+    const [hostPage, guest1Page, guest2Page, guest3Page] = await createPlayers(4);
+    const code = await startGameViaTemplateBuilder(hostPage, [
+      guest1Page,
+      guest2Page,
+      guest3Page,
+    ]);
+    const match = await getMatchSnapshot(hostPage, code);
+    const targetName = findHeroTarget(match, ["Bob", "Charlie", "Diana"]);
+    const pagesByName: Record<string, Page> = {
+      Alice: hostPage,
+      Bob: guest1Page,
+      Charlie: guest2Page,
+      Diana: guest3Page,
+    };
+    const targetPage = pagesByName[targetName];
 
     await advancePhase(hostPage);
-    await expect(guestPage.getByText(/voting/i).first()).toBeVisible({
+    await expect(guest1Page.getByText(/voting/i).first()).toBeVisible({
       timeout: 5000,
     });
 
-    // Guest votes for Alice
-    await guestPage.getByText("Alice").first().click();
-    await guestPage.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guestPage.getByText(/1 vote/i)).toBeVisible({ timeout: 5000 });
+    for (const [name, page] of Object.entries(pagesByName)) {
+      if (name === targetName) continue;
+      await voteForTarget(page, targetName);
+    }
 
     await advancePhase(hostPage);
 
-    await expect(guestPage.getByText(/dead|eliminated/i).first()).toBeVisible({
+    await expect(targetPage.getByText(/dead|eliminated/i).first()).toBeVisible({
       timeout: 5000,
     });
-    await expect(hostPage.getByText(/you have been eliminated/i)).toBeVisible({
+    await expect(targetPage.getByText(/you have been eliminated/i)).toBeVisible({
       timeout: 5000,
     });
 
@@ -175,54 +248,59 @@ test.describe("Voting", () => {
       timeout: 5000,
     });
     await expect(
-      hostPage.getByRole("button", { name: /cast vote/i }),
+      targetPage.getByRole("button", { name: /cast vote/i }),
     ).toHaveCount(0);
     await expect(
-      hostPage.getByRole("button", { name: /skip vote/i }),
+      targetPage.getByRole("button", { name: /skip vote/i }),
     ).toHaveCount(0);
   });
 });
 
 test.describe("Voting — edge cases", () => {
-  test("most-voted player is eliminated with 3 players (clear majority)", async ({
+  test("most-voted player is eliminated with 4 players (clear majority)", async ({
     createPlayers,
   }) => {
-    // Alice=host, Bob=guest1, Charlie=guest2
-    const [hostPage, guest1Page, guest2Page] = await createPlayers(3);
-    await startGame(hostPage, [guest1Page, guest2Page]);
+    // Alice=host, Bob=guest1, Charlie=guest2, Diana=guest3
+    const [hostPage, guest1Page, guest2Page, guest3Page] = await createPlayers(4);
+    const code = await startGameViaTemplateBuilder(hostPage, [
+      guest1Page,
+      guest2Page,
+      guest3Page,
+    ]);
+    const match = await getMatchSnapshot(hostPage, code);
+    const targetName = findHeroTarget(match, ["Bob", "Charlie", "Diana"]);
+    const pagesByName: Record<string, Page> = {
+      Alice: hostPage,
+      Bob: guest1Page,
+      Charlie: guest2Page,
+      Diana: guest3Page,
+    };
 
     await advancePhase(hostPage);
     await expect(guest1Page.getByText(/voting/i).first()).toBeVisible({
       timeout: 5000,
     });
 
-    // Both Bob and Charlie vote for Alice — Alice gets 2 votes (clear majority)
-    await guest1Page.getByText("Alice").first().click();
-    await guest1Page.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guest1Page.getByText(/2 votes|1 vote/i).first()).toBeVisible({
-      timeout: 5000,
-    });
+    for (const [name, page] of Object.entries(pagesByName)) {
+      if (name === targetName) continue;
+      await voteForTarget(page, targetName);
+    }
 
-    await guest2Page.getByText("Alice").first().click();
-    await guest2Page.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guest2Page.getByText(/2 votes/i)).toBeVisible({
-      timeout: 5000,
-    });
-
-    // Advance phase — Alice (2 votes) must be eliminated, not Bob or Charlie
+    // Advance phase — selected target must be eliminated
     await advancePhase(hostPage);
 
-    for (const page of [hostPage, guest1Page, guest2Page]) {
+    for (const page of [hostPage, guest1Page, guest2Page, guest3Page]) {
       await expect(page.getByText(/action/i).first()).toBeVisible({
         timeout: 5000,
       });
     }
 
-    // Only Alice's card shows eliminated; Bob and Charlie remain alive
-    await expect(hostPage.getByText(/dead|eliminated/i).first()).toBeVisible({
+    await expect(
+      pagesByName[targetName].getByText(/dead|eliminated/i).first(),
+    ).toBeVisible({
       timeout: 5000,
     });
-    // Bob and Charlie are alive — their status should still say "alive"
+    // At least one non-target player remains alive.
     await expect(guest1Page.getByText(/alive/i).first()).toBeVisible({
       timeout: 5000,
     });
@@ -361,49 +439,62 @@ test.describe("Voting — edge cases", () => {
   test("player changing their vote replaces the previous vote", async ({
     createPlayers,
   }) => {
-    // Alice=host, Bob=guest1, Charlie=guest2
-    const [hostPage, guest1Page, guest2Page] = await createPlayers(3);
-    await startGame(hostPage, [guest1Page, guest2Page]);
+    // Alice=host, Bob=guest1, Charlie=guest2, Diana=guest3
+    const [hostPage, guest1Page, guest2Page, guest3Page] = await createPlayers(4);
+    const code = await startGameViaTemplateBuilder(hostPage, [
+      guest1Page,
+      guest2Page,
+      guest3Page,
+    ]);
+    const match = await getMatchSnapshot(hostPage, code);
+    const eliminationTarget = findHeroTarget(match, ["Charlie", "Diana"]);
+    const initialTarget = eliminationTarget === "Charlie" ? "Alice" : "Charlie";
+    const pagesByName: Record<string, Page> = {
+      Alice: hostPage,
+      Bob: guest1Page,
+      Charlie: guest2Page,
+      Diana: guest3Page,
+    };
 
     await advancePhase(hostPage);
     await expect(guest1Page.getByText(/voting/i).first()).toBeVisible({
       timeout: 5000,
     });
 
-    // Bob initially votes for Alice
-    await guest1Page.getByText("Alice").first().click();
-    await guest1Page.getByRole("button", { name: /cast vote/i }).click();
+    // Bob initially votes for one target
+    await voteForTarget(guest1Page, initialTarget);
     await expect(guest1Page.getByText(/1 vote/i)).toBeVisible({
       timeout: 5000,
     });
 
-    // Bob changes his vote to Charlie
-    await guest1Page.getByText("Charlie").first().click();
-    await guest1Page.getByRole("button", { name: /cast vote/i }).click();
+    // Bob changes his vote to the elimination target
+    await voteForTarget(guest1Page, eliminationTarget);
 
-    // Charlie's card should now have 1 vote; Alice's should have 0 (badge gone)
+    // Only one player should have Bob's vote
     await expect(guest1Page.getByText(/1 vote/i)).toBeVisible({
       timeout: 5000,
     });
-    // Only one vote badge should be visible total (Charlie's)
     await expect(guest1Page.getByText(/1 vote/i)).toHaveCount(1, {
       timeout: 3000,
     });
 
-    // Advance phase — Charlie (1 vote) is eliminated, Alice is safe
+    // Add a second vote to guarantee elimination without ending the game
+    await voteForTarget(hostPage, eliminationTarget);
+
     await advancePhase(hostPage);
 
-    for (const page of [hostPage, guest1Page, guest2Page]) {
+    for (const page of [hostPage, guest1Page, guest2Page, guest3Page]) {
       await expect(page.getByText(/action/i).first()).toBeVisible({
         timeout: 5000,
       });
     }
 
-    await expect(guest2Page.getByText(/dead|eliminated/i).first()).toBeVisible({
-      timeout: 5000,
+    await expect(
+      pagesByName[eliminationTarget].getByText(/dead|eliminated/i).first(),
+    ).toBeVisible({
+      timeout: 3000,
     });
-    // Alice must still be alive
-    await expect(guest2Page.getByText("Alice").first()).toBeVisible({
+    await expect(guest3Page.getByText("Alice").first()).toBeVisible({
       timeout: 3000,
     });
   });
@@ -441,5 +532,29 @@ test.describe("Voting — edge cases", () => {
     await expect(hostPage.getByText(/\d+ votes?/i)).toHaveCount(1, {
       timeout: 3000,
     });
+  });
+});
+
+test.describe("End game", () => {
+  test("match finishes and all players are redirected to end screen", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
+
+    await advancePhase(hostPage); // discussion -> voting
+    await guestPage.getByText("Alice").first().click();
+    await guestPage.getByRole("button", { name: /cast vote/i }).click();
+    await advancePhase(hostPage); // voting -> action (and match finish)
+
+    for (const page of [hostPage, guestPage]) {
+      await expect(page).toHaveURL(/\/end/, { timeout: 8000 });
+      await expect(page.getByText(/heroes win|villains win/i)).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(page.getByText(/role reveal/i)).toBeVisible();
+      await expect(page.getByText("Alice").first()).toBeVisible();
+      await expect(page.getByText("Bob").first()).toBeVisible();
+    }
   });
 });

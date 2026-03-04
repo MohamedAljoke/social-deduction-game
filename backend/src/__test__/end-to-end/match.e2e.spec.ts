@@ -204,7 +204,7 @@ describe("Match E2E", () => {
       });
     });
 
-    it("should reject missing templates", async () => {
+    it("should allow missing templates and fallback to defaults", async () => {
       const { body: match } = await createMatchHelper();
       await joinMatchHelper(match.id, "alice");
       await joinMatchHelper(match.id, "bob");
@@ -218,10 +218,18 @@ describe("Match E2E", () => {
         },
       );
 
-      expect(response.status).toBe(400);
+      const body = (await response.json()) as MatchResponse;
+
+      expect(response.status).toBe(200);
+      expect(body.status).toBe(MatchStatus.STARTED);
+      expect(body.players).toHaveLength(2);
+      expect(body.templates).toHaveLength(2);
+      expect(body.templates.every((template) => template.name === "Citizen")).toBe(
+        true,
+      );
     });
 
-    it("should reject empty templates", async () => {
+    it("should allow empty templates and fallback to defaults", async () => {
       const { body: match } = await createMatchHelper();
       await joinMatchHelper(match.id, "alice");
       await joinMatchHelper(match.id, "bob");
@@ -235,7 +243,15 @@ describe("Match E2E", () => {
         },
       );
 
-      expect(response.status).toBe(400);
+      const body = (await response.json()) as MatchResponse;
+
+      expect(response.status).toBe(200);
+      expect(body.status).toBe(MatchStatus.STARTED);
+      expect(body.players).toHaveLength(2);
+      expect(body.templates).toHaveLength(2);
+      expect(body.templates.every((template) => template.name === "Citizen")).toBe(
+        true,
+      );
     });
 
     it("should reject invalid alignment", async () => {
@@ -291,7 +307,7 @@ describe("Match E2E", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should reject template with empty abilities", async () => {
+    it("should allow template with empty abilities", async () => {
       const { body: match } = await createMatchHelper();
       await joinMatchHelper(match.id, "alice");
       await joinMatchHelper(match.id, "bob");
@@ -313,7 +329,15 @@ describe("Match E2E", () => {
         },
       );
 
-      expect(response.status).toBe(400);
+      const body = (await response.json()) as MatchResponse;
+
+      expect(response.status).toBe(200);
+      expect(body.status).toBe(MatchStatus.STARTED);
+      expect(body.templates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ alignment: Alignment.Villain, abilities: [] }),
+        ]),
+      );
     });
   });
 
@@ -560,6 +584,94 @@ describe("Match E2E", () => {
       });
     });
   });
+
+  describe("Win Condition", () => {
+    it("should finish the match with hero winner when last villain is eliminated", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const hero = findPlayerByAlignment(started, Alignment.Hero);
+
+      expect(villain).toBeDefined();
+      expect(hero).toBeDefined();
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await submitVoteHelper(match.id, hero!.id, villain!.id);
+      const { body: finishedMatch } = await advancePhaseHelper(match.id); // voting -> action
+
+      expect(finishedMatch.status).toBe(MatchStatus.FINISHED);
+      expect(finishedMatch.winnerAlignment).toBe(Alignment.Hero);
+      expect(
+        finishedMatch.players.find((player) => player.id === villain!.id)
+          ?.status,
+      ).toBe("eliminated");
+    });
+
+    it("should finish the match with villain winner when villains reach parity", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: AbilityId.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: AbilityId.Protect }] },
+        { alignment: Alignment.Hero, abilities: [{ id: AbilityId.Investigate }] },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const heroTarget = started.players.find(
+        (player) =>
+          player.id !== villain?.id &&
+          findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+
+      expect(villain).toBeDefined();
+      expect(heroTarget).toBeDefined();
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await submitVoteHelper(match.id, villain!.id, heroTarget!.id);
+      const { body: finishedMatch } = await advancePhaseHelper(match.id); // voting -> action
+
+      expect(finishedMatch.status).toBe(MatchStatus.FINISHED);
+      expect(finishedMatch.winnerAlignment).toBe(Alignment.Villain);
+    });
+
+    it("should keep the match running when voting ends in a tie", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: AbilityId.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: AbilityId.Protect }] },
+        { alignment: Alignment.Hero, abilities: [{ id: AbilityId.Investigate }] },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const heroes = started.players.filter(
+        (player) => findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+
+      expect(villain).toBeDefined();
+      expect(heroes).toHaveLength(2);
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await submitVoteHelper(match.id, villain!.id, heroes[0].id);
+      await submitVoteHelper(match.id, heroes[0].id, villain!.id);
+      const { body: updated } = await advancePhaseHelper(match.id); // voting -> action
+
+      expect(updated.status).toBe(MatchStatus.STARTED);
+      expect(updated.winnerAlignment).toBeNull();
+    });
+  });
 });
 
 async function createMatchHelper(name?: string): Promise<{
@@ -616,6 +728,28 @@ async function startMatchHelper(matchId: string): Promise<{
   body: MatchResponse;
   response: Response;
 }> {
+  return startMatchWithTemplatesHelper(matchId, [
+    {
+      alignment: Alignment.Villain,
+      abilities: [{ id: AbilityId.Kill }],
+    },
+    {
+      alignment: Alignment.Hero,
+      abilities: [{ id: AbilityId.Protect }],
+    },
+  ]);
+}
+
+async function startMatchWithTemplatesHelper(
+  matchId: string,
+  templates: {
+    alignment: Alignment;
+    abilities: { id: AbilityId }[];
+  }[],
+): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
   const response = await fetch(
     `http://localhost:${port}/match/${matchId}/start`,
     {
@@ -624,16 +758,7 @@ async function startMatchHelper(matchId: string): Promise<{
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        templates: [
-          {
-            alignment: Alignment.Villain,
-            abilities: [{ id: AbilityId.Kill }],
-          },
-          {
-            alignment: Alignment.Hero,
-            abilities: [{ id: AbilityId.Protect }],
-          },
-        ],
+        templates,
       }),
     },
   );
@@ -672,22 +797,46 @@ async function useAbilityHelper(
   return { body, response };
 }
 
+async function submitVoteHelper(
+  matchId: string,
+  voterId: string,
+  targetId: string | null,
+): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
+  const response = await fetch(`http://localhost:${port}/match/${matchId}/vote`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ voterId, targetId }),
+  });
+
+  const body = (await response.json()) as MatchResponse;
+
+  return { body, response };
+}
+
+async function advancePhaseHelper(matchId: string): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
+  const response = await fetch(`http://localhost:${port}/match/${matchId}/phase`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+  });
+  const body = (await response.json()) as MatchResponse;
+
+  return { body, response };
+}
+
 async function advanceToActionPhase(matchId: string): Promise<void> {
   let currentPhase = "discussion";
   while (currentPhase !== "action") {
-    const response = await fetch(
-      `http://localhost:${port}/match/${matchId}/phase`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-      },
-    );
+    const { response, body } = await advancePhaseHelper(matchId);
     if (!response.ok) {
-      const body = await response.json();
       throw new Error(`Failed to advance phase: ${JSON.stringify(body)}`);
     }
-    const match = (await response.json()) as MatchResponse;
-    currentPhase = match.phase;
+    currentPhase = body.phase;
   }
 }
 
@@ -696,4 +845,25 @@ async function getMatch(matchId: string): Promise<MatchResponse> {
     method: "GET",
   });
   return (await response.json()) as MatchResponse;
+}
+
+function findTemplateAlignment(
+  match: MatchResponse,
+  playerId: string,
+): Alignment | null {
+  const player = match.players.find((p) => p.id === playerId);
+  if (!player?.templateId) {
+    return null;
+  }
+  const template = match.templates.find((t) => t.id === player.templateId);
+  return template?.alignment ?? null;
+}
+
+function findPlayerByAlignment(
+  match: MatchResponse,
+  alignment: Alignment,
+) {
+  return match.players.find(
+    (player) => findTemplateAlignment(match, player.id) === alignment,
+  );
 }
