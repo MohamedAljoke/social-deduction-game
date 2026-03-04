@@ -1,5 +1,11 @@
 import { test, expect } from "./fixtures";
-import { createMatch, joinMatch, startGame, startGameViaTemplateBuilder } from "./helpers";
+import {
+  createMatch,
+  focus,
+  joinMatch,
+  startGame,
+  startGameViaTemplateBuilder,
+} from "./helpers";
 
 test.describe("Create match", () => {
   test("navigates to lobby and shows match code", async ({ page }) => {
@@ -41,8 +47,7 @@ test.describe("Join match", () => {
   test("existing players see new player appear in real-time without refresh", async ({
     createPlayers,
   }) => {
-    const [hostPage, alicePage, bobPage, charliePage] =
-      await createPlayers(4);
+    const [hostPage, alicePage, bobPage, charliePage] = await createPlayers(4);
 
     const code = await createMatch(hostPage, "Host");
     await joinMatch(alicePage, code, "Alice");
@@ -196,7 +201,9 @@ test.describe("Default template / no abilities", () => {
     await expect(hostPage.getByText("Charlie").first()).toBeVisible({
       timeout: 5000,
     });
-    await hostPage.getByRole("button", { name: /configure templates/i }).click();
+    await hostPage
+      .getByRole("button", { name: /configure templates/i })
+      .click();
     await hostPage.waitForURL("**/templates");
 
     await expect(hostPage.getByTestId("template-card")).toHaveCount(2);
@@ -229,10 +236,18 @@ test.describe("Default template / no abilities", () => {
     const [hostPage, guestPage] = await createPlayers(2);
     await startGameViaTemplateBuilder(hostPage, [guestPage], async (host) => {
       // Deselect Kill from the first template card, Investigate from the second
-      await host.getByTestId("template-card").nth(0)
-        .getByTestId("ability-chip").filter({ hasText: "Kill" }).click();
-      await host.getByTestId("template-card").nth(1)
-        .getByTestId("ability-chip").filter({ hasText: "Investigate" }).click();
+      await host
+        .getByTestId("template-card")
+        .nth(0)
+        .getByTestId("ability-chip")
+        .filter({ hasText: "Kill" })
+        .click();
+      await host
+        .getByTestId("template-card")
+        .nth(1)
+        .getByTestId("ability-chip")
+        .filter({ hasText: "Investigate" })
+        .click();
     });
 
     await expect(hostPage).toHaveURL(/\/game/);
@@ -250,9 +265,7 @@ test.describe("Match code copy", () => {
 
     await page.getByTestId("match-id").click();
 
-    const clipboard = await page.evaluate(() =>
-      navigator.clipboard.readText(),
-    );
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboard).toBe(code);
   });
 });

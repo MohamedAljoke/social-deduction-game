@@ -82,3 +82,14 @@ export async function startGameViaTemplateBuilder(
   }
   return code;
 }
+
+export async function focus(page: Page, label?: string) {
+  await page.bringToFront();
+
+  if (label) {
+    await page.evaluate((l) => {
+      document.title = l;
+      document.body.style.border = "6px solid red";
+    }, label);
+  }
+}
