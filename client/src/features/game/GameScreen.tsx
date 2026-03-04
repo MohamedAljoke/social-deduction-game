@@ -22,6 +22,7 @@ export function GameScreen() {
     handleCancelAbility,
   } = useGameActions();
   const { actions } = useGameLog();
+  const isCurrentPlayerAlive = currentPlayer?.status === "alive";
 
   const handleLeave = () => {
     if (confirm("Leave the game?")) {
@@ -94,6 +95,21 @@ export function GameScreen() {
         <div className="text-sm opacity-90 mt-1">{phaseConfig.description}</div>
       </div>
 
+      {!isCurrentPlayerAlive && (
+        <div
+          className="rounded-2xl p-4 mb-5 text-center"
+          style={{ backgroundColor: "#1a1a2e", border: "2px solid #e94560" }}
+        >
+          <div className="text-lg font-semibold" style={{ color: "#e94560" }}>
+            You have been eliminated
+          </div>
+          <div className="text-sm mt-1" style={{ color: "#a0a0b8" }}>
+            You can continue watching, but you can no longer vote or use
+            abilities.
+          </div>
+        </div>
+      )}
+
       {isHost && match.status === "started" && (
         <div className="mb-5 text-center">
           <button
@@ -118,7 +134,7 @@ export function GameScreen() {
           return (
             <div
               key={player.id}
-              className="rounded-2xl p-4 text-center cursor-pointer transition-all duration-200"
+              className="rounded-2xl p-4 text-center transition-all duration-200"
               style={{
                 backgroundColor: "#16213e",
                 border: isDead
@@ -128,8 +144,12 @@ export function GameScreen() {
                     : "2px solid #2a2a4a",
                 opacity: isDead ? 0.5 : 1,
                 boxShadow: isSelected ? "0 0 20px rgba(233,69,96,0.4)" : "none",
+                cursor:
+                  !isDead && isCurrentPlayerAlive ? "pointer" : "not-allowed",
               }}
-              onClick={() => !isDead && handleTargetClick(player.id)}
+              onClick={() =>
+                !isDead && isCurrentPlayerAlive && handleTargetClick(player.id)
+              }
             >
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg mx-auto mb-2.5"
@@ -164,7 +184,7 @@ export function GameScreen() {
         })}
       </div>
 
-      {match.phase === "action" && currentTemplate && (
+      {match.phase === "action" && currentTemplate && isCurrentPlayerAlive && (
         <div
           className="rounded-2xl p-5 mb-5"
           style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}
@@ -197,7 +217,7 @@ export function GameScreen() {
         </div>
       )}
 
-      {selectedAbility && selectedTarget && (
+      {selectedAbility && selectedTarget && isCurrentPlayerAlive && (
         <div
           className="rounded-2xl p-5 mb-5 text-center"
           style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}
@@ -278,7 +298,7 @@ export function GameScreen() {
         </div>
       )}
 
-      {match.phase === "voting" && (
+      {match.phase === "voting" && isCurrentPlayerAlive && (
         <div
           className="rounded-2xl p-5 mb-5 text-center"
           style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}

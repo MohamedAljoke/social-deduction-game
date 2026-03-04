@@ -162,6 +162,24 @@ test.describe("Voting", () => {
     await expect(guestPage.getByText(/dead|eliminated/i).first()).toBeVisible({
       timeout: 5000,
     });
+    await expect(hostPage.getByText(/you have been eliminated/i)).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Advance to the next voting round; eliminated players still cannot vote.
+    await advancePhase(hostPage); // action -> resolution
+    await advancePhase(hostPage); // resolution -> discussion
+    await advancePhase(hostPage); // discussion -> voting
+
+    await expect(hostPage.getByText(/voting/i).first()).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(
+      hostPage.getByRole("button", { name: /cast vote/i }),
+    ).toHaveCount(0);
+    await expect(
+      hostPage.getByRole("button", { name: /skip vote/i }),
+    ).toHaveCount(0);
   });
 });
 
