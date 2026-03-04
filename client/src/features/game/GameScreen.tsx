@@ -39,6 +39,7 @@ export function GameScreen() {
   if (!match) {
     return <div>Loading...</div>;
   }
+  const showVotingTransparency = match.config?.showVotingTransparency ?? true;
 
   return (
     <div
@@ -171,7 +172,7 @@ export function GameScreen() {
               >
                 {player.status}
               </div>
-              {match.phase === "voting" && voteCount > 0 && (
+              {match.phase === "voting" && showVotingTransparency && voteCount > 0 && (
                 <div
                   className="mt-1 text-[11px] font-bold rounded-full px-2 py-0.5 inline-block"
                   style={{ backgroundColor: "#e94560", color: "#fff" }}
@@ -244,7 +245,7 @@ export function GameScreen() {
         </div>
       )}
 
-      {match.phase === "voting" && (
+      {match.phase === "voting" && showVotingTransparency && (
         <div
           data-testid="vote-status-panel"
           className="rounded-2xl p-4 mb-5"
@@ -255,7 +256,6 @@ export function GameScreen() {
             style={{ color: "#6b6b80" }}
           >
             Vote Status
-            {/* TODO: Add showVotingTransparency to match config - hide when config.showVotingTransparency === false */}
           </div>
           {match.players
             .filter((player) => player.status === "alive")

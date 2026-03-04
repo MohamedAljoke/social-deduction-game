@@ -13,6 +13,7 @@ const baseMatch: Match = {
   templates: [],
   actions: [],
   createdAt: "2026-01-01T00:00:00.000Z",
+  config: { showVotingTransparency: true },
 };
 
 const baseState: GameState = {

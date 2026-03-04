@@ -5,6 +5,11 @@ import { AbilityId } from "../../../domain/entity/ability";
 export const CreateMatchSchema = z
   .object({
     name: z.string().optional(),
+    config: z
+      .object({
+        showVotingTransparency: z.boolean().optional(),
+      })
+      .optional(),
   })
   .optional();
 
@@ -21,6 +26,7 @@ export const TemplateAbilitySchema = z.object({
 });
 
 export const TemplateSchema = z.object({
+  name: z.string().min(1).max(20).optional(),
   alignment: z.enum(Alignment),
   abilities: z.array(TemplateAbilitySchema),
 });

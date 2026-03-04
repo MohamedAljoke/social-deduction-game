@@ -11,6 +11,7 @@ export function useHomeScreen() {
   const [mode, setMode] = useState<Mode>("create");
   const [playerName, setPlayerName] = useState("");
   const [matchCode, setMatchCode] = useState("");
+  const [openVoting, setOpenVoting] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +33,9 @@ export function useHomeScreen() {
 
       try {
         if (mode === "create") {
-          await service.createMatch(playerName.trim());
+          await service.createMatch(playerName.trim(), {
+            showVotingTransparency: openVoting,
+          });
         } else {
           await service.joinMatch(matchCode.trim(), playerName.trim());
         }
@@ -47,17 +50,19 @@ export function useHomeScreen() {
         setLoading(false);
       }
     },
-    [mode, playerName, matchCode, service, navigate],
+    [mode, playerName, matchCode, openVoting, service, navigate],
   );
 
   return {
     mode,
     playerName,
     matchCode,
+    openVoting,
     loading,
     error,
     setPlayerName,
     setMatchCode,
+    setOpenVoting,
     toggleMode,
     submit,
   };

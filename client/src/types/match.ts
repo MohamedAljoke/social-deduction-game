@@ -38,6 +38,9 @@ export interface Match {
   actions: Action[];
   createdAt: string;
   votes?: Array<{ voterId: string; targetId: string | null }>;
+  config: {
+    showVotingTransparency: boolean;
+  };
 }
 
 export interface PlayerAssignment {
@@ -50,4 +53,11 @@ export interface TemplateInput {
   name?: string;
   alignment: Alignment;
   abilities: { id: string }[];
+}
+
+export interface CreateMatchInput {
+  name: string;
+  config?: {
+    showVotingTransparency?: boolean;
+  };
 }

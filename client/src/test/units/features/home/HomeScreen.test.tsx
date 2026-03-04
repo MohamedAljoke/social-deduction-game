@@ -53,7 +53,9 @@ describe("HomeScreen integration", () => {
     await userEvent.click(screen.getByRole("button", { name: /create game/i }));
 
     await waitFor(() => {
-      expect(mockCreateMatch).toHaveBeenCalledWith("Mohamed");
+      expect(mockCreateMatch).toHaveBeenCalledWith("Mohamed", {
+        showVotingTransparency: true,
+      });
       expect(mockNavigate).toHaveBeenCalledWith("/lobby");
     });
   });

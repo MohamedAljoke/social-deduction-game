@@ -1,4 +1,4 @@
-import type { Match, TemplateInput } from "../../types/match";
+import type { CreateMatchInput, Match, TemplateInput } from "../../types/match";
 
 const API_URL = "http://localhost:3000";
 
@@ -9,11 +9,11 @@ export class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  async createMatch(name: string): Promise<Match> {
+  async createMatch(input: CreateMatchInput): Promise<Match> {
     const response = await fetch(`${this.baseUrl}/match`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify(input),
     });
     if (!response.ok) throw new Error("Failed to create match");
     return response.json();

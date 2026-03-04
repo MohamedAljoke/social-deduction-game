@@ -23,6 +23,9 @@ export function TemplateBuilderScreen() {
     { name: "Detective", alignment: "hero" as const, abilities: ["investigate"] },
   ];
 
+  const playerCount = state.match?.players.length ?? 2;
+  const maxTemplates = Math.max(2, playerCount);
+
   const templates =
     state.configuredTemplates.length > 0
       ? state.configuredTemplates
@@ -53,7 +56,7 @@ export function TemplateBuilderScreen() {
     setLoading(true);
     try {
       const apiTemplates = templates.map((t) => ({
-        name: t.name,
+        name: t.name.trim() || undefined,
         alignment: t.alignment,
         abilities: t.abilities.map((id) => ({ id })),
       }));
@@ -64,6 +67,21 @@ export function TemplateBuilderScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddTemplate = () => {
+    if (templates.length >= maxTemplates) return;
+    const next = [
+      ...templates,
+      { name: `Template ${templates.length + 1}`, alignment: "hero" as const, abilities: [] },
+    ];
+    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: next });
+  };
+
+  const handleRemoveTemplate = (index: number) => {
+    if (templates.length <= 2) return;
+    const next = templates.filter((_, i) => i !== index);
+    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: next });
   };
 
   return (
@@ -101,6 +119,15 @@ export function TemplateBuilderScreen() {
                   >
                     Template {index + 1}
                   </span>
+                  {templates.length > 2 && (
+                    <button
+                      className="text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                      style={{ color: "#e94560", background: "transparent", border: "none" }}
+                      onClick={() => handleRemoveTemplate(index)}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
                 <div className="flex gap-3 mb-3">
                   <input
@@ -167,6 +194,18 @@ export function TemplateBuilderScreen() {
                 </div>
               </div>
             ))}
+            <Button
+              variant="secondary"
+              onClick={handleAddTemplate}
+              disabled={templates.length >= maxTemplates}
+            >
+              {templates.length >= maxTemplates
+                ? `Max templates reached (${maxTemplates})`
+                : "Add Template"}
+            </Button>
+            <div className="text-xs mt-2" style={{ color: "#6b6b80" }}>
+              Templates: {templates.length}/{maxTemplates}
+            </div>
           </div>
 
           <div className="flex gap-3 mt-5">

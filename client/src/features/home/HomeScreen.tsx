@@ -10,10 +10,12 @@ export function HomeScreen() {
     mode,
     playerName,
     matchCode,
+    openVoting,
     loading,
     error,
     setPlayerName,
     setMatchCode,
+    setOpenVoting,
     toggleMode,
     submit,
   } = useHomeScreen();
@@ -58,6 +60,36 @@ export function HomeScreen() {
                 maxLength={10}
                 required
               />
+            )}
+
+            {isCreate && (
+              <div
+                className="mb-5 p-4 rounded-xl flex items-center justify-between"
+                style={{
+                  backgroundColor: "#1a1a2e",
+                  border: "2px solid #2a2a4a",
+                }}
+              >
+                <div>
+                  <div
+                    className="text-xs uppercase tracking-wider"
+                    style={{ color: "#a0a0b8" }}
+                  >
+                    Open Voting
+                  </div>
+                  <div className="text-sm" style={{ color: "#6b6b80" }}>
+                    Show who votes for whom in real time
+                  </div>
+                </div>
+                <input
+                  id="openVoting"
+                  type="checkbox"
+                  checked={openVoting}
+                  onChange={(e) => setOpenVoting(e.target.checked)}
+                  aria-label="Open Voting"
+                  className="w-5 h-5 cursor-pointer accent-[#e94560]"
+                />
+              </div>
             )}
 
             <Button type="submit" loading={loading}>

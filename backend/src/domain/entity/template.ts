@@ -19,7 +19,7 @@ export class Template {
   ) {}
 
   static default(id: string): Template {
-    return new Template("", id, Alignment.Hero, []);
+    return new Template("Citizen", id, Alignment.Hero, []);
   }
 
   public getAbility(abilityId: AbilityId): Ability | undefined {

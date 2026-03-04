@@ -33,8 +33,9 @@ export class StartMatchUseCase {
 
     const templates = input.templates.map((raw, index) => {
       const abilities = raw.abilities.map((a) => new Ability(a.id));
+      const name = raw.name?.trim() || "Citizen";
 
-      return new Template(raw.name ?? "", `template_${index}`, raw.alignment, abilities);
+      return new Template(name, `template_${index}`, raw.alignment, abilities);
     });
 
     match.startWithTemplates(templates);

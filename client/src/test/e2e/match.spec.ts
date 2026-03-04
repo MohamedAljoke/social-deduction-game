@@ -1,5 +1,6 @@
 import { test, expect } from "./fixtures";
 import {
+  advancePhase,
   createMatch,
   focus,
   joinMatch,
@@ -252,6 +253,55 @@ test.describe("Default template / no abilities", () => {
 
     await expect(hostPage).toHaveURL(/\/game/);
     await expect(guestPage).toHaveURL(/\/game/);
+  });
+
+  test("template builder allows adding templates up to player count", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage1, guestPage2] = await createPlayers(3);
+    const code = await createMatch(hostPage, "Alice");
+    await joinMatch(guestPage1, code, "Bob");
+    await joinMatch(guestPage2, code, "Charlie");
+
+    await hostPage.getByRole("button", { name: /configure templates/i }).click();
+    await hostPage.waitForURL("**/templates");
+    await expect(hostPage.getByTestId("template-card")).toHaveCount(2);
+
+    await hostPage.getByRole("button", { name: /add template/i }).click();
+    await expect(hostPage.getByTestId("template-card")).toHaveCount(3);
+
+    await hostPage.getByRole("button", { name: /save & start/i }).click();
+    await expect(hostPage).toHaveURL(/\/game/);
+    await expect(guestPage1).toHaveURL(/\/game/);
+    await expect(guestPage2).toHaveURL(/\/game/);
+  });
+});
+
+test.describe("Match config", () => {
+  test("open voting disabled at creation hides voting transparency panel", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await hostPage.goto("http://localhost:5173");
+    await hostPage.getByLabel(/your name/i).fill("Alice");
+    await hostPage.getByLabel(/open voting/i).uncheck();
+    await hostPage.getByRole("button", { name: /create game/i }).click();
+    await hostPage.waitForURL("**/lobby");
+
+    const code = (await hostPage.getByTestId("match-id").textContent())!.trim();
+    await joinMatch(guestPage, code, "Bob");
+
+    await hostPage.getByRole("button", { name: /start game/i }).click();
+    await expect(hostPage).toHaveURL(/\/game/);
+    await expect(guestPage).toHaveURL(/\/game/);
+
+    await advancePhase(hostPage);
+    await expect(hostPage.getByText(/voting/i).first()).toBeVisible({
+      timeout: 5000,
+    });
+
+    await expect(hostPage.getByTestId("vote-status-panel")).not.toBeVisible();
+    await expect(guestPage.getByTestId("vote-status-panel")).not.toBeVisible();
   });
 });
 

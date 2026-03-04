@@ -36,6 +36,10 @@ export enum MatchStatus {
 
 export type MatchResponse = ReturnType<Match["toJSON"]>;
 
+export interface MatchConfig {
+  showVotingTransparency: boolean;
+}
+
 interface MatchProps {
   id: string;
   name: string;
@@ -45,6 +49,7 @@ interface MatchProps {
   actions?: Action[];
   templates?: Template[];
   status: MatchStatus;
+  config?: MatchConfig;
 }
 
 export class Match {
@@ -58,6 +63,7 @@ export class Match {
   private actions: Action[];
   private templates: Template[];
   private votes: Array<{ voterId: string; targetId: string | null }> = [];
+  private config: MatchConfig;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -68,14 +74,18 @@ export class Match {
     this.phase = props.phase ?? new Phase();
     this.actions = props.actions ?? [];
     this.templates = props.templates ?? [];
+    this.config = props.config ?? { showVotingTransparency: true };
   }
 
-  static create(name: string): Match {
+  static create(name: string, config?: Partial<MatchConfig>): Match {
     return new Match({
       id: generateShortCode(),
       name: name,
       status: MatchStatus.LOBBY,
       createdAt: new Date(),
+      config: {
+        showVotingTransparency: config?.showVotingTransparency ?? true,
+      },
     });
   }
 
@@ -298,6 +308,7 @@ export class Match {
         endsGameOnWin: template.endsGameOnWin,
       })),
       votes: this.votes,
+      config: this.config,
     };
   }
 }

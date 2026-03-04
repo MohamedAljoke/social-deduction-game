@@ -87,8 +87,11 @@ export class GameSessionService {
     this.gateway.disconnect();
   }
 
-  async createMatch(name: string): Promise<void> {
-    const created = await this.api.createMatch(name);
+  async createMatch(
+    name: string,
+    config?: { showVotingTransparency?: boolean },
+  ): Promise<void> {
+    const created = await this.api.createMatch({ name, config });
     const joined = await this.api.joinMatch(created.id, name);
     const player = joined.players.find((p) => p.name === name);
     if (!player) throw new Error("Player not found after join");
