@@ -51,6 +51,11 @@ export function useGameActions() {
     state.playerId,
   ]);
 
+  const handleSkipVote = useCallback(async () => {
+    if (!state.matchId || !state.playerId) return;
+    await service.castVote(state.matchId, state.playerId, null);
+  }, [service, state.matchId, state.playerId]);
+
   const handleCancelAbility = useCallback(() => {
     dispatch({ type: GAME_ACTIONS.SELECT_ABILITY, payload: null });
   }, [dispatch]);
@@ -62,6 +67,7 @@ export function useGameActions() {
     handleAbilityClick,
     handleTargetClick,
     handleConfirm,
+    handleSkipVote,
     handleCancelAbility,
   };
 }

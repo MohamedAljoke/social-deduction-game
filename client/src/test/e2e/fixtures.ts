@@ -1,6 +1,7 @@
 import { test as base, chromium } from "@playwright/test";
 import type { BrowserContext, Page } from "@playwright/test";
 
+const IS_HEADLESS = true;
 const SHOW_ALL_PLAYERS = false;
 
 export const test = base.extend<{
@@ -14,7 +15,7 @@ export const test = base.extend<{
 
       for (let i = 0; i < n; i++) {
         const browser = await chromium.launch({
-          headless: !SHOW_ALL_PLAYERS && i !== 0,
+          headless: IS_HEADLESS || (!SHOW_ALL_PLAYERS && i !== 0),
         });
 
         const context = await browser.newContext();

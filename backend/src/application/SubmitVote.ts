@@ -6,7 +6,7 @@ import { MatchResponse } from "../domain/entity/match";
 export interface SubmitVoteInput {
   matchId: string;
   voterId: string;
-  targetId: string;
+  targetId: string | null;
 }
 
 export class SubmitVoteUseCase {

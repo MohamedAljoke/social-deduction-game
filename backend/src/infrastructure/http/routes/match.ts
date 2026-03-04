@@ -99,7 +99,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
   server.register("post", "/match/:matchId/vote", async (req, res) => {
     const schema = z.object({
       voterId: z.string(),
-      targetId: z.string(),
+      targetId: z.string().nullable(),
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {

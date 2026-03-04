@@ -57,7 +57,7 @@ export class Match {
   private phase: Phase;
   private actions: Action[];
   private templates: Template[];
-  private votes: Array<{ voterId: string; targetId: string }> = [];
+  private votes: Array<{ voterId: string; targetId: string | null }> = [];
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -129,13 +129,13 @@ export class Match {
     return this.phase.getCurrentPhase();
   }
 
-  public submitVote(voterId: string, targetId: string): void {
+  public submitVote(voterId: string, targetId: string | null): void {
     if (this.phase.getCurrentPhase() !== "voting") {
       throw new InvalidPhase();
     }
 
     const playerIds = new Set(this.players.map((p) => p.id));
-    if (!playerIds.has(voterId) || !playerIds.has(targetId)) {
+    if (!playerIds.has(voterId) || (targetId !== null && !playerIds.has(targetId))) {
       throw new PlayerNotInMatch();
     }
 
@@ -153,17 +153,23 @@ export class Match {
     }
 
     if (this.phase.getCurrentPhase() === "voting") {
+      const skipCount = this.votes.filter((v) => v.targetId === null).length;
       const tally = new Map<string, number>();
       for (const { targetId } of this.votes) {
-        tally.set(targetId, (tally.get(targetId) ?? 0) + 1);
+        if (targetId !== null) {
+          tally.set(targetId, (tally.get(targetId) ?? 0) + 1);
+        }
       }
 
       if (tally.size > 0) {
-        const topTarget = [...tally.entries()].reduce((a, b) =>
+        const [topTarget, topCount] = [...tally.entries()].reduce((a, b) =>
           b[1] > a[1] ? b : a,
-        )[0];
-        const player = this.players.find((p) => p.id === topTarget);
-        player?.eliminate();
+        );
+        const isTied = [...tally.values()].filter((v) => v === topCount).length > 1;
+        if (!isTied && topCount > skipCount) {
+          const player = this.players.find((p) => p.id === topTarget);
+          player?.eliminate();
+        }
       }
 
       this.votes = [];

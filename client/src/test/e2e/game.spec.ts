@@ -136,7 +136,7 @@ test.describe("Voting", () => {
     }
 
     // Alice's card should show eliminated status
-    await expect(hostPage.getByText(/eliminated/i).first()).toBeVisible({
+    await expect(hostPage.getByText(/dead|eliminated/i).first()).toBeVisible({
       timeout: 5000,
     });
   });
@@ -159,7 +159,7 @@ test.describe("Voting", () => {
 
     await advancePhase(hostPage);
 
-    await expect(guestPage.getByText(/eliminated/i).first()).toBeVisible({
+    await expect(guestPage.getByText(/dead|eliminated/i).first()).toBeVisible({
       timeout: 5000,
     });
   });
@@ -201,7 +201,7 @@ test.describe("Voting — edge cases", () => {
     }
 
     // Only Alice's card shows eliminated; Bob and Charlie remain alive
-    await expect(hostPage.getByText(/eliminated/i).first()).toBeVisible({
+    await expect(hostPage.getByText(/dead|eliminated/i).first()).toBeVisible({
       timeout: 5000,
     });
     // Bob and Charlie are alive — their status should still say "alive"
@@ -210,13 +210,31 @@ test.describe("Voting — edge cases", () => {
     });
   });
 
-  test("tie vote — first-voted player is eliminated (deterministic tie-break)", async ({
+  test("player can cast skip vote — no vote badge appears on any card", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
+
+    await advancePhase(hostPage);
+    await expect(guestPage.getByText(/voting/i).first()).toBeVisible({
+      timeout: 5000,
+    });
+
+    await guestPage.getByRole("button", { name: /skip vote/i }).click();
+
+    await expect(guestPage.getByText(/\d+ votes?/i)).toHaveCount(0, {
+      timeout: 5000,
+    });
+    await expect(hostPage.getByText(/\d+ votes?/i)).toHaveCount(0, {
+      timeout: 5000,
+    });
+  });
+
+  test("skip majority — player is not eliminated when skips outnumber votes", async ({
     createPlayers,
   }) => {
     // Alice=host, Bob=guest1, Charlie=guest2
-    // Bob votes for Alice first → Alice enters the tally map first
-    // Charlie votes for Bob → Bob enters second with equal count
-    // Tie-break: first entry (Alice) is eliminated
     const [hostPage, guest1Page, guest2Page] = await createPlayers(3);
     await startGame(hostPage, [guest1Page, guest2Page]);
 
@@ -225,40 +243,78 @@ test.describe("Voting — edge cases", () => {
       timeout: 5000,
     });
 
-    // Bob votes for Alice (Alice is first in tally)
-    await guest1Page.getByText("Alice").first().click();
-    await guest1Page.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guest1Page.getByText(/1 vote/i)).toBeVisible({
-      timeout: 5000,
-    });
+    // Bob and Charlie skip, Alice votes Bob => Bob 1, skip 2
+    await guest1Page.getByRole("button", { name: /skip vote/i }).click();
+    await guest2Page.getByRole("button", { name: /skip vote/i }).click();
+    await hostPage.getByText("Bob").first().click();
+    await hostPage.getByRole("button", { name: /cast vote/i }).click();
 
-    // Charlie votes for Bob (Bob is second in tally — now tied 1-1)
-    await guest2Page.getByText("Bob").first().click();
-    await guest2Page.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guest2Page.getByText(/1 vote/i).first()).toBeVisible({
-      timeout: 5000,
-    });
-
-    // Advance phase — tie → first-voted player (Alice) gets eliminated
     await advancePhase(hostPage);
 
     for (const page of [hostPage, guest1Page, guest2Page]) {
       await expect(page.getByText(/action/i).first()).toBeVisible({
         timeout: 5000,
       });
+      await expect(page.getByText(/dead|eliminated/i)).toHaveCount(0);
     }
+  });
 
-    // Exactly one player eliminated — Alice (first in tally)
-    await expect(hostPage.getByText(/eliminated/i).first()).toBeVisible({
+  test("tie vote — no player is eliminated when votes are tied", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guest1Page, guest2Page] = await createPlayers(3);
+    await startGame(hostPage, [guest1Page, guest2Page]);
+
+    await advancePhase(hostPage);
+    await expect(guest1Page.getByText(/voting/i).first()).toBeVisible({
       timeout: 5000,
     });
-    // Bob must still be alive (he was second in tally)
-    await expect(guest1Page.getByText("Bob").first()).toBeVisible({
-      timeout: 3000,
+
+    // Bob -> Alice, Charlie -> Bob (1-1 tie)
+    await guest1Page.getByText("Alice").first().click();
+    await guest1Page.getByRole("button", { name: /cast vote/i }).click();
+    await guest2Page.getByText("Bob").first().click();
+    await guest2Page.getByRole("button", { name: /cast vote/i }).click();
+
+    await advancePhase(hostPage);
+
+    for (const page of [hostPage, guest1Page, guest2Page]) {
+      await expect(page.getByText(/action/i).first()).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(page.getByText(/dead|eliminated/i)).toHaveCount(0);
+    }
+  });
+
+  test("voting transparency panel is visible during voting phase", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
+
+    await advancePhase(hostPage);
+    await expect(hostPage.getByText(/vote status/i)).toBeVisible({
+      timeout: 5000,
     });
-    // Bob's status card should show "alive", not "eliminated"
-    const bobCard = guest1Page.getByText("Bob").first().locator("..");
-    await expect(bobCard.getByText(/alive/i)).toBeVisible({ timeout: 3000 });
+    await expect(hostPage.getByText("Alice").first()).toBeVisible();
+    await expect(hostPage.getByText("Bob").first()).toBeVisible();
+  });
+
+  test("transparency panel shows Skip for players who skip", async ({
+    createPlayers,
+  }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
+
+    await advancePhase(hostPage);
+    await guestPage.getByRole("button", { name: /skip vote/i }).click();
+
+    await expect(
+      hostPage.getByTestId("vote-status-panel").getByText(/^Skip$/),
+    ).toBeVisible({ timeout: 5000 });
+    await expect(
+      guestPage.getByTestId("vote-status-panel").getByText(/^Skip$/),
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("no votes cast — phase advances without any elimination", async ({
@@ -280,7 +336,7 @@ test.describe("Voting — edge cases", () => {
         timeout: 5000,
       });
       // No player should be eliminated
-      await expect(page.getByText(/eliminated/i)).not.toBeVisible();
+      await expect(page.getByText(/dead|eliminated/i)).not.toBeVisible();
     }
   });
 
@@ -325,7 +381,7 @@ test.describe("Voting — edge cases", () => {
       });
     }
 
-    await expect(guest2Page.getByText(/eliminated/i).first()).toBeVisible({
+    await expect(guest2Page.getByText(/dead|eliminated/i).first()).toBeVisible({
       timeout: 5000,
     });
     // Alice must still be alive

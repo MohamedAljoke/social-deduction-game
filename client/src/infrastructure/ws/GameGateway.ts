@@ -35,7 +35,7 @@ export class GameGateway {
     this.ws.send("use_ability", { matchId, actorId, abilityId, targetIds });
   }
 
-  castVote(matchId: string, voterId: string, targetId: string): void {
+  castVote(matchId: string, voterId: string, targetId: string | null): void {
     this.ws.send("submit_vote", { matchId, voterId, targetId });
   }
 

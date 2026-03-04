@@ -22,5 +22,5 @@ export interface RealtimePublisher {
   ): void;
   playerKilled(matchId: string, playerId: string): void;
   matchEnded(matchId: string, winner: string): void;
-  voteSubmitted(matchId: string, voterId: string, targetId: string): void;
+  voteSubmitted(matchId: string, voterId: string, targetId: string | null): void;
 }

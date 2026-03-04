@@ -18,6 +18,7 @@ export function GameScreen() {
     handleAbilityClick,
     handleTargetClick,
     handleConfirm,
+    handleSkipVote,
     handleCancelAbility,
   } = useGameActions();
   const { actions } = useGameLog();
@@ -225,6 +226,60 @@ export function GameScreen() {
 
       {match.phase === "voting" && (
         <div
+          data-testid="vote-status-panel"
+          className="rounded-2xl p-4 mb-5"
+          style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}
+        >
+          <div
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: "#6b6b80" }}
+          >
+            Vote Status
+            {/* TODO: Add showVotingTransparency to match config - hide when config.showVotingTransparency === false */}
+          </div>
+          {match.players
+            .filter((player) => player.status === "alive")
+            .map((player) => {
+              const vote = match.votes?.find((v) => v.voterId === player.id);
+              const targetLabel =
+                vote === undefined
+                  ? "Waiting..."
+                  : vote.targetId === null
+                    ? "Skip"
+                    : (match.players.find((p) => p.id === vote.targetId)?.name ??
+                      "?");
+              return (
+                <div
+                  key={player.id}
+                  className="flex justify-between text-sm py-1"
+                  style={{
+                    color: "#a0a0b8",
+                    borderBottom: "1px solid #2a2a4a",
+                  }}
+                >
+                  <span style={{ color: "#e94560", fontWeight: 600 }}>
+                    {player.name}
+                    {player.id === playerId ? " (You)" : ""}
+                  </span>
+                  <span>
+                    →{" "}
+                    <span
+                      style={{
+                        color: vote?.targetId === null ? "#6b6b80" : "#4ade80",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {targetLabel}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+        </div>
+      )}
+
+      {match.phase === "voting" && (
+        <div
           className="rounded-2xl p-5 mb-5 text-center"
           style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}
         >
@@ -236,6 +291,17 @@ export function GameScreen() {
             onClick={handleConfirm}
           >
             Cast Vote
+          </button>
+          <button
+            className="py-3 px-8 rounded-lg text-sm font-semibold cursor-pointer ml-3"
+            style={{
+              backgroundColor: "transparent",
+              border: "2px solid #6b6b80",
+              color: "#a0a0b8",
+            }}
+            onClick={handleSkipVote}
+          >
+            Skip Vote
           </button>
         </div>
       )}

@@ -11,14 +11,14 @@ A real-time multiplayer social deduction game built with:
 
 ## Quick Navigation
 
-| What you need | Where to look |
-|---|---|
-| Backend architecture & key files | [`backend/README.md`](backend/README.md) |
-| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md) |
-| WebSocket event contracts | [`docs/implementation-spec/websocket/README.md`](docs/implementation-spec/websocket/README.md) |
-| Ability system design & steps | [`docs/implementation-spec/ability/README.md`](docs/implementation-spec/ability/README.md) |
-| Frontend screen/flow design | [`docs/implementation-spec/front/front.md`](docs/implementation-spec/front/front.md) |
-| Frontend React component plan | [`docs/implementation-spec/front/react-components.md`](docs/implementation-spec/front/react-components.md) |
+| What you need                        | Where to look                                                                                              |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Backend architecture & key files     | [`backend/README.md`](backend/README.md)                                                                   |
+| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md)                                                                     |
+| WebSocket event contracts            | [`docs/implementation-spec/websocket/README.md`](docs/implementation-spec/websocket/README.md)             |
+| Ability system design & steps        | [`docs/implementation-spec/ability/README.md`](docs/implementation-spec/ability/README.md)                 |
+| Frontend screen/flow design          | [`docs/implementation-spec/front/front.md`](docs/implementation-spec/front/front.md)                       |
+| Frontend React component plan        | [`docs/implementation-spec/front/react-components.md`](docs/implementation-spec/front/react-components.md) |
 
 ---
 
@@ -40,23 +40,23 @@ social-deduction-game/
 
 **Backend**
 
-| File | Purpose |
-|---|---|
-| `backend/src/domain/entity/match.ts` | Core Match aggregate |
-| `backend/src/application/` | Use cases (StartMatch, UseAbility, AdvancePhase, LeaveMatch…) |
-| `backend/src/infrastructure/websocket/mod.ts` | WebSocket server & room management |
-| `backend/src/infrastructure/http/routes/match.ts` | REST routes |
-| `backend/src/container.ts` | Dependency injection wiring |
+| File                                              | Purpose                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| `backend/src/domain/entity/match.ts`              | Core Match aggregate                                          |
+| `backend/src/application/`                        | Use cases (StartMatch, UseAbility, AdvancePhase, LeaveMatch…) |
+| `backend/src/infrastructure/websocket/mod.ts`     | WebSocket server & room management                            |
+| `backend/src/infrastructure/http/routes/match.ts` | REST routes                                                   |
+| `backend/src/container.ts`                        | Dependency injection wiring                                   |
 
 **Frontend**
 
-| File | Purpose |
-|---|---|
-| `client/src/context/GameContext.tsx` | React context + reducer + Provider |
-| `client/src/context/GameSessionService.ts` | Orchestrates gateway + API + dispatch |
-| `client/src/infrastructure/ws/GameGateway.ts` | Domain-aware WebSocket bridge |
-| `client/src/infrastructure/http/ApiClient.ts` | Typed REST client |
-| `client/src/types/events.ts` | ClientEvent / ServerEvent union types |
+| File                                          | Purpose                               |
+| --------------------------------------------- | ------------------------------------- |
+| `client/src/context/GameContext.tsx`          | React context + reducer + Provider    |
+| `client/src/context/GameSessionService.ts`    | Orchestrates gateway + API + dispatch |
+| `client/src/infrastructure/ws/GameGateway.ts` | Domain-aware WebSocket bridge         |
+| `client/src/infrastructure/http/ApiClient.ts` | Typed REST client                     |
+| `client/src/types/events.ts`                  | ClientEvent / ServerEvent union types |
 
 ---
 
@@ -119,3 +119,7 @@ Resolution pipeline: `Action → ActionResolver → [KillHandler | ProtectHandle
 - Scalable real-time engine
 - Easy migration to PostgreSQL
 - Easily extendable ability system
+
+## E2E test errors
+
+if an error happens you can find the error context in /client/test-results/error-context.md

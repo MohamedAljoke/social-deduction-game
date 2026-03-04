@@ -62,7 +62,11 @@ export class ApiClient {
     if (!response.ok) throw new Error("Failed to use ability");
   }
 
-  async submitVote(matchId: string, voterId: string, targetId: string): Promise<Match> {
+  async submitVote(
+    matchId: string,
+    voterId: string,
+    targetId: string | null,
+  ): Promise<Match> {
     const response = await fetch(`${this.baseUrl}/match/${matchId}/vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

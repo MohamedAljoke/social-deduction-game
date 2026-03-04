@@ -2,16 +2,16 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./src/test/e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   retries: 0,
   reporter: "list",
   // workers: 1,
   use: {
     baseURL: "http://localhost:5173",
     trace: "on-first-retry",
-    // headless: false,
+    headless: true,
     launchOptions: {
-      slowMo: 1000,
+      // slowMo: 1000,
     },
   },
   projects: [

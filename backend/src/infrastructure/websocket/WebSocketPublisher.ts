@@ -73,7 +73,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     });
   }
 
-  voteSubmitted(matchId: string, voterId: string, targetId: string): void {
+  voteSubmitted(matchId: string, voterId: string, targetId: string | null): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "vote_submitted",
       matchId,
