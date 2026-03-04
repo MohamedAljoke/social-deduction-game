@@ -104,4 +104,14 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
 
     res.status(200).json(result);
   });
+
+  server.register("post", "/match/:matchId/leave", async (req, res) => {
+    const useCase = container.resolve(TOKENS.LeaveMatchUseCase);
+    const { matchId } = req.params;
+    const { playerId } = req.body as { playerId: string };
+
+    const result = await useCase.execute({ matchId, playerId });
+
+    res.status(200).json(result);
+  });
 }

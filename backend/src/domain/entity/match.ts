@@ -111,6 +111,10 @@ export class Match {
     this.players.push(player);
   }
 
+  public removePlayer(playerId: string): void {
+    this.players = this.players.filter((p) => p.id !== playerId);
+  }
+
   public getPhase(): PhaseType {
     return this.phase.getCurrentPhase();
   }

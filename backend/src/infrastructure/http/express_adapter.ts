@@ -10,15 +10,20 @@ import {
   normalizeQuery,
 } from "./server";
 import { Server } from "http";
-import { wsManager } from "../websocket/mod";
+
+interface WebSocketManager {
+  attach(server: Server): void;
+}
 
 export class ExpressServer implements HttpServer {
   private app = express();
   private server?: Server;
+  private wsManager?: WebSocketManager;
 
-  constructor() {
+  constructor(wsManager?: WebSocketManager) {
     this.app.use(cors());
     this.app.use(express.json());
+    this.wsManager = wsManager;
   }
 
   register(method: HttpMethod, path: string, ...handlers: HttpHandler[]) {
@@ -60,7 +65,7 @@ export class ExpressServer implements HttpServer {
     return new Promise<void>((resolve, reject) => {
       this.server = this.app.listen(port, () => {
         console.log("server is on");
-        wsManager.attach(this.server!);
+        this.wsManager?.attach(this.server!);
         resolve();
       });
 

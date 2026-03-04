@@ -1,6 +1,7 @@
 import { CreateMatchUseCase } from "./application/CreateMatch";
 import { ListMatchesUseCase } from "./application/ListMatchs";
 import { JoinMatchUseCase } from "./application/JoinMatch";
+import { LeaveMatchUseCase } from "./application/LeaveMatch";
 import { StartMatchUseCase } from "./application/StartMatch";
 import { UseAbilityUseCase } from "./application/UseAbility";
 import { AdvancePhaseUseCase } from "./application/AdvancePhase";
@@ -24,6 +25,7 @@ export const TOKENS = {
   CreateMatchUseCase: "CreateMatchUseCase" as Token<CreateMatchUseCase>,
   ListMatchesUseCase: "ListMatchesUseCase" as Token<ListMatchesUseCase>,
   JoinMatchUseCase: "JoinMatchUseCase" as Token<JoinMatchUseCase>,
+  LeaveMatchUseCase: "LeaveMatchUseCase" as Token<LeaveMatchUseCase>,
   StartMatchUseCase: "StartMatchUseCase" as Token<StartMatchUseCase>,
   UseAbilityUseCase: "UseAbilityUseCase" as Token<UseAbilityUseCase>,
   AdvancePhaseUseCase: "AdvancePhaseUseCase" as Token<AdvancePhaseUseCase>,
@@ -110,6 +112,15 @@ export function buildContainer() {
   container.register(
     TOKENS.GetMatchUseCase,
     (c) => new GetMatchUseCase(c.resolve(TOKENS.MatchRepository)),
+  );
+
+  container.register(
+    TOKENS.LeaveMatchUseCase,
+    (c) =>
+      new LeaveMatchUseCase(
+        c.resolve(TOKENS.MatchRepository),
+        wsPublisher,
+      ),
   );
 
   return container;

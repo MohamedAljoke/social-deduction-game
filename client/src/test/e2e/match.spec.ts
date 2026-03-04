@@ -1,4 +1,4 @@
-import { test, expect, chromium } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { createMatch, joinMatch } from "./helpers";
 
 test.describe("Create match", () => {
@@ -178,6 +178,83 @@ test.describe("Join match", () => {
     } finally {
       await hostCtx.close();
       await guestCtx.close();
+    }
+  });
+
+  test("player removal persists after page refresh", async ({ browser }) => {
+    const hostCtx = await browser.newContext();
+    const guestCtx = await browser.newContext();
+
+    const hostPage = await hostCtx.newPage();
+    const guestPage = await guestCtx.newPage();
+
+    try {
+      const code = await createMatch(hostPage, "Alice");
+      await joinMatch(guestPage, code, "Bob");
+
+      // Both see Alice and Bob
+      await expect(hostPage.getByText("Alice")).toBeVisible();
+      await expect(hostPage.getByText("Bob")).toBeVisible();
+
+      // Bob leaves
+      guestPage.on("dialog", async (dialog) => {
+        await dialog.accept();
+      });
+      await guestPage.getByRole("button", { name: /leave game/i }).click();
+      await guestPage.waitForURL("**/", { timeout: 5000 });
+
+      // Alice sees Bob removed
+      await expect(hostPage.getByText("Bob")).not.toBeVisible({ timeout: 5000 });
+
+      // Alice refreshes the page - Bob should still be gone
+      await hostPage.reload();
+      await expect(hostPage.getByText("Alice")).toBeVisible();
+      await expect(hostPage.getByText("Bob")).not.toBeVisible();
+    } finally {
+      await hostCtx.close();
+      await guestCtx.close();
+    }
+  });
+
+  test("new player sees all existing players in match via WebSocket sync", async ({
+    browser,
+  }) => {
+    const hostCtx = await browser.newContext();
+    const aliceCtx = await browser.newContext();
+    const bobCtx = await browser.newContext();
+
+    const hostPage = await hostCtx.newPage();
+    const alicePage = await aliceCtx.newPage();
+    const bobPage = await bobCtx.newPage();
+
+    try {
+      // Host creates match
+      const code = await createMatch(hostPage, "Host");
+
+      // Alice joins
+      await joinMatch(alicePage, code, "Alice");
+
+      // Bob joins
+      await joinMatch(bobPage, code, "Bob");
+
+      // Verify Bob sees both Host and Alice
+      await expect(bobPage.getByText("Host").first()).toBeVisible();
+      await expect(bobPage.getByText("Alice").first()).toBeVisible();
+      await expect(bobPage.getByText("Bob").first()).toBeVisible();
+
+      // Verify Alice sees Host and Bob (her own name via REST, others via WebSocket)
+      await expect(alicePage.getByText("Host").first()).toBeVisible();
+      await expect(alicePage.getByText("Bob").first()).toBeVisible();
+      await expect(alicePage.getByText("Alice").first()).toBeVisible();
+
+      // Verify Host sees all
+      await expect(hostPage.getByText("Host").first()).toBeVisible();
+      await expect(hostPage.getByText("Alice").first()).toBeVisible();
+      await expect(hostPage.getByText("Bob").first()).toBeVisible();
+    } finally {
+      await hostCtx.close();
+      await aliceCtx.close();
+      await bobCtx.close();
     }
   });
 });

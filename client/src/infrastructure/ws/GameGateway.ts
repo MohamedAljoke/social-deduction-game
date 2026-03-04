@@ -18,8 +18,8 @@ export class GameGateway {
     this.ws.disconnect();
   }
 
-  joinMatch(matchId: string, playerId: string): void {
-    this.ws.send("join_match", { matchId, playerId });
+  joinMatch(matchId: string, playerId: string, player?: { id: string; name: string; isHost: boolean }): void {
+    this.ws.send("join_match", { matchId, playerId, player });
   }
 
   leaveMatch(matchId: string, playerId: string): void {
@@ -76,6 +76,15 @@ export class GameGateway {
     return this.ws.on<{ matchId: string; playerId: string }>(
       "player_left",
       (msg) => handler(msg.matchId, msg.playerId),
+    );
+  }
+
+  onPlayersSynced(
+    handler: (matchId: string, players: Player[]) => void,
+  ): () => void {
+    return this.ws.on<{ matchId: string; players: Player[] }>(
+      "players_synced",
+      (msg) => handler(msg.matchId, msg.players),
     );
   }
 

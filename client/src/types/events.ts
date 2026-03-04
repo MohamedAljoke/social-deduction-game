@@ -10,6 +10,7 @@ export type ServerEvent =
   | { type: "connected"; clientId: string }
   | { type: "player_joined"; matchId: string; player: Player }
   | { type: "player_left"; matchId: string; playerId: string }
+  | { type: "players_synced"; matchId: string; players: Player[] }
   | { type: "match_started"; matchId: string; playerAssignments: PlayerAssignment[] }
   | { type: "phase_changed"; matchId: string; phase: string }
   | { type: "action_submitted"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }

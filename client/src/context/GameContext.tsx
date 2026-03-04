@@ -144,6 +144,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     case GAME_ACTIONS.ADD_PLAYER:
       if (!state.match) return state;
+      if (state.match.players.some(p => p.id === action.payload.id)) return state;
       return { ...state, match: { ...state.match, players: [...state.match.players, action.payload] } };
     case GAME_ACTIONS.REMOVE_PLAYER:
       if (!state.match) return state;
@@ -184,8 +185,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (state.matchId && state.playerId) {
-      service.connect(state.matchId, state.playerId);
+    if (state.matchId && state.playerId && state.playerName) {
+      service.connect(state.matchId, state.playerId, { name: state.playerName, isHost: state.isHost });
       const matchId = state.matchId;
       const playerId = state.playerId;
       return () => service.disconnect(matchId, playerId);

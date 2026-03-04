@@ -1,8 +1,10 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { Server } from "http";
+import { MatchRepository } from "../../domain/ports/persistance/MatchRepository";
+import { RealtimePublisher } from "../../domain/ports/RealtimePublisher";
 
 export type ClientEvent =
-  | { type: "join_match"; matchId: string; playerId: string }
+  | { type: "join_match"; matchId: string; playerId: string; player?: { id: string; name: string; isHost: boolean } }
   | { type: "leave_match"; matchId: string; playerId: string }
   | { type: "use_ability"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }
   | { type: "submit_vote"; matchId: string; voterId: string; targetId: string };
@@ -11,6 +13,7 @@ export type ServerEvent =
   | { type: "connected"; clientId: string }
   | { type: "player_joined"; matchId: string; player: unknown }
   | { type: "player_left"; matchId: string; playerId: string }
+  | { type: "players_synced"; matchId: string; players: unknown[] }
   | { type: "match_started"; matchId: string; playerAssignments: Assignment[] }
   | { type: "phase_changed"; matchId: string; phase: string }
   | { type: "action_submitted"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }
@@ -33,22 +36,37 @@ export interface Client {
   socket: WebSocket;
 }
 
+interface PlayerInfo {
+  id: string;
+  name: string;
+  isHost: boolean;
+}
+
 class MatchRoom {
   matchId: string;
   private clients: Map<string, Client> = new Map();
+  private players: Map<string, PlayerInfo> = new Map();
 
   constructor(matchId: string) {
     this.matchId = matchId;
   }
 
-  join(playerId: string, client: Client): void {
+  join(playerId: string, client: Client, player?: PlayerInfo): void {
     client.playerId = playerId;
     client.matchId = this.matchId;
     this.clients.set(playerId, client);
+    if (player) {
+      this.players.set(playerId, player);
+    }
   }
 
   leave(playerId: string): void {
     this.clients.delete(playerId);
+    this.players.delete(playerId);
+  }
+
+  getPlayers(): PlayerInfo[] {
+    return Array.from(this.players.values());
   }
 
   broadcast(event: ServerEvent, excludePlayerId?: string): void {
@@ -72,13 +90,33 @@ class MatchRoom {
   getClientCount(): number {
     return this.clients.size;
   }
+
+  getPlayerIds(): string[] {
+    return Array.from(this.clients.keys());
+  }
+
+  sendToPlayer(playerId: string, event: ServerEvent): void {
+    const client = this.clients.get(playerId);
+    if (client && client.socket.readyState === WebSocket.OPEN) {
+      client.socket.send(JSON.stringify(event));
+    }
+  }
 }
 
-class WebSocketManager {
+export class WebSocketManager {
   private wss?: WebSocketServer;
   private rooms: Map<string, MatchRoom> = new Map();
   private clients: Map<string, Client> = new Map();
   private clientCounter = 0;
+  private leaveMatchUseCase: {
+    execute(input: { matchId: string; playerId: string }): Promise<unknown>;
+  };
+
+  constructor(
+    leaveMatchUseCase: { execute(input: { matchId: string; playerId: string }): Promise<unknown> },
+  ) {
+    this.leaveMatchUseCase = leaveMatchUseCase;
+  }
 
   attach(server: Server): void {
     this.wss = new WebSocketServer({ server, path: "/ws" });
@@ -120,12 +158,31 @@ class WebSocketManager {
           room = new MatchRoom(event.matchId);
           this.rooms.set(event.matchId, room);
         }
-        room.join(event.playerId, client);
+        room.join(event.playerId, client, event.player);
+
+        // Send existing players to the new player
+        const existingPlayers = room.getPlayers().filter(p => p.id !== event.playerId);
+        room.sendToPlayer(event.playerId, {
+          type: "players_synced",
+          matchId: event.matchId,
+          players: existingPlayers,
+        });
+
+        // Broadcast new player to existing players
+        if (event.player) {
+          room.broadcast(
+            { type: "player_joined", matchId: event.matchId, player: event.player },
+            event.playerId,
+          );
+        }
         break;
       }
 
       case "leave_match": {
         const room = this.rooms.get(event.matchId);
+        if (room && this.leaveMatchUseCase) {
+          this.leaveMatchUseCase.execute({ matchId: event.matchId, playerId: event.playerId }).catch(console.error);
+        }
         if (room) {
           room.broadcast(
             { type: "player_left", matchId: event.matchId, playerId: event.playerId },
@@ -184,4 +241,19 @@ class WebSocketManager {
   }
 }
 
-export const wsManager = new WebSocketManager();
+export const wsManager = (
+  leaveMatchUseCase: { execute(input: { matchId: string; playerId: string }): Promise<unknown> },
+): WebSocketManager => {
+  const instance = new WebSocketManager(leaveMatchUseCase);
+  wsManagerInstance = instance;
+  return instance;
+};
+
+let wsManagerInstance: WebSocketManager | null = null;
+
+export const getWsManager = (): WebSocketManager => {
+  if (!wsManagerInstance) {
+    throw new Error("wsManager not initialized. Call wsManager() first.");
+  }
+  return wsManagerInstance;
+};

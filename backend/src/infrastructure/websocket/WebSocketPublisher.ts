@@ -3,11 +3,11 @@ import {
   MatchStartedPayload,
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../../domain/entity/match";
-import { wsManager } from "./mod";
+import { getWsManager } from "./mod";
 
 export class WebSocketPublisher implements RealtimePublisher {
   matchStarted(matchId: string, payload: MatchStartedPayload): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "match_started",
       matchId,
       ...payload,
@@ -15,11 +15,11 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   matchUpdated(matchId: string, match: MatchResponse): void {
-    wsManager.broadcastMatchUpdate(matchId, match);
+    getWsManager().broadcastMatchUpdate(matchId, match);
   }
 
   phaseChanged(matchId: string, phase: string): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "phase_changed",
       matchId,
       phase,
@@ -27,7 +27,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   playerJoined(matchId: string, player: unknown): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "player_joined",
       matchId,
       player,
@@ -35,7 +35,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   playerLeft(matchId: string, playerId: string): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "player_left",
       matchId,
       playerId,
@@ -48,7 +48,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     abilityId: string,
     targetIds: string[],
   ): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "action_submitted",
       matchId,
       actorId,
@@ -58,7 +58,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   playerKilled(matchId: string, playerId: string): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "player_killed",
       matchId,
       playerId,
@@ -66,7 +66,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   matchEnded(matchId: string, winner: string): void {
-    wsManager.broadcastToMatch(matchId, {
+    getWsManager().broadcastToMatch(matchId, {
       type: "match_ended",
       matchId,
       winner,

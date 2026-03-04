@@ -26,14 +26,14 @@ export class GameSessionService {
     this.navigate = navigate;
   }
 
-  connect(matchId: string, playerId: string): void {
+  connect(matchId: string, playerId: string, player?: { name: string; isHost: boolean }): void {
     this.currentMatchId = matchId;
     this.currentPlayerId = playerId;
 
     this.gateway.connect();
 
     const offConnected = this.gateway.onConnected(() => {
-      this.gateway.joinMatch(matchId, playerId);
+      this.gateway.joinMatch(matchId, playerId, player ? { id: playerId, ...player } : undefined);
       offConnected();
     });
 
@@ -49,6 +49,11 @@ export class GameSessionService {
       }),
       this.gateway.onPlayerLeft((_matchId, playerId) => {
         this.dispatch({ type: GAME_ACTIONS.REMOVE_PLAYER, payload: playerId });
+      }),
+      this.gateway.onPlayersSynced((_matchId, players) => {
+        players.forEach((player) => {
+          this.dispatch({ type: GAME_ACTIONS.ADD_PLAYER, payload: player });
+        });
       }),
       this.gateway.onMatchStarted(() => {
         this.navigate("/game");
