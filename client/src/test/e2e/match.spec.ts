@@ -199,8 +199,7 @@ test.describe("Default template / no abilities", () => {
     await hostPage.getByRole("button", { name: /configure templates/i }).click();
     await hostPage.waitForURL("**/templates");
 
-    const templateLabels = hostPage.locator("span").filter({ hasText: /^Template \d+$/ });
-    await expect(templateLabels).toHaveCount(2);
+    await expect(hostPage.getByTestId("template-card")).toHaveCount(2);
   });
 
   test("template builder → save with 2 templates for 2-player game → all navigate to /game", async ({
@@ -229,11 +228,11 @@ test.describe("Default template / no abilities", () => {
   }) => {
     const [hostPage, guestPage] = await createPlayers(2);
     await startGameViaTemplateBuilder(hostPage, [guestPage], async (host) => {
-      // Deselect every active ability chip (active chips have the accent background colour)
-      const activeChips = host.locator("[style*='background-color: rgb(233, 69, 96)']");
-      while ((await activeChips.count()) > 0) {
-        await activeChips.first().click();
-      }
+      // Deselect Kill from the first template card, Investigate from the second
+      await host.getByTestId("template-card").nth(0)
+        .getByTestId("ability-chip").filter({ hasText: "Kill" }).click();
+      await host.getByTestId("template-card").nth(1)
+        .getByTestId("ability-chip").filter({ hasText: "Investigate" }).click();
     });
 
     await expect(hostPage).toHaveURL(/\/game/);

@@ -33,10 +33,10 @@ export function TemplateBuilderScreen() {
     field: string,
     value: string | string[],
   ) => {
-    dispatch({
-      type: GAME_ACTIONS.UPDATE_TEMPLATE,
-      payload: { index, template: { ...templates[index], [field]: value } },
-    });
+    const updated = templates.map((t, i) =>
+      i === index ? { ...t, [field]: value } : t
+    );
+    dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: updated });
   };
 
   const toggleAbility = (index: number, abilityId: string) => {
@@ -87,6 +87,7 @@ export function TemplateBuilderScreen() {
             {templates.map((template, index) => (
               <div
                 key={index}
+                data-testid="template-card"
                 className="rounded-2xl p-5 mb-4"
                 style={{
                   backgroundColor: "#1a1a2e",
@@ -140,6 +141,8 @@ export function TemplateBuilderScreen() {
                   {ABILITIES.map((ability) => (
                     <div
                       key={ability.id}
+                      data-testid="ability-chip"
+                      aria-pressed={template.abilities.includes(ability.id)}
                       className={`inline-flex items-center gap-1.5 py-2 px-3.5 rounded-full text-[13px] cursor-pointer transition-all duration-200 ${
                         template.abilities.includes(ability.id)
                           ? ""
