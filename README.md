@@ -1,4 +1,4 @@
-# 🎮 Social Deduction Game
+# Social Deduction Game
 
 A real-time multiplayer social deduction game built with:
 
@@ -9,98 +9,110 @@ A real-time multiplayer social deduction game built with:
 
 ---
 
-# 🏗 Monorepo Structure
+## Quick Navigation
 
-    social-deduction-game/
-    ├── backend/     # DDD-based API + WebSocket server
-    ├── client/      # Frontend application
-    └── package.json
+| What you need | Where to look |
+|---|---|
+| Backend architecture & key files | [`backend/README.md`](backend/README.md) |
+| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md) |
+| WebSocket event contracts | [`docs/implementation-spec/websocket/README.md`](docs/implementation-spec/websocket/README.md) |
+| Ability system design & steps | [`docs/implementation-spec/ability/README.md`](docs/implementation-spec/ability/README.md) |
+| Frontend screen/flow design | [`docs/implementation-spec/front/front.md`](docs/implementation-spec/front/front.md) |
+| Frontend React component plan | [`docs/implementation-spec/front/react-components.md`](docs/implementation-spec/front/react-components.md) |
 
 ---
 
-# ⚙️ Development
+## Monorepo Structure
 
-Install root dependencies:
+```
+social-deduction-game/
+├── backend/     # DDD-based API + WebSocket server (port 3000)
+├── client/      # React frontend (Vite)
+├── docs/
+│   └── implementation-spec/
+│       ├── ability/    # Ability resolver — step-by-step specs (steps 01–11)
+│       ├── front/      # Frontend screen flow & component plan
+│       └── websocket/  # WS event contracts & architecture
+└── package.json
+```
+
+### Key Source Files
+
+**Backend**
+
+| File | Purpose |
+|---|---|
+| `backend/src/domain/entity/match.ts` | Core Match aggregate |
+| `backend/src/application/` | Use cases (StartMatch, UseAbility, AdvancePhase, LeaveMatch…) |
+| `backend/src/infrastructure/websocket/mod.ts` | WebSocket server & room management |
+| `backend/src/infrastructure/http/routes/match.ts` | REST routes |
+| `backend/src/container.ts` | Dependency injection wiring |
+
+**Frontend**
+
+| File | Purpose |
+|---|---|
+| `client/src/context/GameContext.tsx` | React context + reducer + Provider |
+| `client/src/context/GameSessionService.ts` | Orchestrates gateway + API + dispatch |
+| `client/src/infrastructure/ws/GameGateway.ts` | Domain-aware WebSocket bridge |
+| `client/src/infrastructure/http/ApiClient.ts` | Typed REST client |
+| `client/src/types/events.ts` | ClientEvent / ServerEvent union types |
+
+---
+
+## Development
 
 ```bash
+# Install all dependencies
 npm install
-```
-
-Install client dependencies:
-
-```bash
 npm run dev:client-install
-```
-
-Install backend dependencies:
-
-```bash
 npm run dev:server-install
-```
 
----
-
-# 🚀 Run Both Frontend & Backend
-
-```bash
+# Run both servers (concurrently)
 npm run dev
 ```
 
-This runs:
-
-- Backend server
-- Frontend dev server
-
-Using `concurrently`.
+Backend runs on `http://localhost:3000` / `ws://localhost:3000/ws`.
 
 ---
 
-# 🧪 Testing
-
-Run backend tests:
+## Testing
 
 ```bash
-npm run dev:server-test
-```
-
-Run frontend tests:
-
-```bash
-npm run dev:client-test
+npm run dev:server-test   # Backend (Vitest)
+npm run dev:client-test   # Frontend (Playwright e2e)
 ```
 
 ---
 
-# 🧠 Architecture Philosophy
+## Architecture at a Glance
 
-## Backend
+```
+Frontend                          Backend
+────────────────────────────────────────────────────
+features/ (UI)                    infrastructure/http  (REST)
+  └── hooks → GameSessionService ──→ application/ (use cases)
+                 ↕                       └── domain/ (Match, Player…)
+            GameGateway ←──────────── infrastructure/websocket
+            (WS events)               (broadcasts domain events)
+```
 
-- Domain layer
-- Application use cases
-- Infrastructure adapters
-- Repository pattern
-- Zod validation at boundaries
-- In-memory persistence (swappable)
-
-## Frontend
-
-- Transport isolated from UI
-- WebSocket gateway pattern
-- Centralized state management
-- Feature-based UI modules
+- REST for match creation and commands (start, ability, phase)
+- WebSocket for real-time domain events pushed to all room members
+- Backend is authoritative — frontend renders state received from server
 
 ---
 
-# 🔄 Communication Model
+## Active Implementation: Ability Resolver (`feat/ability-resolver`)
 
-    Frontend Gateway  <---->  Backend Use Cases
-    Frontend Store    <---->  Backend Domain Events
+The current branch is building the full ability resolution pipeline.
+See [`docs/implementation-spec/ability/`](docs/implementation-spec/ability/) for the step-by-step plan.
 
-WebSocket messages reflect domain events rather than UI events.
+Resolution pipeline: `Action → ActionResolver → [KillHandler | ProtectHandler | RoleblockHandler | InvestigateHandler] → Commit`
 
 ---
 
-# 🎯 Project Goals
+## Project Goals
 
 - Clean separation of concerns
 - Highly testable architecture

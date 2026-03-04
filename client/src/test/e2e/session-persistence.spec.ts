@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { createMatch, joinMatch } from "./helpers";
+import { test, expect } from "./fixtures";
+import { createMatch, joinMatch, startGame } from "./helpers";
 
 test.describe("Session persistence (localStorage)", () => {
   test("host stays in lobby after page refresh", async ({ page }) => {
@@ -13,50 +13,27 @@ test.describe("Session persistence (localStorage)", () => {
     await expect(page.getByTestId("match-id")).toHaveText(code);
   });
 
-  test("guest stays in lobby after page refresh", async ({ browser }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
-    const hostPage = await hostCtx.newPage();
-    const guestPage = await guestCtx.newPage();
+  test("guest stays in lobby after page refresh", async ({ createPlayers }) => {
+    const [hostPage, guestPage] = await createPlayers(2);
+    const code = await createMatch(hostPage, "Alice");
+    await joinMatch(guestPage, code, "Bob");
 
-    try {
-      const code = await createMatch(hostPage, "Alice");
-      await joinMatch(guestPage, code, "Bob");
+    await guestPage.reload();
 
-      await guestPage.reload();
-
-      await expect(guestPage).toHaveURL(/\/lobby/);
-      await expect(guestPage.getByText("Bob")).toBeVisible();
-      await expect(guestPage.getByTestId("match-id")).toHaveText(code);
-    } finally {
-      await hostCtx.close();
-      await guestCtx.close();
-    }
+    await expect(guestPage).toHaveURL(/\/lobby/);
+    await expect(guestPage.getByText("Bob")).toBeVisible();
+    await expect(guestPage.getByTestId("match-id")).toHaveText(code);
   });
 
   test("player in /game stays on /game after page refresh", async ({
-    browser,
+    createPlayers,
   }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
-    const hostPage = await hostCtx.newPage();
-    const guestPage = await guestCtx.newPage();
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
 
-    try {
-      const code = await createMatch(hostPage, "Alice");
-      await joinMatch(guestPage, code, "Bob");
-      await expect(hostPage.getByText("Bob")).toBeVisible({ timeout: 5000 });
-      await hostPage.getByRole("button", { name: /start game/i }).click();
-      await expect(hostPage).toHaveURL(/\/game/, { timeout: 8000 });
-      await expect(guestPage).toHaveURL(/\/game/, { timeout: 8000 });
+    await guestPage.reload();
 
-      await guestPage.reload();
-
-      await expect(guestPage).toHaveURL(/\/game/);
-    } finally {
-      await hostCtx.close();
-      await guestCtx.close();
-    }
+    await expect(guestPage).toHaveURL(/\/game/);
   });
 
   test("clearing localStorage and refreshing redirects to home", async ({
@@ -98,27 +75,14 @@ test.describe("Home redirect (active session)", () => {
   });
 
   test("player with in-progress session is redirected from / to /game", async ({
-    browser,
+    createPlayers,
   }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
-    const hostPage = await hostCtx.newPage();
-    const guestPage = await guestCtx.newPage();
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
 
-    try {
-      const code = await createMatch(hostPage, "Alice");
-      await joinMatch(guestPage, code, "Bob");
-      await expect(hostPage.getByText("Bob")).toBeVisible({ timeout: 5000 });
-      await hostPage.getByRole("button", { name: /start game/i }).click();
-      await expect(guestPage).toHaveURL(/\/game/, { timeout: 8000 });
+    await guestPage.goto("http://localhost:5173/");
 
-      await guestPage.goto("http://localhost:5173/");
-
-      await expect(guestPage).toHaveURL(/\/game/);
-    } finally {
-      await hostCtx.close();
-      await guestCtx.close();
-    }
+    await expect(guestPage).toHaveURL(/\/game/);
   });
 });
 
@@ -133,37 +97,22 @@ test.describe("Leave game", () => {
     await page.getByRole("button", { name: /leave game/i }).click();
 
     await expect(page).toHaveURL("/");
-    // Session cleared — navigating back to lobby should redirect to home
     await page.goto("http://localhost:5173/lobby");
     await expect(page).toHaveURL("/");
   });
 
   test("player can leave from game screen and is redirected to home", async ({
-    browser,
+    createPlayers,
   }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
-    const hostPage = await hostCtx.newPage();
-    const guestPage = await guestCtx.newPage();
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
 
-    try {
-      const code = await createMatch(hostPage, "Alice");
-      await joinMatch(guestPage, code, "Bob");
-      await expect(hostPage.getByText("Bob")).toBeVisible({ timeout: 5000 });
-      await hostPage.getByRole("button", { name: /start game/i }).click();
-      await expect(guestPage).toHaveURL(/\/game/, { timeout: 8000 });
+    guestPage.once("dialog", (dialog) => dialog.accept());
+    await guestPage.getByRole("button", { name: /leave game/i }).click();
 
-      guestPage.once("dialog", (dialog) => dialog.accept());
-      await guestPage.getByRole("button", { name: /leave game/i }).click();
-
-      await expect(guestPage).toHaveURL("/");
-      // Session cleared — navigating back to game should redirect to home
-      await guestPage.goto("http://localhost:5173/game");
-      await expect(guestPage).toHaveURL("/");
-    } finally {
-      await hostCtx.close();
-      await guestCtx.close();
-    }
+    await expect(guestPage).toHaveURL("/");
+    await guestPage.goto("http://localhost:5173/game");
+    await expect(guestPage).toHaveURL("/");
   });
 });
 
@@ -180,26 +129,13 @@ test.describe("Status-based route guard", () => {
   });
 
   test("player in active game cannot navigate to /lobby — redirected to /game", async ({
-    browser,
+    createPlayers,
   }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
-    const hostPage = await hostCtx.newPage();
-    const guestPage = await guestCtx.newPage();
+    const [hostPage, guestPage] = await createPlayers(2);
+    await startGame(hostPage, [guestPage]);
 
-    try {
-      const code = await createMatch(hostPage, "Alice");
-      await joinMatch(guestPage, code, "Bob");
-      await expect(hostPage.getByText("Bob")).toBeVisible({ timeout: 5000 });
-      await hostPage.getByRole("button", { name: /start game/i }).click();
-      await expect(guestPage).toHaveURL(/\/game/, { timeout: 8000 });
+    await guestPage.goto("http://localhost:5173/lobby");
 
-      await guestPage.goto("http://localhost:5173/lobby");
-
-      await expect(guestPage).toHaveURL(/\/game/);
-    } finally {
-      await hostCtx.close();
-      await guestCtx.close();
-    }
+    await expect(guestPage).toHaveURL(/\/game/);
   });
 });

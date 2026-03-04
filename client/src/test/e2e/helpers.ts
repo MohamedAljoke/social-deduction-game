@@ -1,6 +1,8 @@
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 const BASE_URL = "http://localhost:5173";
+
+const GUEST_NAMES = ["Bob", "Charlie", "Diana", "Eve", "Frank", "Grace"];
 
 /** Navigate to home and create a new match, returning the match code shown in the lobby. */
 export async function createMatch(
@@ -28,4 +30,27 @@ export async function joinMatch(
   await page.getByLabel(/match id/i).fill(matchId);
   await page.getByRole("button", { name: /join game/i }).click();
   await page.waitForURL("**/lobby");
+}
+
+/**
+ * Creates a match as Alice (hostPage), joins with guestPages using auto-assigned names,
+ * starts the game, and waits until all players are on /game.
+ * Returns the match code.
+ */
+export async function startGame(
+  hostPage: Page,
+  guestPages: Page[],
+): Promise<string> {
+  const code = await createMatch(hostPage, "Alice");
+  for (const [i, page] of guestPages.entries()) {
+    await joinMatch(page, code, GUEST_NAMES[i]);
+  }
+  await expect(hostPage.getByText(GUEST_NAMES[0]).first()).toBeVisible({
+    timeout: 5000,
+  });
+  await hostPage.getByRole("button", { name: /start game/i }).click();
+  for (const page of [hostPage, ...guestPages]) {
+    await expect(page).toHaveURL(/\/game/, { timeout: 8000 });
+  }
+  return code;
 }
