@@ -65,8 +65,8 @@ social-deduction-game/
 ```bash
 # Install all dependencies
 npm install
-npm run dev:client-install
-npm run dev:server-install
+npm run install:client
+npm run install:server
 
 # Run both servers (concurrently)
 npm run dev
@@ -79,8 +79,8 @@ Backend runs on `http://localhost:3000` / `ws://localhost:3000/ws`.
 ## Testing
 
 ```bash
-npm run dev:server-test   # Backend (Vitest)
-npm run dev:client-test   # Frontend (Playwright e2e)
+npm run test --prefix backend -- --run   # Backend (Vitest)
+npm run test:e2e --prefix client         # Frontend (Playwright e2e)
 ```
 
 ### E2E scenario flag
@@ -129,3 +129,11 @@ Resolution pipeline: `Action → ActionResolver → [KillHandler | ProtectHandle
 ## E2E test errors
 
 if an error happens you can find the error context in /client/test-results/error-context.md
+
+---
+
+## Contributing
+
+- Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR.
+- Pull requests use [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
+- Issues use templates in [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).

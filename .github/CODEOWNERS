@@ -1,0 +1,12 @@
+# Default owner for all files
+* @MohamedAljoke
+
+# Backend
+/backend/ @MohamedAljoke
+
+# Client
+/client/ @MohamedAljoke
+
+# CI and repo governance
+/.github/ @MohamedAljoke
+/CONTRIBUTING.md @MohamedAljoke
