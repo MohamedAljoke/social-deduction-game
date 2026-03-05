@@ -2,33 +2,31 @@
   "name": "social-deduction-game",
   "version": "1.0.0",
   "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
-    "typecheck": "tsc --noEmit",
-    "dev": "tsx watch src/main.ts",
-    "test": "vitest",
-    "demo": "tsx demo.ts",
-    "coverage": "vitest run --coverage"
+    "install:client": "npm run install --prefix ./client",
+    "install:server": "npm run install --prefix ./backend",
+    "test:client": "npm run test --prefix ./client",
+    "test:server": "npm run test --prefix ./backend",
+    "dev:client": "npm run dev --prefix ./client",
+    "dev:server": "npm run dev --prefix ./backend",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MohamedAljoke/social-deduction-game.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MohamedAljoke/social-deduction-game/issues"
+  },
+  "homepage": "https://github.com/MohamedAljoke/social-deduction-game#readme",
   "description": "",
   "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.2.3",
-    "@types/supertest": "^6.0.3",
-    "@vitest/coverage-v8": "^4.0.18",
-    "supertest": "^7.2.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
-  },
-  "dependencies": {
-    "@hono/node-server": "^1.19.9",
-    "express": "^5.2.1",
-    "hono": "^4.12.1",
-    "zod": "^4.3.6"
+    "concurrently": "^9.2.1"
   }
 }

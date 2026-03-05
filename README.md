@@ -1,73 +1,131 @@
 # Social Deduction Game
 
-A multiplayer social deduction game built with TypeScript, following Clean Architecture principles.
+A real-time multiplayer social deduction game built with:
 
-## Overview
+- TypeScript
+- Clean Architecture (DDD-inspired backend)
+- WebSockets for real-time gameplay
+- Feature-oriented frontend structure
 
-This is a general-purpose social deduction game — similar to games like Among Us, Werewolf Town of Salem —, Mafia, or where players work together to identify hidden enemies through discussion, voting, and strategic deception. The game is designed to be flexible, supporting various game modes and role configurations.
+---
 
-## Features
+## Quick Navigation
 
-- **Multiple Game Modes** — Support for different social deduction gameplay styles
-- **Role System** — Configurable roles with unique abilities
-- **Real-time Gameplay** — Lobby system with game state management
-- **Clean Architecture** — Well-structured codebase using hexagonal ports & adapters
-- **Dual HTTP Adapters** — Works with both Express and Hono
+| What you need                        | Where to look                                                                                              |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Backend architecture & key files     | [`backend/README.md`](backend/README.md)                                                                   |
+| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md)                                                                     |
+| WebSocket event contracts            | [`docs/implementation-spec/websocket/README.md`](docs/implementation-spec/websocket/README.md)             |
+| Ability system design & steps        | [`docs/implementation-spec/ability/README.md`](docs/implementation-spec/ability/README.md)                 |
+| Frontend screen/flow design          | [`docs/implementation-spec/front/front.md`](docs/implementation-spec/front/front.md)                       |
+| Frontend React component plan        | [`docs/implementation-spec/front/react-components.md`](docs/implementation-spec/front/react-components.md) |
 
-## Tech Stack
+---
 
-- **Language**: TypeScript
-- **HTTP Servers**: Express, Hono
-- **Testing**: Vitest
-- **Architecture**: Clean Architecture (Hexagonal)
+## Monorepo Structure
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Installation
-
-```bash
-npm install
+```
+social-deduction-game/
+├── backend/     # DDD-based API + WebSocket server (port 3000)
+├── client/      # React frontend (Vite)
+├── docs/
+│   └── implementation-spec/
+│       ├── ability/    # Ability resolver — step-by-step specs (steps 01–11)
+│       ├── front/      # Frontend screen flow & component plan
+│       └── websocket/  # WS event contracts & architecture
+└── package.json
 ```
 
-### Development
+### Key Source Files
+
+**Backend**
+
+| File                                              | Purpose                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| `backend/src/domain/entity/match.ts`              | Core Match aggregate                                          |
+| `backend/src/application/`                        | Use cases (StartMatch, UseAbility, AdvancePhase, LeaveMatch…) |
+| `backend/src/infrastructure/websocket/mod.ts`     | WebSocket server & room management                            |
+| `backend/src/infrastructure/http/routes/match.ts` | REST routes                                                   |
+| `backend/src/container.ts`                        | Dependency injection wiring                                   |
+
+**Frontend**
+
+| File                                          | Purpose                               |
+| --------------------------------------------- | ------------------------------------- |
+| `client/src/context/GameContext.tsx`          | React context + reducer + Provider    |
+| `client/src/context/GameSessionService.ts`    | Orchestrates gateway + API + dispatch |
+| `client/src/infrastructure/ws/GameGateway.ts` | Domain-aware WebSocket bridge         |
+| `client/src/infrastructure/http/ApiClient.ts` | Typed REST client                     |
+| `client/src/types/events.ts`                  | ClientEvent / ServerEvent union types |
+
+---
+
+## Development
 
 ```bash
+# Install all dependencies
+npm install
+npm run dev:client-install
+npm run dev:server-install
+
+# Run both servers (concurrently)
 npm run dev
 ```
 
-### Build
+Backend runs on `http://localhost:3000` / `ws://localhost:3000/ws`.
+
+---
+
+## Testing
 
 ```bash
-npm run build
+npm run dev:server-test   # Backend (Vitest)
+npm run dev:client-test   # Frontend (Playwright e2e)
 ```
 
-### Tests
+### E2E scenario flag
 
-```bash
-npm run test
+- `ENABLE_ABILITIES_IN_REAL_SCENARIO` in `client/src/test/e2e/real-game-scenario.spec.ts` is currently `false`.
+- This keeps the 8-player full-flow e2e scenario focused on join/phase/voting/end-game without action abilities.
+- Flip it to `true` when extending that scenario to include ability usage assertions.
+
+---
+
+## Architecture at a Glance
+
+```
+Frontend                          Backend
+────────────────────────────────────────────────────
+features/ (UI)                    infrastructure/http  (REST)
+  └── hooks → GameSessionService ──→ application/ (use cases)
+                 ↕                       └── domain/ (Match, Player…)
+            GameGateway ←──────────── infrastructure/websocket
+            (WS events)               (broadcasts domain events)
 ```
 
-## Project Structure
+- REST for match creation and commands (start, ability, phase)
+- WebSocket for real-time domain events pushed to all room members
+- Backend is authoritative — frontend renders state received from server
 
-```
-src/
-├── domain/           # Core business logic (entities, ports)
-├── application/     # Use cases
-├── infrastructure/   # Adapters (HTTP servers, persistence)
-└── __test__/         # End-to-end tests
-```
+---
 
-## Architecture
+## Active Implementation: Ability Resolver (`feat/ability-resolver`)
 
-The project follows Clean Architecture with hexagonal ports & adapters:
+The current branch is building the full ability resolution pipeline.
+See [`docs/implementation-spec/ability/`](docs/implementation-spec/ability/) for the step-by-step plan.
 
-- **Domain Layer**: Core entities and business rules (no external dependencies)
-- **Application Layer**: Use cases orchestrating domain logic
-- **Infrastructure Layer**: External adapters (HTTP, persistence)
+Resolution pipeline: `Action → ActionResolver → [KillHandler | ProtectHandler | RoleblockHandler | InvestigateHandler] → Commit`
 
-See `docs/architecture.md` for detailed architecture diagrams.
+---
+
+## Project Goals
+
+- Clean separation of concerns
+- Highly testable architecture
+- Scalable real-time engine
+- Easy migration to PostgreSQL
+- Easily extendable ability system
+
+## E2E test errors
+
+if an error happens you can find the error context in /client/test-results/error-context.md
