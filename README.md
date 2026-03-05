@@ -11,14 +11,10 @@ A real-time multiplayer social deduction game built with:
 
 ## Quick Navigation
 
-| What you need                        | Where to look                                                                                              |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Backend architecture & key files     | [`backend/README.md`](backend/README.md)                                                                   |
-| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md)                                                                     |
-| WebSocket event contracts            | [`docs/implementation-spec/websocket/README.md`](docs/implementation-spec/websocket/README.md)             |
-| Ability system design & steps        | [`docs/implementation-spec/ability/README.md`](docs/implementation-spec/ability/README.md)                 |
-| Frontend screen/flow design          | [`docs/implementation-spec/front/front.md`](docs/implementation-spec/front/front.md)                       |
-| Frontend React component plan        | [`docs/implementation-spec/front/react-components.md`](docs/implementation-spec/front/react-components.md) |
+| What you need                        | Where to look                            |
+| ------------------------------------ | ---------------------------------------- |
+| Backend architecture & key files     | [`backend/README.md`](backend/README.md) |
+| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md)   |
 
 ---
 
@@ -29,10 +25,6 @@ social-deduction-game/
 ├── backend/     # DDD-based API + WebSocket server (port 3000)
 ├── client/      # React frontend (Vite)
 ├── docs/
-│   └── implementation-spec/
-│       ├── ability/    # Ability resolver — step-by-step specs (steps 01–11)
-│       ├── front/      # Frontend screen flow & component plan
-│       └── websocket/  # WS event contracts & architecture
 └── package.json
 ```
 
@@ -83,12 +75,6 @@ npm run test --prefix backend -- --run   # Backend (Vitest)
 npm run test:e2e --prefix client         # Frontend (Playwright e2e)
 ```
 
-### E2E scenario flag
-
-- `ENABLE_ABILITIES_IN_REAL_SCENARIO` in `client/src/test/e2e/real-game-scenario.spec.ts` is currently `false`.
-- This keeps the 8-player full-flow e2e scenario focused on join/phase/voting/end-game without action abilities.
-- Flip it to `true` when extending that scenario to include ability usage assertions.
-
 ---
 
 ## Architecture at a Glance
@@ -106,15 +92,6 @@ features/ (UI)                    infrastructure/http  (REST)
 - REST for match creation and commands (start, ability, phase)
 - WebSocket for real-time domain events pushed to all room members
 - Backend is authoritative — frontend renders state received from server
-
----
-
-## Active Implementation: Ability Resolver (`feat/ability-resolver`)
-
-The current branch is building the full ability resolution pipeline.
-See [`docs/implementation-spec/ability/`](docs/implementation-spec/ability/) for the step-by-step plan.
-
-Resolution pipeline: `Action → ActionResolver → [KillHandler | ProtectHandler | RoleblockHandler | InvestigateHandler] → Commit`
 
 ---
 

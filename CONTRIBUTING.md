@@ -42,6 +42,20 @@ npm run test:e2e --prefix client
 - Include test evidence in the PR description.
 - Keep PRs rebased on `main`.
 
+## Contributing via GitHub Issues
+
+If you want to pick up an existing issue:
+
+1. Find an open issue (recommended: start with `good first issue`).
+2. Comment on the issue that you are taking it.
+3. Fork the repository and clone your fork.
+4. Create a branch from `main` (example: `fix/issue-17-double-submit-guard`).
+5. Implement the change and add/update tests.
+6. Run the checks listed in this guide before opening a PR.
+7. Push your branch and open a PR to `MohamedAljoke/social-deduction-game:main`.
+8. In the PR description, link the issue with a closing keyword like `Closes #17`.
+9. Address review feedback and keep the branch up to date until merge.
+
 ## CI Expectations
 
 PRs to `main` must pass:
@@ -49,4 +63,3 @@ PRs to `main` must pass:
 - `backend-tests`
 - `client-check`
 - `client-e2e`
-
