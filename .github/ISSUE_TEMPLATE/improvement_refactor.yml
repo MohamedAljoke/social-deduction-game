@@ -1,0 +1,60 @@
+name: Improvement / Refactor
+description: Track engineering improvements, architecture cleanups, or technical debt
+title: "[Improvement]: "
+labels: ["enhancement", "refactor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for non-bug technical improvements:
+        architecture cleanup, reliability hardening, maintainability, and refactors.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What is the current behavior/design and where does it hurt?
+      placeholder: Current flow, files/modules involved, and observed downside.
+    validations:
+      required: true
+  - type: textarea
+    id: target
+    attributes:
+      label: Target improvement
+      description: What should be improved?
+      placeholder: Desired architecture/behavior after this work.
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Why this matters
+      description: Practical impact (security, reliability, velocity, clarity, etc.)
+      placeholder: Reduced risk, simpler code paths, better testability, etc.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: Backend
+        - label: Client
+        - label: Infrastructure/CI
+        - label: Documentation
+        - label: Tests
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete checks to consider this complete
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and rollout notes
+      description: Migration/compatibility risks and mitigation plan
+      placeholder: Backward-compatibility notes, rollout strategy, fallback plan.
