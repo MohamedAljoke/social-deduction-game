@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose an improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share the problem first, then the proposed solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user/developer problem are you trying to solve?
+      placeholder: As a player/developer, I want ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What do you want to happen?
+      placeholder: Describe the behavior and UX/API impact.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you considered?
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and impact
+      description: Backend, client, docs, tests?
+      placeholder: "client + e2e tests"
