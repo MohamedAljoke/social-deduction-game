@@ -51,13 +51,13 @@ export class ApiClient {
   async useAbility(
     matchId: string,
     actorId: string,
-    abilityId: string,
+    EffectType: string,
     targetIds: string[],
   ): Promise<void> {
     const response = await fetch(`${this.baseUrl}/match/${matchId}/ability`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ actorId, abilityId, targetIds }),
+      body: JSON.stringify({ actorId, EffectType, targetIds }),
     });
     if (!response.ok) throw new Error("Failed to use ability");
   }

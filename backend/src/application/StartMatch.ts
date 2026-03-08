@@ -6,7 +6,7 @@ import {
 } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
-import { Ability, AbilityId } from "../domain/entity/ability";
+import { Ability, EffectType } from "../domain/entity/ability";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 
 export interface StartMatchInput {
@@ -14,7 +14,7 @@ export interface StartMatchInput {
   templates: {
     name?: string;
     alignment: Alignment;
-    abilities: { id: AbilityId }[];
+    abilities: { id: EffectType }[];
   }[];
 }
 

@@ -23,7 +23,11 @@ export class GameGateway {
     this.ws.disconnect();
   }
 
-  joinMatch(matchId: string, playerId: string, player?: { id: string; name: string; isHost: boolean }): void {
+  joinMatch(
+    matchId: string,
+    playerId: string,
+    player?: { id: string; name: string; isHost: boolean },
+  ): void {
     this.ws.send("join_match", { matchId, playerId, player });
   }
 
@@ -34,10 +38,10 @@ export class GameGateway {
   submitAction(
     matchId: string,
     actorId: string,
-    abilityId: string,
+    EffectType: string,
     targetIds: string[],
   ): void {
-    this.ws.send("use_ability", { matchId, actorId, abilityId, targetIds });
+    this.ws.send("use_ability", { matchId, actorId, EffectType, targetIds });
   }
 
   castVote(matchId: string, voterId: string, targetId: string | null): void {

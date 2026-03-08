@@ -46,14 +46,14 @@ export class WebSocketPublisher implements RealtimePublisher {
   actionSubmitted(
     matchId: string,
     actorId: string,
-    abilityId: string,
+    EffectType: string,
     targetIds: string[],
   ): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "action_submitted",
       matchId,
       actorId,
-      abilityId,
+      EffectType,
       targetIds,
     });
   }
@@ -74,7 +74,11 @@ export class WebSocketPublisher implements RealtimePublisher {
     });
   }
 
-  voteSubmitted(matchId: string, voterId: string, targetId: string | null): void {
+  voteSubmitted(
+    matchId: string,
+    voterId: string,
+    targetId: string | null,
+  ): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "vote_submitted",
       matchId,

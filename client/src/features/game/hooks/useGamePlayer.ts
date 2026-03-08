@@ -67,7 +67,7 @@ export function useGameLog() {
   const { match, playerId } = state;
 
   const formatAction = (action: {
-    abilityId: string;
+    EffectType: string;
     actorId: string;
     targetIds: string[];
   }) => {
@@ -88,7 +88,7 @@ export function useGameLog() {
     return {
       actorName: actor?.name || "Unknown",
       targetNames: targets.map((t) => t?.name).join(", "),
-      verb: verb[action.abilityId] || action.abilityId,
+      verb: verb[action.EffectType] || action.EffectType,
     };
   };
 

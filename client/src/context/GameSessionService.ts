@@ -131,10 +131,10 @@ export class GameSessionService {
   async useAbility(
     matchId: string,
     playerId: string,
-    abilityId: string,
+    EffectType: string,
     targetId: string,
   ): Promise<void> {
-    await this.api.useAbility(matchId, playerId, abilityId, [targetId]);
+    await this.api.useAbility(matchId, playerId, EffectType, [targetId]);
     this.dispatch({ type: GAME_ACTIONS.SELECT_ABILITY, payload: null });
     this.dispatch({ type: GAME_ACTIONS.SELECT_TARGET, payload: null });
   }

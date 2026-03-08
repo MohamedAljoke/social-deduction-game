@@ -20,7 +20,11 @@ export function TemplateBuilderScreen() {
 
   const DEFAULT_TEMPLATES = [
     { name: "Killer", alignment: "villain" as const, abilities: ["kill"] },
-    { name: "Detective", alignment: "hero" as const, abilities: ["investigate"] },
+    {
+      name: "Detective",
+      alignment: "hero" as const,
+      abilities: ["investigate"],
+    },
   ];
 
   const playerCount = state.match?.players.length ?? 2;
@@ -37,16 +41,16 @@ export function TemplateBuilderScreen() {
     value: string | string[],
   ) => {
     const updated = templates.map((t, i) =>
-      i === index ? { ...t, [field]: value } : t
+      i === index ? { ...t, [field]: value } : t,
     );
     dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: updated });
   };
 
-  const toggleAbility = (index: number, abilityId: string) => {
+  const toggleAbility = (index: number, EffectType: string) => {
     const current = templates[index].abilities;
-    const updated = current.includes(abilityId)
-      ? current.filter((a) => a !== abilityId)
-      : [...current, abilityId];
+    const updated = current.includes(EffectType)
+      ? current.filter((a) => a !== EffectType)
+      : [...current, EffectType];
     updateTemplate(index, "abilities", updated);
   };
 
@@ -73,7 +77,11 @@ export function TemplateBuilderScreen() {
     if (templates.length >= maxTemplates) return;
     const next = [
       ...templates,
-      { name: `Template ${templates.length + 1}`, alignment: "hero" as const, abilities: [] },
+      {
+        name: `Template ${templates.length + 1}`,
+        alignment: "hero" as const,
+        abilities: [],
+      },
     ];
     dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: next });
   };
@@ -122,7 +130,11 @@ export function TemplateBuilderScreen() {
                   {templates.length > 2 && (
                     <button
                       className="text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                      style={{ color: "#e94560", background: "transparent", border: "none" }}
+                      style={{
+                        color: "#e94560",
+                        background: "transparent",
+                        border: "none",
+                      }}
                       onClick={() => handleRemoveTemplate(index)}
                     >
                       Remove

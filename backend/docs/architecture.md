@@ -63,14 +63,14 @@ classDiagram
 
     class Ability {
         <<entity>>
-        +id: AbilityId
+        +id: EffectType
         +canUseWhenDead: boolean
         +targetCount: number
         +canTargetSelf: boolean
         +requiresAliveTarget: boolean
     }
 
-    class AbilityId {
+    class EffectType {
         <<enum>>
         kill
         protect
@@ -81,7 +81,7 @@ classDiagram
     class Action {
         <<value object>>
         +actorId: string
-        +abilityId: AbilityId
+        +EffectType: EffectType
         +targetIds: string[]
         +cancelled: boolean
     }
@@ -95,7 +95,7 @@ classDiagram
     Player --> Template
     Template --> Alignment
     Template --> Ability
-    Ability --> AbilityId
+    Ability --> EffectType
 ```
 
 ## Layer Structure
