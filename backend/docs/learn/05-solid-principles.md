@@ -6,11 +6,11 @@ Five guidelines for maintainable code.
 
 **Each class does one thing.**
 
-| In This Project | Responsibility |
-|-----------------|----------------|
-| `Match` | Game logic only |
-| `CreateMatchUseCase` | Orchestrates match creation |
-| `InMemoryMatchRepository` | Data storage only |
+| In This Project           | Responsibility              |
+| ------------------------- | --------------------------- |
+| `Match`                   | Game logic only             |
+| `CreateMatchUseCase`      | Orchestrates match creation |
+| `InMemoryMatchRepository` | Data storage only           |
 
 Classes in `src/domain/entity/` have no imports from infrastructure - pure domain logic.
 
@@ -22,7 +22,7 @@ Add new abilities without changing existing code:
 
 ```typescript
 // src/domain/entity/ability.ts
-export type AbilityId = "kill" | "protect" | "roleblock" | "investigate";
+export type EffectType = "kill" | "protect" | "roleblock" | "investigate";
 ```
 
 New ability? Add to type + create handler. Old code untouched.
@@ -79,13 +79,13 @@ The `MatchRepository` interface lives in domain. Concrete `InMemoryMatchReposito
 
 ## Summary
 
-| Principle | This Project |
-|-----------|---------------|
-| SRP | Domain has no infrastructure imports |
-| OCP | Ability types are extensible |
-| LSP | Any repo implementation works |
-| ISP | Separate ports for Match, Template |
-| DIP | Use cases depend on interfaces |
+| Principle | This Project                         |
+| --------- | ------------------------------------ |
+| SRP       | Domain has no infrastructure imports |
+| OCP       | Ability types are extensible         |
+| LSP       | Any repo implementation works        |
+| ISP       | Separate ports for Match, Template   |
+| DIP       | Use cases depend on interfaces       |
 
 ---
 

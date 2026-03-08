@@ -4,10 +4,26 @@ import { MatchRepository } from "../../domain/ports/persistance/MatchRepository"
 import { RealtimePublisher } from "../../domain/ports/RealtimePublisher";
 
 export type ClientEvent =
-  | { type: "join_match"; matchId: string; playerId: string; player?: { id: string; name: string; isHost: boolean } }
+  | {
+      type: "join_match";
+      matchId: string;
+      playerId: string;
+      player?: { id: string; name: string; isHost: boolean };
+    }
   | { type: "leave_match"; matchId: string; playerId: string }
-  | { type: "use_ability"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }
-  | { type: "submit_vote"; matchId: string; voterId: string; targetId: string | null };
+  | {
+      type: "use_ability";
+      matchId: string;
+      actorId: string;
+      EffectType: string;
+      targetIds: string[];
+    }
+  | {
+      type: "submit_vote";
+      matchId: string;
+      voterId: string;
+      targetId: string | null;
+    };
 
 export type ServerEvent =
   | { type: "connected"; clientId: string }
@@ -16,8 +32,19 @@ export type ServerEvent =
   | { type: "players_synced"; matchId: string; players: unknown[] }
   | { type: "match_started"; matchId: string; playerAssignments: Assignment[] }
   | { type: "phase_changed"; matchId: string; phase: string }
-  | { type: "action_submitted"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }
-  | { type: "vote_submitted"; matchId: string; voterId: string; targetId: string | null }
+  | {
+      type: "action_submitted";
+      matchId: string;
+      actorId: string;
+      EffectType: string;
+      targetIds: string[];
+    }
+  | {
+      type: "vote_submitted";
+      matchId: string;
+      voterId: string;
+      targetId: string | null;
+    }
   | { type: "match_updated"; matchId: string; state: unknown }
   | { type: "player_killed"; matchId: string; playerId: string }
   | { type: "match_ended"; matchId: string; winner: string }
@@ -112,9 +139,9 @@ export class WebSocketManager {
     execute(input: { matchId: string; playerId: string }): Promise<unknown>;
   };
 
-  constructor(
-    leaveMatchUseCase: { execute(input: { matchId: string; playerId: string }): Promise<unknown> },
-  ) {
+  constructor(leaveMatchUseCase: {
+    execute(input: { matchId: string; playerId: string }): Promise<unknown>;
+  }) {
     this.leaveMatchUseCase = leaveMatchUseCase;
   }
 
@@ -161,7 +188,9 @@ export class WebSocketManager {
         room.join(event.playerId, client, event.player);
 
         // Send existing players to the new player
-        const existingPlayers = room.getPlayers().filter(p => p.id !== event.playerId);
+        const existingPlayers = room
+          .getPlayers()
+          .filter((p) => p.id !== event.playerId);
         room.sendToPlayer(event.playerId, {
           type: "players_synced",
           matchId: event.matchId,
@@ -171,7 +200,11 @@ export class WebSocketManager {
         // Broadcast new player to existing players
         if (event.player) {
           room.broadcast(
-            { type: "player_joined", matchId: event.matchId, player: event.player },
+            {
+              type: "player_joined",
+              matchId: event.matchId,
+              player: event.player,
+            },
             event.playerId,
           );
         }
@@ -181,11 +214,17 @@ export class WebSocketManager {
       case "leave_match": {
         const room = this.rooms.get(event.matchId);
         if (room && this.leaveMatchUseCase) {
-          this.leaveMatchUseCase.execute({ matchId: event.matchId, playerId: event.playerId }).catch(console.error);
+          this.leaveMatchUseCase
+            .execute({ matchId: event.matchId, playerId: event.playerId })
+            .catch(console.error);
         }
         if (room) {
           room.broadcast(
-            { type: "player_left", matchId: event.matchId, playerId: event.playerId },
+            {
+              type: "player_left",
+              matchId: event.matchId,
+              playerId: event.playerId,
+            },
             event.playerId,
           );
           room.leave(event.playerId);
@@ -241,9 +280,9 @@ export class WebSocketManager {
   }
 }
 
-export const wsManager = (
-  leaveMatchUseCase: { execute(input: { matchId: string; playerId: string }): Promise<unknown> },
-): WebSocketManager => {
+export const wsManager = (leaveMatchUseCase: {
+  execute(input: { matchId: string; playerId: string }): Promise<unknown>;
+}): WebSocketManager => {
   const instance = new WebSocketManager(leaveMatchUseCase);
   wsManagerInstance = instance;
   return instance;

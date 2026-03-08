@@ -29,7 +29,13 @@ All event types defined inline for simplicity:
 type ClientEvent =
   | { type: "join_match"; matchId: string; playerId: string }
   | { type: "leave_match"; matchId: string; playerId: string }
-  | { type: "use_ability"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }
+  | {
+      type: "use_ability";
+      matchId: string;
+      actorId: string;
+      EffectType: string;
+      targetIds: string[];
+    }
   | { type: "submit_vote"; matchId: string; voterId: string; targetId: string };
 
 // Server → Client
@@ -39,8 +45,19 @@ type ServerEvent =
   | { type: "player_left"; matchId: string; playerId: string }
   | { type: "match_started"; matchId: string; playerAssignments: Assignment[] }
   | { type: "phase_changed"; matchId: string; phase: PhaseType }
-  | { type: "action_submitted"; matchId: string; actorId: string; abilityId: string; targetIds: string[] }
-  | { type: "vote_submitted"; matchId: string; voterId: string; targetId: string }
+  | {
+      type: "action_submitted";
+      matchId: string;
+      actorId: string;
+      EffectType: string;
+      targetIds: string[];
+    }
+  | {
+      type: "vote_submitted";
+      matchId: string;
+      voterId: string;
+      targetId: string;
+    }
   | { type: "match_updated"; matchId: string; state: MatchResponse }
   | { type: "player_killed"; matchId: string; playerId: string }
   | { type: "match_ended"; matchId: string; winner: Alignment }
@@ -103,11 +120,13 @@ room?.broadcastMatchUpdated(updatedMatch);
 ## Frontend Changes
 
 ### Current (HTTP Polling)
+
 ```javascript
 setInterval(fetchGameState, 2000);
 ```
 
 ### Target (WebSocket)
+
 ```javascript
 const ws = new WebSocket(`ws://${location.host}/ws`);
 
@@ -125,15 +144,15 @@ ws.onmessage = (event) => {
 
 ## Broadcasting Triggers
 
-| Action | Event |
-|--------|-------|
-| Player joins lobby | `player_joined` |
-| Game starts | `match_started` |
-| Phase advances | `phase_changed` |
-| Ability used | `action_submitted` + `match_updated` |
-| Vote cast | `vote_submitted` + `match_updated` |
-| Player eliminated | `player_killed` + `match_updated` |
-| Game ends | `match_ended` |
+| Action             | Event                                |
+| ------------------ | ------------------------------------ |
+| Player joins lobby | `player_joined`                      |
+| Game starts        | `match_started`                      |
+| Phase advances     | `phase_changed`                      |
+| Ability used       | `action_submitted` + `match_updated` |
+| Vote cast          | `vote_submitted` + `match_updated`   |
+| Player eliminated  | `player_killed` + `match_updated`    |
+| Game ends          | `match_ended`                        |
 
 ## Error Handling
 

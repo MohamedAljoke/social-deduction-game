@@ -6,16 +6,24 @@ import {
 } from "../errors";
 import { Player } from "./player";
 
-export enum AbilityId {
+export enum EffectType {
   Kill = "kill",
   Protect = "protect",
   Roleblock = "roleblock",
   Investigate = "investigate",
 }
 
+export const DEFAULT_PRIORITY: Record<EffectType, number> = {
+  [EffectType.Roleblock]: 3,
+  [EffectType.Protect]: 2,
+  [EffectType.Investigate]: 1,
+  [EffectType.Kill]: 0,
+};
+
 export class Ability {
   constructor(
-    readonly id: AbilityId,
+    readonly id: EffectType,
+    readonly priority: number = DEFAULT_PRIORITY[id],
     readonly canUseWhenDead: boolean = false,
     readonly targetCount: number = 1,
     readonly canTargetSelf: boolean = false,

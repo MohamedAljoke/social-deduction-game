@@ -1,6 +1,6 @@
 import { Player, PlayerResponse } from "./player";
 import { Phase, PhaseType } from "./phase";
-import { Action } from "./action";
+import { Action, DEFAULT_STAGE_BY_EFFECT } from "./action";
 import { Alignment, Template } from "./template";
 import {
   InsufficientPlayers,
@@ -17,7 +17,8 @@ import {
   TargetNotAlive,
   PlayerHasNoTemplate,
 } from "../errors";
-import { AbilityId } from "./ability";
+import { EffectType } from "./ability";
+import { ActionResolver, ResolutionResult } from "../services/ActionResolver";
 
 function generateShortCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -157,7 +158,10 @@ export class Match {
     }
 
     const playerIds = new Set(this.players.map((p) => p.id));
-    if (!playerIds.has(voterId) || (targetId !== null && !playerIds.has(targetId))) {
+    if (
+      !playerIds.has(voterId) ||
+      (targetId !== null && !playerIds.has(targetId))
+    ) {
       throw new PlayerNotInMatch();
     }
 
@@ -189,7 +193,8 @@ export class Match {
         const [topTarget, topCount] = [...tally.entries()].reduce((a, b) =>
           b[1] > a[1] ? b : a,
         );
-        const isTied = [...tally.values()].filter((v) => v === topCount).length > 1;
+        const isTied =
+          [...tally.values()].filter((v) => v === topCount).length > 1;
         if (!isTied && topCount > skipCount) {
           const player = this.players.find((p) => p.id === topTarget);
           if (player) {
@@ -210,6 +215,20 @@ export class Match {
     return nextPhase;
   }
 
+  public resolveActions(resolver: ActionResolver): ResolutionResult {
+    if (this.status !== MatchStatus.STARTED) {
+      throw new MatchNotStarted();
+    }
+
+    if (this.phase.getCurrentPhase() !== "resolution") {
+      throw new InvalidPhase();
+    }
+
+    const result = resolver.resolve(this.actions, this.players, this.templates);
+    this.actions = [];
+    return result;
+  }
+
   public getActions(): Action[] {
     return this.actions;
   }
@@ -220,7 +239,7 @@ export class Match {
 
   public useAbility(
     actorId: string,
-    abilityId: AbilityId,
+    EffectType: EffectType,
     targetIds: string[],
   ): void {
     if (this.status !== MatchStatus.STARTED) {
@@ -250,7 +269,7 @@ export class Match {
       throw new TemplateNotFound();
     }
 
-    const ability = template.getAbility(abilityId);
+    const ability = template.getAbility(EffectType);
     if (!ability) {
       throw new AbilityDoesNotBelongToUser();
     }
@@ -266,7 +285,15 @@ export class Match {
       targets,
     });
 
-    this.actions.push(new Action(actorId, abilityId, uniqueTargetIds));
+    this.actions.push(
+      new Action(
+        actorId,
+        ability.id,
+        ability.priority,
+        DEFAULT_STAGE_BY_EFFECT[ability.id],
+        uniqueTargetIds,
+      ),
+    );
   }
 
   private assignTemplatesToPlayers() {
@@ -341,7 +368,9 @@ export class Match {
       [Alignment.Neutral]: 0,
     };
 
-    const templatesById = new Map(this.templates.map((template) => [template.id, template]));
+    const templatesById = new Map(
+      this.templates.map((template) => [template.id, template]),
+    );
 
     for (const player of this.players) {
       if (!player.isAlive()) {
@@ -376,7 +405,7 @@ export class Match {
       phase: this.phase.getCurrentPhase(),
       actions: this.actions.map((action) => ({
         actorId: action.actorId,
-        abilityId: action.abilityId,
+        EffectType: action.effectType,
         targetIds: action.targetIds,
         cancelled: action.cancelled,
       })),

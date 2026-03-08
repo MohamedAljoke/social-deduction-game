@@ -18,10 +18,14 @@ export interface RealtimePublisher {
   actionSubmitted(
     matchId: string,
     actorId: string,
-    abilityId: string,
+    EffectType: string,
     targetIds: string[],
   ): void;
   playerKilled(matchId: string, playerId: string): void;
   matchEnded(matchId: string, winner: Alignment): void;
-  voteSubmitted(matchId: string, voterId: string, targetId: string | null): void;
+  voteSubmitted(
+    matchId: string,
+    voterId: string,
+    targetId: string | null,
+  ): void;
 }

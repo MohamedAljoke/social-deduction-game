@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Alignment } from "../../../domain/entity/template";
-import { AbilityId } from "../../../domain/entity/ability";
+import { EffectType } from "../../../domain/entity/ability";
 
 export const CreateMatchSchema = z
   .object({
@@ -22,7 +22,7 @@ export const JoinMatchSchema = z.object({
 export type JoinMatchBody = z.infer<typeof JoinMatchSchema>;
 
 export const TemplateAbilitySchema = z.object({
-  id: z.enum(AbilityId),
+  id: z.enum(EffectType),
 });
 
 export const TemplateSchema = z.object({
@@ -39,7 +39,7 @@ export type StartMatchBody = z.infer<typeof StartMatchSchema>;
 
 export const UseAbilitySchema = z.object({
   actorId: z.string().min(1, "Actor ID is required"),
-  abilityId: z.enum(AbilityId),
+  EffectType: z.enum(EffectType),
   targetIds: z.array(z.string().min(1, "Target ID is required")),
 });
 

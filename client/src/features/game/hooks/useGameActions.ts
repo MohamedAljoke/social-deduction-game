@@ -7,10 +7,10 @@ export function useGameActions() {
   const { selectedAbility, selectedTarget, selectedVote } = state;
 
   const handleAbilityClick = useCallback(
-    (abilityId: string) => {
+    (EffectType: string) => {
       dispatch({
         type: GAME_ACTIONS.SELECT_ABILITY,
-        payload: selectedAbility === abilityId ? null : abilityId,
+        payload: selectedAbility === EffectType ? null : EffectType,
       });
     },
     [dispatch, selectedAbility],

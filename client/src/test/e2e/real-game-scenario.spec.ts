@@ -39,7 +39,7 @@ interface MatchSnapshot {
   status: MatchStatus;
   players: MatchPlayerSnapshot[];
   templates: MatchTemplateSnapshot[];
-  actions: Array<{ actorId: string; abilityId: string; targetIds: string[] }>;
+  actions: Array<{ actorId: string; EffectType: string; targetIds: string[] }>;
   winnerAlignment: MatchAlignment | null;
 }
 
@@ -47,7 +47,9 @@ async function getMatchSnapshot(
   page: Page,
   matchId: string,
 ): Promise<MatchSnapshot> {
-  const response = await page.request.get(`http://localhost:3000/match/${matchId}`);
+  const response = await page.request.get(
+    `http://localhost:3000/match/${matchId}`,
+  );
   if (!response.ok()) {
     throw new Error(`Failed to fetch match ${matchId}`);
   }
@@ -79,12 +81,17 @@ function getAliveNamesByAlignment(
   );
 }
 
-async function castVoteForTarget(page: Page, targetName: string): Promise<void> {
+async function castVoteForTarget(
+  page: Page,
+  targetName: string,
+): Promise<void> {
   await page.getByText(targetName).first().click();
   await page.getByRole("button", { name: /cast vote/i }).click();
 }
 
-async function configureTemplatesForEightPlayers(hostPage: Page): Promise<void> {
+async function configureTemplatesForEightPlayers(
+  hostPage: Page,
+): Promise<void> {
   await hostPage.getByRole("button", { name: /configure templates/i }).click();
   await hostPage.waitForURL("**/templates");
 
@@ -157,9 +164,9 @@ test.describe("Real game scenario (8 players, no abilities)", () => {
     let match = await getMatchSnapshot(hostPage, matchId);
     expect(match.players).toHaveLength(8);
     expect(match.templates).toHaveLength(8);
-    expect(match.templates.filter((t) => t.alignment === "villain")).toHaveLength(
-      2,
-    );
+    expect(
+      match.templates.filter((t) => t.alignment === "villain"),
+    ).toHaveLength(2);
     expect(match.templates.every((t) => t.abilities.length === 0)).toBeTruthy();
 
     // Round 1: skip majority (4 skips) beats target votes (3 votes) => no elimination.
@@ -171,15 +178,21 @@ test.describe("Real game scenario (8 players, no abilities)", () => {
     match = await getMatchSnapshot(hostPage, matchId);
     const skipRoundTarget = getAliveNamesByAlignment(match, "hero")[0];
     if (!skipRoundTarget) {
-      throw new Error("Expected at least one alive hero for skip-majority round");
+      throw new Error(
+        "Expected at least one alive hero for skip-majority round",
+      );
     }
 
-    const voters = getAliveNames(match).filter((name) => name !== skipRoundTarget);
+    const voters = getAliveNames(match).filter(
+      (name) => name !== skipRoundTarget,
+    );
     const skipVoters = voters.slice(0, 4);
     const targetVoters = voters.slice(4, 7);
 
     for (const name of skipVoters) {
-      await pagesByName[name].getByRole("button", { name: /skip vote/i }).click();
+      await pagesByName[name]
+        .getByRole("button", { name: /skip vote/i })
+        .click();
     }
     for (const name of targetVoters) {
       await castVoteForTarget(pagesByName[name], skipRoundTarget);
@@ -225,10 +238,14 @@ test.describe("Real game scenario (8 players, no abilities)", () => {
       match = await getMatchSnapshot(hostPage, matchId);
       const heroTarget = getAliveNamesByAlignment(match, "hero")[0];
       if (!heroTarget) {
-        throw new Error(`No alive hero target found for elimination round ${round}`);
+        throw new Error(
+          `No alive hero target found for elimination round ${round}`,
+        );
       }
 
-      const aliveVoters = getAliveNames(match).filter((name) => name !== heroTarget);
+      const aliveVoters = getAliveNames(match).filter(
+        (name) => name !== heroTarget,
+      );
       for (const voterName of aliveVoters) {
         await castVoteForTarget(pagesByName[voterName], heroTarget);
       }

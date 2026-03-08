@@ -93,8 +93,8 @@ sequenceDiagram
     Svc->>UI: navigate("/game")
 
     Note over UI,BE: ── In-game: ability & phase ──
-    UI->>Svc: useAbility(matchId, playerId, abilityId, targetId)
-    Svc->>API: POST /match/:id/ability {actorId, abilityId, targetIds}
+    UI->>Svc: useAbility(matchId, playerId, EffectType, targetId)
+    Svc->>API: POST /match/:id/ability {actorId, EffectType, targetIds}
     BE-->>GW: match_updated {matchId, state}
     GW->>Svc: onMatchUpdated
     Svc->>UI: dispatch UPDATE_MATCH
