@@ -1,10 +1,16 @@
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useGame } from "../../../context/GameContext";
 import { GAME_ACTIONS } from "../../../types/gameActions";
 
 export function useGameActions() {
   const { state, dispatch, service } = useGame();
   const { selectedAbility, selectedTarget, selectedVote } = state;
+  const [pendingVoteAction, setPendingVoteAction] = useState<
+    "cast" | "skip" | null
+  >(null);
+  const [isAdvancingPhase, setIsAdvancingPhase] = useState(false);
+  const voteInFlightRef = useRef(false);
+  const advanceInFlightRef = useRef(false);
 
   const handleAbilityClick = useCallback(
     (EffectType: string) => {
@@ -40,7 +46,15 @@ export function useGameActions() {
         selectedTarget,
       );
     } else if (selectedVote) {
-      await service.castVote(state.matchId, state.playerId, selectedVote);
+      if (voteInFlightRef.current) return;
+      voteInFlightRef.current = true;
+      setPendingVoteAction("cast");
+      try {
+        await service.castVote(state.matchId, state.playerId, selectedVote);
+      } finally {
+        voteInFlightRef.current = false;
+        setPendingVoteAction(null);
+      }
     }
   }, [
     selectedAbility,
@@ -53,8 +67,28 @@ export function useGameActions() {
 
   const handleSkipVote = useCallback(async () => {
     if (!state.matchId || !state.playerId) return;
-    await service.castVote(state.matchId, state.playerId, null);
+    if (voteInFlightRef.current) return;
+    voteInFlightRef.current = true;
+    setPendingVoteAction("skip");
+    try {
+      await service.castVote(state.matchId, state.playerId, null);
+    } finally {
+      voteInFlightRef.current = false;
+      setPendingVoteAction(null);
+    }
   }, [service, state.matchId, state.playerId]);
+
+  const handleAdvancePhase = useCallback(async () => {
+    if (!state.matchId || advanceInFlightRef.current) return;
+    advanceInFlightRef.current = true;
+    setIsAdvancingPhase(true);
+    try {
+      await service.advancePhase(state.matchId);
+    } finally {
+      advanceInFlightRef.current = false;
+      setIsAdvancingPhase(false);
+    }
+  }, [service, state.matchId]);
 
   const handleCancelAbility = useCallback(() => {
     dispatch({ type: GAME_ACTIONS.SELECT_ABILITY, payload: null });
@@ -64,10 +98,14 @@ export function useGameActions() {
     selectedAbility,
     selectedTarget,
     selectedVote,
+    isVoteSubmitting: pendingVoteAction !== null,
+    pendingVoteAction,
+    isAdvancingPhase,
     handleAbilityClick,
     handleTargetClick,
     handleConfirm,
     handleSkipVote,
+    handleAdvancePhase,
     handleCancelAbility,
   };
 }

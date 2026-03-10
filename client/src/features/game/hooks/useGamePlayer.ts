@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useGame } from "../../../context/GameContext";
+import type { GameLogEntry } from "../components/gameScreenShared";
 
 export const PHASE_CONFIG: Record<
   string,
@@ -64,19 +65,21 @@ export function useGamePlayer() {
 
 export function useGameLog() {
   const { state } = useGame();
-  const { match, playerId } = state;
+  const { match } = state;
 
   const formatAction = (action: {
-    EffectType: string;
+    effectType?: string;
+    EffectType?: string;
     actorId: string;
     targetIds: string[];
-  }) => {
+  }): GameLogEntry | null => {
     if (!match) return null;
 
     const actor = match.players.find((p) => p.id === action.actorId);
     const targets = action.targetIds
       .map((id) => match.players.find((p) => p.id === id))
       .filter(Boolean);
+    const effectType = action.effectType ?? action.EffectType;
 
     const verb: Record<string, string> = {
       kill: "killed",
@@ -88,13 +91,16 @@ export function useGameLog() {
     return {
       actorName: actor?.name || "Unknown",
       targetNames: targets.map((t) => t?.name).join(", "),
-      verb: verb[action.EffectType] || action.EffectType,
+      verb: (effectType && verb[effectType]) || effectType || "acted on",
     };
   };
 
+  const isGameLogEntry = (entry: GameLogEntry | null): entry is GameLogEntry =>
+    entry !== null;
+
   const actions = useMemo(() => {
     if (!match) return [];
-    return match.actions.slice().reverse().map(formatAction).filter(Boolean);
+    return match.actions.slice().reverse().map(formatAction).filter(isGameLogEntry);
   }, [match]);
 
   return { actions };
