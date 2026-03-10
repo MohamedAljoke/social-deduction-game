@@ -1,22 +1,19 @@
-import { Player, PlayerResponse } from "./player";
+import { Player } from "./player";
 import { Phase, PhaseType } from "./phase";
-import { Action, DEFAULT_STAGE_BY_EFFECT } from "./action";
+import { Action } from "./action";
 import { Alignment, Template } from "./template";
 import {
-  InsufficientPlayers,
   MatchAlreadyStarted,
-  TemplateNotFound,
-  TemplatePlayerCountMismatch,
   MatchNotStarted,
   InvalidPhase,
-  PlayerNotInMatch,
-  AbilityDoesNotBelongToUser,
-  PlayerHasNoTemplate,
-  PlayerIsDeadError,
-  TargetNotAlive,
 } from "../errors";
 import { EffectType } from "./ability";
 import { ActionResolver, ResolutionResult } from "../services/ActionResolver";
+import { MatchVoting } from "../services/MatchVoting";
+import { TemplateAssignmentService } from "../services/TemplateAssignmentService";
+import { AbilityActionFactory } from "../services/AbilityActionFactory";
+import { WinConditionEvaluator } from "../services/WinConditionEvaluator";
+import { MatchSnapshotMapper } from "../services/MatchSnapshotMapper";
 
 function generateShortCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -47,6 +44,7 @@ interface MatchProps {
   phase?: Phase;
   actions?: Action[];
   templates?: Template[];
+  votes?: Array<{ voterId: string; targetId: string | null }>;
   status: MatchStatus;
   config?: MatchConfig;
   winnerAlignment?: Alignment | null;
@@ -54,6 +52,11 @@ interface MatchProps {
 }
 
 export class Match {
+  private readonly templateAssignment = new TemplateAssignmentService();
+  private readonly abilityActionFactory = new AbilityActionFactory();
+  private readonly winConditionEvaluator = new WinConditionEvaluator();
+  private readonly snapshotMapper = new MatchSnapshotMapper();
+
   public readonly id: string;
   public readonly name: string;
   public readonly createdAt: Date;
@@ -63,7 +66,7 @@ export class Match {
   private phase: Phase;
   private actions: Action[];
   private templates: Template[];
-  private votes: Array<{ voterId: string; targetId: string | null }> = [];
+  private readonly voting: MatchVoting;
   private config: MatchConfig;
   private winnerAlignment: Alignment | null;
   private endedAt: Date | null;
@@ -77,6 +80,7 @@ export class Match {
     this.phase = props.phase ?? new Phase();
     this.actions = props.actions ?? [];
     this.templates = props.templates ?? [];
+    this.voting = new MatchVoting(props.votes);
     this.config = props.config ?? { showVotingTransparency: true };
     this.winnerAlignment = props.winnerAlignment ?? null;
     this.endedAt = props.endedAt ?? null;
@@ -115,19 +119,11 @@ export class Match {
   }
 
   public startWithTemplates(templates: Template[]): void {
-    this.validateStart(templates);
-
-    const missing = this.players.length - templates.length;
-
-    const padded = [
-      ...templates,
-      ...Array.from({ length: Math.max(0, missing) }, (_, i) =>
-        Template.default(`default_template_${templates.length + i}`),
-      ),
-    ];
-
-    this.templates = padded;
-    this.assignTemplatesToPlayers();
+    this.templates = this.templateAssignment.assign(
+      this.status,
+      this.players,
+      templates,
+    );
 
     this.status = MatchStatus.STARTED;
     this.winnerAlignment = null;
@@ -151,38 +147,7 @@ export class Match {
   }
 
   public submitVote(voterId: string, targetId: string | null): void {
-    if (this.phase.getCurrentPhase() !== "voting") {
-      throw new InvalidPhase();
-    }
-
-    const playersById = new Map(this.players.map((player) => [player.id, player]));
-    const voter = playersById.get(voterId);
-
-    if (!voter) {
-      throw new PlayerNotInMatch();
-    }
-
-    if (!voter.isAlive()) {
-      throw new PlayerIsDeadError();
-    }
-
-    if (targetId !== null) {
-      const target = playersById.get(targetId);
-      if (!target) {
-        throw new PlayerNotInMatch();
-      }
-
-      if (!target.isAlive()) {
-        throw new TargetNotAlive();
-      }
-    }
-
-    const existing = this.votes.findIndex((v) => v.voterId === voterId);
-    if (existing !== -1) {
-      this.votes[existing] = { voterId, targetId };
-    } else {
-      this.votes.push({ voterId, targetId });
-    }
+    this.voting.submitVote(this.phase, this.players, voterId, targetId);
   }
 
   public advancePhase(): PhaseType {
@@ -190,33 +155,21 @@ export class Match {
       throw new MatchNotStarted();
     }
 
-    const isVotingPhase = this.phase.getCurrentPhase() === "voting";
+    const isVotingPhase = this.phase.isVoting();
     let playerEliminatedThisRound = false;
     if (isVotingPhase) {
-      const skipCount = this.votes.filter((v) => v.targetId === null).length;
-      const tally = new Map<string, number>();
-      for (const { targetId } of this.votes) {
-        if (targetId !== null) {
-          tally.set(targetId, (tally.get(targetId) ?? 0) + 1);
-        }
-      }
-
-      if (tally.size > 0) {
-        const [topTarget, topCount] = [...tally.entries()].reduce((a, b) =>
-          b[1] > a[1] ? b : a,
+      const result = this.voting.resolveRound();
+      if (result.eliminatedPlayerId) {
+        const player = this.players.find(
+          (candidate) => candidate.id === result.eliminatedPlayerId,
         );
-        const isTied =
-          [...tally.values()].filter((v) => v === topCount).length > 1;
-        if (!isTied && topCount > skipCount) {
-          const player = this.players.find((p) => p.id === topTarget);
-          if (player) {
-            player.eliminate();
-            playerEliminatedThisRound = true;
-          }
+        if (player) {
+          player.eliminate();
+          playerEliminatedThisRound = true;
         }
       }
 
-      this.votes = [];
+      this.voting.clear();
     }
 
     const nextPhase = this.phase.nextPhase();
@@ -232,7 +185,7 @@ export class Match {
       throw new MatchNotStarted();
     }
 
-    if (this.phase.getCurrentPhase() !== "resolution") {
+    if (!this.phase.isResolution()) {
       throw new InvalidPhase();
     }
 
@@ -259,88 +212,19 @@ export class Match {
       throw new MatchNotStarted();
     }
 
-    if (this.phase.getCurrentPhase() !== "action") {
+    if (!this.phase.isAction()) {
       throw new InvalidPhase();
     }
 
-    const uniqueTargetIds = [...new Set(targetIds)];
-
-    const playersById = new Map(this.players.map((p) => [p.id, p]));
-
-    const actor = playersById.get(actorId);
-    if (!actor) {
-      throw new PlayerNotInMatch();
-    }
-
-    const templateId = actor.getTemplateId();
-    if (!templateId) {
-      throw new PlayerHasNoTemplate();
-    }
-
-    const template = this.templates.find((t) => t.id === templateId);
-    if (!template) {
-      throw new TemplateNotFound();
-    }
-
-    const ability = template.getAbility(EffectType);
-    if (!ability) {
-      throw new AbilityDoesNotBelongToUser();
-    }
-
-    const targets = uniqueTargetIds.map((id) => {
-      const target = playersById.get(id);
-      if (!target) throw new PlayerNotInMatch();
-      return target;
-    });
-
-    ability.validateUsage({
-      actor,
-      targets,
-    });
-
     this.actions.push(
-      new Action(
+      this.abilityActionFactory.create(
         actorId,
-        ability.id,
-        ability.priority,
-        DEFAULT_STAGE_BY_EFFECT[ability.id],
-        uniqueTargetIds,
+        EffectType,
+        targetIds,
+        this.players,
+        this.templates,
       ),
     );
-  }
-
-  private assignTemplatesToPlayers() {
-    const shuffled = this.shuffle(this.templates);
-
-    for (let i = 0; i < this.players.length; i++) {
-      this.players[i].assignTemplate(shuffled[i].id);
-    }
-  }
-
-  private validateStart(templates: Template[]) {
-    if (this.status !== MatchStatus.LOBBY) {
-      throw new MatchAlreadyStarted();
-    }
-
-    if (this.players.length < 2) {
-      throw new InsufficientPlayers();
-    }
-
-    if (templates.length > this.players.length) {
-      throw new TemplatePlayerCountMismatch(
-        templates.length,
-        this.players.length,
-      );
-    }
-  }
-
-  private shuffle<T>(items: T[]): T[] {
-    const copy = [...items];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
   }
 
   private finishIfWinnerExists(): void {
@@ -348,7 +232,10 @@ export class Match {
       return;
     }
 
-    const winner = this.evaluateWinCondition();
+    const winner = this.winConditionEvaluator.evaluate(
+      this.players,
+      this.templates,
+    );
     if (!winner) {
       return;
     }
@@ -358,84 +245,20 @@ export class Match {
     this.endedAt ??= new Date();
   }
 
-  private evaluateWinCondition(): Alignment | null {
-    const counts = this.getAliveAlignmentCounts();
-    const aliveHeroes = counts[Alignment.Hero];
-    const aliveVillains = counts[Alignment.Villain];
-
-    if (aliveHeroes > 0 && aliveVillains === 0) {
-      return Alignment.Hero;
-    }
-
-    if (aliveVillains > 0 && aliveVillains >= aliveHeroes) {
-      return Alignment.Villain;
-    }
-
-    return null;
-  }
-
-  private getAliveAlignmentCounts(): Record<Alignment, number> {
-    const counts: Record<Alignment, number> = {
-      [Alignment.Hero]: 0,
-      [Alignment.Villain]: 0,
-      [Alignment.Neutral]: 0,
-    };
-
-    const templatesById = new Map(
-      this.templates.map((template) => [template.id, template]),
-    );
-
-    for (const player of this.players) {
-      if (!player.isAlive()) {
-        continue;
-      }
-
-      const templateId = player.getTemplateId();
-      if (!templateId) {
-        continue;
-      }
-
-      const template = templatesById.get(templateId);
-      if (!template) {
-        continue;
-      }
-
-      counts[template.alignment] += 1;
-    }
-
-    return counts;
-  }
-
   toJSON() {
-    return {
+    return this.snapshotMapper.map({
       id: this.id,
       name: this.name,
       createdAt: this.createdAt,
       status: this.status,
-      players: this.players.map(
-        (player: Player): PlayerResponse => player.toJSON(),
-      ),
+      players: this.players,
       phase: this.phase.getCurrentPhase(),
-      actions: this.actions.map((action) => ({
-        actorId: action.actorId,
-        EffectType: action.effectType,
-        targetIds: action.targetIds,
-        cancelled: action.cancelled,
-      })),
-      templates: this.templates.map((template) => ({
-        id: template.id,
-        name: template.name,
-        alignment: template.alignment,
-        abilities: template.abilities.map((ability) => ({
-          id: ability.id,
-        })),
-        winCondition: template.winCondition,
-        endsGameOnWin: template.endsGameOnWin,
-      })),
-      votes: this.votes,
+      actions: this.actions,
+      templates: this.templates,
+      votes: this.voting.getVotes(),
       config: this.config,
       winnerAlignment: this.winnerAlignment,
       endedAt: this.endedAt,
-    };
+    });
   }
 }
