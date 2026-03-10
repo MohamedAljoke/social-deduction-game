@@ -22,7 +22,7 @@ const ABILITY_METADATA: Record<string, AbilityMetadata> = {
     id: "protect",
     canUseWhenDead: false,
     targetCount: 1,
-    canTargetSelf: false,
+    canTargetSelf: true,
     requiresAliveTarget: true,
   },
   roleblock: {

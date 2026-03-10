@@ -97,13 +97,16 @@ test.describe("Phase advance", () => {
   test("phase cycles: discussion → voting → action → resolution → discussion", async ({
     createPlayers,
   }) => {
-    const [hostPage, guestPage] = await createPlayers(2);
-    await startGame(hostPage, [guestPage]);
+    // 3 players = 1 villain + 2 heroes (default templates + 1 citizen pad).
+    // With 2 heroes alive, villain parity condition (>=) is never met during
+    // resolution unless a kill lands, so the game doesn't end prematurely.
+    const [hostPage, guestPage1, guestPage2] = await createPlayers(3);
+    await startGameViaTemplateBuilder(hostPage, [guestPage1, guestPage2]);
 
     const phases = ["voting", "action", "resolution", "discussion"];
     for (const phase of phases) {
       await advancePhase(hostPage);
-      for (const page of [hostPage, guestPage]) {
+      for (const page of [hostPage, guestPage1, guestPage2]) {
         await expect(
           page.getByText(new RegExp(phase, "i")).first(),
         ).toBeVisible({ timeout: 5000 });

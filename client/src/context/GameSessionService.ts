@@ -63,7 +63,9 @@ export class GameSessionService {
         });
       }),
       this.gateway.onMatchStarted(() => {
-        this.navigate("/game");
+        // Navigation is handled reactively by MatchRoute when match_updated
+        // arrives with status="started", avoiding a race where navigate("/game")
+        // fires before the match state is updated.
       }),
       this.gateway.onMatchEnded((matchId) => {
         void this.fetchMatch(matchId);
