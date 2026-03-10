@@ -8,3 +8,5 @@ client/test-results
 .env.*
 **/.env
 **/.env.*
+
+client/.env
