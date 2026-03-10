@@ -11,6 +11,8 @@ import {
   AbilityDoesNotBelongToUser,
   InvalidTargetCount,
   CannotTargetSelf,
+  PlayerIsDeadError,
+  TargetNotAlive,
 } from "../../domain/errors";
 
 const port = 4001;
@@ -751,6 +753,243 @@ describe("Match E2E", () => {
 
       expect(resolved.players.every((p) => p.status === "alive")).toBe(true);
       expect(resolved.status).toBe(MatchStatus.STARTED);
+    });
+  });
+
+  describe("SubmitVote UseCase", () => {
+    it("should allow an alive player to vote for an alive target", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchHelper(match.id);
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const votingMatch = await getMatch(match.id);
+      const voter = votingMatch.players[0];
+      const target = votingMatch.players[1];
+
+      const { response, body } = await submitVoteHelper(match.id, voter.id, target.id);
+
+      expect(response.status).toBe(200);
+      expect(body.votes).toContainEqual({ voterId: voter.id, targetId: target.id });
+    });
+
+    it("should allow an alive player to skip vote", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchHelper(match.id);
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const votingMatch = await getMatch(match.id);
+      const voter = votingMatch.players[0];
+
+      const { response, body } = await submitVoteHelper(match.id, voter.id, null);
+
+      expect(response.status).toBe(200);
+      expect(body.votes).toContainEqual({ voterId: voter.id, targetId: null });
+    });
+
+    it("should reject a dead voter with the existing error shape", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+      await joinMatchHelper(match.id, "diana");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const heroTarget = started.players.find(
+        (player) => player.id !== villain?.id && findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await advancePhaseHelper(match.id); // voting -> action
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [heroTarget!.id]);
+      await advancePhaseHelper(match.id); // action -> resolution
+      await advancePhaseHelper(match.id); // resolution -> discussion
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const votingMatch = await getMatch(match.id);
+      const aliveTarget = votingMatch.players.find((player) => player.status === "alive" && player.id !== heroTarget!.id);
+
+      const { response, body } = await submitVoteHelper(match.id, heroTarget!.id, aliveTarget!.id);
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new PlayerIsDeadError().code,
+        message: new PlayerIsDeadError().message,
+      });
+    });
+
+    it("should reject an eliminated voter with the existing error shape", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+      await joinMatchHelper(match.id, "diana");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+      ]);
+
+      const started = await getMatch(match.id);
+      const eliminatedTarget = started.players.find(
+        (player) => findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+      const voters = started.players.filter((player) => player.id !== eliminatedTarget?.id);
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      for (const voter of voters) {
+        await submitVoteHelper(match.id, voter.id, eliminatedTarget!.id);
+      }
+      await advancePhaseHelper(match.id); // voting -> action, eliminate target
+      await advancePhaseHelper(match.id); // action -> resolution
+      await advancePhaseHelper(match.id); // resolution -> discussion
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const votingMatch = await getMatch(match.id);
+      const aliveTarget = votingMatch.players.find(
+        (player) => player.status === "alive" && player.id !== eliminatedTarget!.id,
+      );
+
+      const { response, body } = await submitVoteHelper(
+        match.id,
+        eliminatedTarget!.id,
+        aliveTarget!.id,
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new PlayerIsDeadError().code,
+        message: new PlayerIsDeadError().message,
+      });
+    });
+
+    it("should reject votes targeting a dead player", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+      await joinMatchHelper(match.id, "diana");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const deadTarget = started.players.find(
+        (player) => player.id !== villain?.id && findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await advancePhaseHelper(match.id); // voting -> action
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [deadTarget!.id]);
+      await advancePhaseHelper(match.id); // action -> resolution
+      await advancePhaseHelper(match.id); // resolution -> discussion
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const votingMatch = await getMatch(match.id);
+      const aliveVoter = votingMatch.players.find(
+        (player) => player.status === "alive" && player.id !== deadTarget!.id,
+      );
+
+      const { response, body } = await submitVoteHelper(match.id, aliveVoter!.id, deadTarget!.id);
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new TargetNotAlive().code,
+        message: new TargetNotAlive().message,
+      });
+    });
+
+    it("should reject votes targeting an eliminated player", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+      await joinMatchHelper(match.id, "diana");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
+      ]);
+
+      const started = await getMatch(match.id);
+      const eliminatedTarget = started.players.find(
+        (player) => findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+      const voters = started.players.filter((player) => player.id !== eliminatedTarget?.id);
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      for (const voter of voters) {
+        await submitVoteHelper(match.id, voter.id, eliminatedTarget!.id);
+      }
+      await advancePhaseHelper(match.id); // voting -> action, eliminate target
+      await advancePhaseHelper(match.id); // action -> resolution
+      await advancePhaseHelper(match.id); // resolution -> discussion
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const votingMatch = await getMatch(match.id);
+      const aliveVoter = votingMatch.players.find(
+        (player) => player.status === "alive" && player.id !== voters[0].id,
+      ) ?? voters[0];
+
+      const { response, body } = await submitVoteHelper(
+        match.id,
+        aliveVoter.id,
+        eliminatedTarget!.id,
+      );
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new TargetNotAlive().code,
+        message: new TargetNotAlive().message,
+      });
     });
   });
 

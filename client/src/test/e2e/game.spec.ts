@@ -256,6 +256,11 @@ test.describe("Voting", () => {
     await expect(
       targetPage.getByRole("button", { name: /skip vote/i }),
     ).toHaveCount(0);
+
+    await hostPage.getByText(targetName).click();
+    await expect(
+      hostPage.getByRole("button", { name: /cast vote/i }),
+    ).toBeDisabled();
   });
 });
 

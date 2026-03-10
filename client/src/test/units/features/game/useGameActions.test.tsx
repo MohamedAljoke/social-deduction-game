@@ -2,12 +2,36 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameActions } from "@/features/game/hooks/useGameActions";
 import { useGame } from "@/context/GameContext";
+import type { Match } from "@/types/match";
+import { GAME_ACTIONS } from "@/types/gameActions";
 
 vi.mock("@/context/GameContext", () => ({
   useGame: vi.fn(),
 }));
 
 const mockUseGame = vi.mocked(useGame);
+
+function createMatch(
+  overrides: Partial<Match> = {},
+  playerOverrides?: Match["players"],
+): Match {
+  return {
+    id: "match-1",
+    name: "Test Match",
+    status: "started",
+    phase: "voting",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    templates: [],
+    actions: [],
+    votes: [],
+    config: { showVotingTransparency: true },
+    players: playerOverrides ?? [
+      { id: "player-1", name: "Alice", status: "alive" },
+      { id: "player-2", name: "Bob", status: "alive" },
+    ],
+    ...overrides,
+  };
+}
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -32,6 +56,7 @@ describe("useGameActions", () => {
       state: {
         matchId: "match-1",
         playerId: "player-1",
+        match: createMatch(),
         selectedAbility: null,
         selectedTarget: null,
         selectedVote: "player-2",
@@ -77,6 +102,7 @@ describe("useGameActions", () => {
       state: {
         matchId: "match-1",
         playerId: "player-1",
+        match: createMatch(),
         selectedAbility: null,
         selectedTarget: null,
         selectedVote: null,
@@ -124,6 +150,7 @@ describe("useGameActions", () => {
       state: {
         matchId: "match-1",
         playerId: "player-1",
+        match: createMatch(),
         selectedAbility: null,
         selectedTarget: null,
         selectedVote: null,
@@ -158,6 +185,74 @@ describe("useGameActions", () => {
 
     await waitFor(() => {
       expect(result.current.isAdvancingPhase).toBe(false);
+    });
+  });
+
+  it("ignores dead vote targets in handleTargetClick", () => {
+    const dispatch = vi.fn();
+
+    mockUseGame.mockReturnValue({
+      state: {
+        matchId: "match-1",
+        playerId: "player-1",
+        match: createMatch({}, [
+          { id: "player-1", name: "Alice", status: "alive" },
+          { id: "player-2", name: "Bob", status: "dead" },
+        ]),
+        selectedAbility: null,
+        selectedTarget: null,
+        selectedVote: null,
+      },
+      dispatch,
+      service: {
+        castVote: vi.fn(),
+        advancePhase: vi.fn(),
+        useAbility: vi.fn(),
+      },
+    } as never);
+
+    const { result } = renderHook(() => useGameActions());
+
+    act(() => {
+      result.current.handleTargetClick("player-2");
+    });
+
+    expect(dispatch).not.toHaveBeenCalledWith({
+      type: GAME_ACTIONS.SELECT_VOTE,
+      payload: "player-2",
+    });
+  });
+
+  it("clears a stale selected vote when the selected player is no longer alive", async () => {
+    const dispatch = vi.fn();
+
+    mockUseGame.mockReturnValue({
+      state: {
+        matchId: "match-1",
+        playerId: "player-1",
+        match: createMatch({}, [
+          { id: "player-1", name: "Alice", status: "alive" },
+          { id: "player-2", name: "Bob", status: "eliminated" },
+        ]),
+        selectedAbility: null,
+        selectedTarget: null,
+        selectedVote: "player-2",
+      },
+      dispatch,
+      service: {
+        castVote: vi.fn(),
+        advancePhase: vi.fn(),
+        useAbility: vi.fn(),
+      },
+    } as never);
+
+    renderHook(() => useGameActions());
+
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledWith({
+        type: GAME_ACTIONS.SELECT_VOTE,
+        payload: null,
+      });
     });
   });
 });
