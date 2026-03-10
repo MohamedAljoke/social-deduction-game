@@ -14,6 +14,22 @@ export class Phase {
     return this.current;
   }
 
+  public isDiscussion(): boolean {
+    return this.current === "discussion";
+  }
+
+  public isVoting(): boolean {
+    return this.current === "voting";
+  }
+
+  public isAction(): boolean {
+    return this.current === "action";
+  }
+
+  public isResolution(): boolean {
+    return this.current === "resolution";
+  }
+
   public nextPhase(): PhaseType {
     const currentIndex = PHASE_ORDER.indexOf(this.current);
     const nextIndex = (currentIndex + 1) % PHASE_ORDER.length;

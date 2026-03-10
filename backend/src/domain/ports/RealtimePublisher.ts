@@ -1,6 +1,6 @@
 import { MatchResponse } from "../entity/match";
 import { Alignment } from "../entity/template";
-import { EffectResult } from "../services/ResolutionContext";
+import { EffectResult } from "../services/resolution";
 
 export interface MatchStartedPayload {
   playerAssignments: {

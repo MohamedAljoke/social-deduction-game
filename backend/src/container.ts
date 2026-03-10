@@ -10,8 +10,7 @@ import { GetMatchUseCase } from "./application/GetMatch";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 import { WebSocketPublisher } from "./infrastructure/websocket/WebSocketPublisher";
-import { ActionResolver } from "./domain/services/ActionResolver";
-import { ActionResolverFactory } from "./domain/services/ActionResolverFactory";
+import { ActionResolver, ActionResolverFactory } from "./domain/services/resolution";
 
 const wsPublisher = new WebSocketPublisher();
 
