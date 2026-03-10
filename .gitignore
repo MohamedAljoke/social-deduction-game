@@ -3,3 +3,8 @@ coverage
 dist
 
 client/test-results
+
+.env
+.env.*
+**/.env
+**/.env.*
