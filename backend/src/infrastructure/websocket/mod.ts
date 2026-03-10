@@ -153,7 +153,7 @@ export class WebSocketManager {
   attach(server: Server): void {
     this.wss = new WebSocketServer({ server, path: "/ws" });
 
-    this.wss.on("connection", (socket, request) => {
+    this.wss.on("connection", (socket, _) => {
       const clientId = `client_${++this.clientCounter}`;
       const client: Client = { id: clientId, socket };
 
