@@ -9,14 +9,13 @@ import {
 } from "../errors";
 import { EffectType } from "./ability";
 import {
-  ActionResolver,
-  ResolutionResult,
-} from "../services/resolution/ActionResolver";
-import { MatchVoting } from "../services/match/MatchVoting";
-import { TemplateAssignmentService } from "../services/match/TemplateAssignmentService";
-import { AbilityActionFactory } from "../services/match/AbilityActionFactory";
-import { WinConditionEvaluator } from "../services/match/WinConditionEvaluator";
-import { MatchSnapshotMapper } from "../services/match/MatchSnapshotMapper";
+  AbilityActionFactory,
+  MatchSnapshotMapper,
+  MatchVoting,
+  TemplateAssignmentService,
+  WinConditionEvaluator,
+} from "../services/match";
+import { ActionResolver, ResolutionResult } from "../services/resolution";
 
 function generateShortCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
