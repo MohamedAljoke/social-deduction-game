@@ -8,7 +8,6 @@ import { AdvancePhaseUseCase } from "./application/AdvancePhase";
 import { SubmitVoteUseCase } from "./application/SubmitVote";
 import { GetMatchUseCase } from "./application/GetMatch";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
-import { RealtimePublisher } from "./domain/ports/RealtimePublisher";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 import { WebSocketPublisher } from "./infrastructure/websocket/WebSocketPublisher";
 import { ActionResolver } from "./domain/services/ActionResolver";

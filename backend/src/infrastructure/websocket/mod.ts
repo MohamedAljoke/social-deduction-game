@@ -1,7 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { Server } from "http";
-import { MatchRepository } from "../../domain/ports/persistance/MatchRepository";
-import { RealtimePublisher } from "../../domain/ports/RealtimePublisher";
 
 export type ClientEvent =
   | {
@@ -48,7 +46,13 @@ export type ServerEvent =
   | { type: "match_updated"; matchId: string; state: unknown }
   | { type: "player_killed"; matchId: string; playerId: string }
   | { type: "match_ended"; matchId: string; winner: string }
-  | { type: "investigate_result"; matchId: string; actorId: string; targetId: string; alignment: string }
+  | {
+      type: "investigate_result";
+      matchId: string;
+      actorId: string;
+      targetId: string;
+      alignment: string;
+    }
   | { type: "error"; code: string; message: string };
 
 export interface Assignment {

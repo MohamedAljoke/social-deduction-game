@@ -1,5 +1,5 @@
 import { MatchNotFound, PlayerNotInMatch } from "../domain/errors";
-import { Match, MatchResponse } from "../domain/entity/match";
+import { MatchResponse } from "../domain/entity/match";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 

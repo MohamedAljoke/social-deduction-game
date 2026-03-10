@@ -7,14 +7,10 @@ import {
   InsufficientPlayers,
   MatchAlreadyStarted,
   MatchNotFound,
-  MatchNotStarted,
   InvalidPhase,
-  PlayerNotInMatch,
-  PlayerIsDeadError,
   AbilityDoesNotBelongToUser,
   InvalidTargetCount,
   CannotTargetSelf,
-  TargetNotAlive,
 } from "../../domain/errors";
 
 const port = 4001;
@@ -509,7 +505,6 @@ describe("Match E2E", () => {
 
       const matchInAction = await getMatch(match.id);
       const alice = matchInAction.players.find((p) => p.name === "alice");
-      const bob = matchInAction.players.find((p) => p.name === "bob");
       const aliceTemplate = matchInAction.templates.find(
         (t) => t.id === alice!.templateId,
       );
@@ -610,7 +605,9 @@ describe("Match E2E", () => {
       await advancePhaseHelper(match.id); // voting -> action
 
       // Villain kills hero
-      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [hero!.id]);
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [
+        hero!.id,
+      ]);
 
       // Advance to resolution
       const { body: resolved } = await advancePhaseHelper(match.id);
@@ -628,7 +625,10 @@ describe("Match E2E", () => {
       await startMatchWithTemplatesHelper(match.id, [
         { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
         { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
-        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
       ]);
 
       const started = await getMatch(match.id);
@@ -636,7 +636,8 @@ describe("Match E2E", () => {
       const protector = started.players.find(
         (p) =>
           findTemplateAlignment(started, p.id) === Alignment.Hero &&
-          started.templates.find((t) => t.id === p.templateId)?.abilities[0]?.id === EffectType.Protect,
+          started.templates.find((t) => t.id === p.templateId)?.abilities[0]
+            ?.id === EffectType.Protect,
       );
       const target = started.players.find(
         (p) => p.id !== villain?.id && p.id !== protector?.id,
@@ -649,8 +650,12 @@ describe("Match E2E", () => {
       await advancePhaseHelper(match.id); // voting -> action
 
       // Protector protects target; villain kills same target
-      await useAbilityHelper(match.id, protector!.id, EffectType.Protect, [target!.id]);
-      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [target!.id]);
+      await useAbilityHelper(match.id, protector!.id, EffectType.Protect, [
+        target!.id,
+      ]);
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [
+        target!.id,
+      ]);
 
       const { body: resolved } = await advancePhaseHelper(match.id); // action -> resolution
 
@@ -666,8 +671,14 @@ describe("Match E2E", () => {
 
       await startMatchWithTemplatesHelper(match.id, [
         { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
-        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Roleblock }] },
-        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Roleblock }],
+        },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
       ]);
 
       const started = await getMatch(match.id);
@@ -675,7 +686,8 @@ describe("Match E2E", () => {
       const blocker = started.players.find(
         (p) =>
           findTemplateAlignment(started, p.id) === Alignment.Hero &&
-          started.templates.find((t) => t.id === p.templateId)?.abilities[0]?.id === EffectType.Roleblock,
+          started.templates.find((t) => t.id === p.templateId)?.abilities[0]
+            ?.id === EffectType.Roleblock,
       );
       const killTarget = started.players.find(
         (p) => p.id !== villain?.id && p.id !== blocker?.id,
@@ -688,8 +700,12 @@ describe("Match E2E", () => {
       await advancePhaseHelper(match.id); // voting -> action
 
       // Blocker roleblocks the villain; villain tries to kill
-      await useAbilityHelper(match.id, blocker!.id, EffectType.Roleblock, [villain!.id]);
-      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [killTarget!.id]);
+      await useAbilityHelper(match.id, blocker!.id, EffectType.Roleblock, [
+        villain!.id,
+      ]);
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [
+        killTarget!.id,
+      ]);
 
       const { body: resolved } = await advancePhaseHelper(match.id); // action -> resolution
 
@@ -707,14 +723,17 @@ describe("Match E2E", () => {
       await startMatchWithTemplatesHelper(match.id, [
         { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
         { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
-        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+        {
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Investigate }],
+        },
       ]);
 
       const started = await getMatch(match.id);
       const detective = started.players.find(
         (p) =>
-          started.templates.find((t) => t.id === p.templateId)?.abilities[0]?.id ===
-          EffectType.Investigate,
+          started.templates.find((t) => t.id === p.templateId)?.abilities[0]
+            ?.id === EffectType.Investigate,
       );
       const suspect = findPlayerByAlignment(started, Alignment.Villain);
       expect(detective).toBeDefined();
@@ -724,7 +743,9 @@ describe("Match E2E", () => {
       await advancePhaseHelper(match.id); // voting -> action
 
       // Detective investigates villain; no kill submitted → no one dies
-      await useAbilityHelper(match.id, detective!.id, EffectType.Investigate, [suspect!.id]);
+      await useAbilityHelper(match.id, detective!.id, EffectType.Investigate, [
+        suspect!.id,
+      ]);
 
       const { body: resolved } = await advancePhaseHelper(match.id); // action -> resolution
 

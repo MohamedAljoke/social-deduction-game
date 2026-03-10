@@ -1,9 +1,5 @@
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
-import {
-  MatchNotFound,
-  TemplateNotFound,
-  TemplatePlayerCountMismatch,
-} from "../domain/errors";
+import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
 import { Ability, EffectType } from "../domain/entity/ability";
