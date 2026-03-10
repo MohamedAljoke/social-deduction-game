@@ -22,7 +22,7 @@ export type HttpHandler = (
 export interface HttpServer {
   register(method: HttpMethod, path: string, ...handlers: HttpHandler[]): void;
   close(): Promise<void>;
-  listen(port: number): void;
+  listen(port: number, host?: string): void;
 }
 
 export function normalizeQuery(query: any): Record<string, string> {

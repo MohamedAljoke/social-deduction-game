@@ -12,7 +12,8 @@
     "test:server": "npm run test --prefix ./backend",
     "dev:client": "npm run dev --prefix ./client",
     "dev:server": "npm run dev --prefix ./backend",
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "tunnel": "./scripts/ngrok-tunnel.sh"
   },
   "repository": {
     "type": "git",

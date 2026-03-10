@@ -61,13 +61,19 @@ export class ExpressServer implements HttpServer {
     });
   }
 
-  listen(port: number) {
+  listen(port: number, host?: string) {
     return new Promise<void>((resolve, reject) => {
-      this.server = this.app.listen(port, () => {
+      const onListen = () => {
         console.log("server is on");
         this.wsManager?.attach(this.server!);
         resolve();
-      });
+      };
+      
+      if (host) {
+        this.server = this.app.listen(port, host, onListen);
+      } else {
+        this.server = this.app.listen(port, onListen);
+      }
 
       this.server.on("error", (err) => {
         // eslint-disable-next-line no-console

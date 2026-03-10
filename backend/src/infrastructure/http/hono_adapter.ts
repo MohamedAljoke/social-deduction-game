@@ -48,12 +48,13 @@ export class HonoServer implements HttpServer {
     });
   }
 
-  async listen(port: number): Promise<void> {
+  async listen(port: number, host?: string): Promise<void> {
     return new Promise((resolve) => {
       this.server = serve(
         {
           fetch: this.app.fetch,
           port,
+          hostname: host,
         },
         () => resolve(),
       );
