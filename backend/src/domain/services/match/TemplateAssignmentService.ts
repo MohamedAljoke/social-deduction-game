@@ -2,9 +2,9 @@ import {
   InsufficientPlayers,
   MatchAlreadyStarted,
   TemplatePlayerCountMismatch,
-} from "../errors";
-import { Player } from "../entity/player";
-import { Template } from "../entity/template";
+} from "../../errors";
+import { Player } from "../../entity/player";
+import { Template } from "../../entity/template";
 
 export class TemplateAssignmentService {
   public assign(

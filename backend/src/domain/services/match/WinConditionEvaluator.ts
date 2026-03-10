@@ -1,5 +1,5 @@
-import { Player } from "../entity/player";
-import { Alignment, Template } from "../entity/template";
+import { Player } from "../../entity/player";
+import { Alignment, Template } from "../../entity/template";
 
 export class WinConditionEvaluator {
   public evaluate(players: Player[], templates: Template[]): Alignment | null {

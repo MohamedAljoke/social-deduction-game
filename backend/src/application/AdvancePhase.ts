@@ -2,7 +2,7 @@ import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse, MatchStatus } from "../domain/entity/match";
-import { ActionResolver } from "../domain/services/ActionResolver";
+import { ActionResolver } from "../domain/services/resolution/ActionResolver";
 
 export interface AdvancePhaseInput {
   matchId: string;

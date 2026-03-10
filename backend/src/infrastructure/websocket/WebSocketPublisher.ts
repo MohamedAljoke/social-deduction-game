@@ -4,7 +4,7 @@ import {
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../../domain/entity/match";
 import { Alignment } from "../../domain/entity/template";
-import { EffectResult } from "../../domain/services/ResolutionContext";
+import { EffectResult } from "../../domain/services/resolution/ResolutionContext";
 import { getWsManager } from "./mod";
 
 export class WebSocketPublisher implements RealtimePublisher {

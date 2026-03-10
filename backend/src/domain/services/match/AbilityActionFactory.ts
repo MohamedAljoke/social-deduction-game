@@ -3,11 +3,11 @@ import {
   PlayerHasNoTemplate,
   PlayerNotInMatch,
   TemplateNotFound,
-} from "../errors";
-import { EffectType } from "../entity/ability";
-import { Action, DEFAULT_STAGE_BY_EFFECT } from "../entity/action";
-import { Player } from "../entity/player";
-import { Template } from "../entity/template";
+} from "../../errors";
+import { EffectType } from "../../entity/ability";
+import { Action, DEFAULT_STAGE_BY_EFFECT } from "../../entity/action";
+import { Player } from "../../entity/player";
+import { Template } from "../../entity/template";
 
 export class AbilityActionFactory {
   public create(

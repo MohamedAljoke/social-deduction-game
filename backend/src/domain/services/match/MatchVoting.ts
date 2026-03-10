@@ -3,9 +3,9 @@ import {
   PlayerIsDeadError,
   PlayerNotInMatch,
   TargetNotAlive,
-} from "../errors";
-import { Phase } from "../entity/phase";
-import { Player } from "../entity/player";
+} from "../../errors";
+import { Phase } from "../../entity/phase";
+import { Player } from "../../entity/player";
 
 export interface VoteResolutionResult {
   eliminatedPlayerId: string | null;

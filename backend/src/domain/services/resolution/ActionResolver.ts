@@ -1,6 +1,6 @@
-import { Action, ResolutionStage } from "../entity/action";
-import { Player } from "../entity/player";
-import { Template } from "../entity/template";
+import { Action, ResolutionStage } from "../../entity/action";
+import { Player } from "../../entity/player";
+import { Template } from "../../entity/template";
 import { EffectHandler } from "./EffectHandler";
 import { EffectResult, ResolutionContext } from "./ResolutionContext";
 

@@ -1,8 +1,8 @@
-import { Action } from "../entity/action";
-import { PhaseType } from "../entity/phase";
-import { Player, PlayerResponse } from "../entity/player";
-import { Alignment, Template } from "../entity/template";
-import type { MatchConfig, MatchStatus } from "../entity/match";
+import { Action } from "../../entity/action";
+import { PhaseType } from "../../entity/phase";
+import { Player, PlayerResponse } from "../../entity/player";
+import { Alignment, Template } from "../../entity/template";
+import type { MatchConfig, MatchStatus } from "../../entity/match";
 
 export interface MatchSnapshotSource {
   id: string;

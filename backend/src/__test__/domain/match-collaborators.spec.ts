@@ -10,11 +10,11 @@ import {
   TargetNotAlive,
   TemplatePlayerCountMismatch,
 } from "../../domain/errors";
-import { AbilityActionFactory } from "../../domain/services/AbilityActionFactory";
-import { MatchSnapshotMapper } from "../../domain/services/MatchSnapshotMapper";
-import { MatchVoting } from "../../domain/services/MatchVoting";
-import { TemplateAssignmentService } from "../../domain/services/TemplateAssignmentService";
-import { WinConditionEvaluator } from "../../domain/services/WinConditionEvaluator";
+import { AbilityActionFactory } from "../../domain/services/match/AbilityActionFactory";
+import { MatchSnapshotMapper } from "../../domain/services/match/MatchSnapshotMapper";
+import { MatchVoting } from "../../domain/services/match/MatchVoting";
+import { TemplateAssignmentService } from "../../domain/services/match/TemplateAssignmentService";
+import { WinConditionEvaluator } from "../../domain/services/match/WinConditionEvaluator";
 
 function createPlayer(id: string, name = id): Player {
   return new Player({ id, name });
