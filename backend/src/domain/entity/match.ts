@@ -12,6 +12,8 @@ import {
   PlayerNotInMatch,
   AbilityDoesNotBelongToUser,
   PlayerHasNoTemplate,
+  PlayerIsDeadError,
+  TargetNotAlive,
 } from "../errors";
 import { EffectType } from "./ability";
 import { ActionResolver, ResolutionResult } from "../services/ActionResolver";
@@ -153,12 +155,26 @@ export class Match {
       throw new InvalidPhase();
     }
 
-    const playerIds = new Set(this.players.map((p) => p.id));
-    if (
-      !playerIds.has(voterId) ||
-      (targetId !== null && !playerIds.has(targetId))
-    ) {
+    const playersById = new Map(this.players.map((player) => [player.id, player]));
+    const voter = playersById.get(voterId);
+
+    if (!voter) {
       throw new PlayerNotInMatch();
+    }
+
+    if (!voter.isAlive()) {
+      throw new PlayerIsDeadError();
+    }
+
+    if (targetId !== null) {
+      const target = playersById.get(targetId);
+      if (!target) {
+        throw new PlayerNotInMatch();
+      }
+
+      if (!target.isAlive()) {
+        throw new TargetNotAlive();
+      }
     }
 
     const existing = this.votes.findIndex((v) => v.voterId === voterId);

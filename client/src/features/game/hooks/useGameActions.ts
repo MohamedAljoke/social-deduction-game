@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGame } from "../../../context/GameContext";
 import { GAME_ACTIONS } from "../../../types/gameActions";
 
@@ -11,6 +11,18 @@ export function useGameActions() {
   const [isAdvancingPhase, setIsAdvancingPhase] = useState(false);
   const voteInFlightRef = useRef(false);
   const advanceInFlightRef = useRef(false);
+
+  useEffect(() => {
+    const match = state.match;
+    if (!match || match.phase !== "voting" || !selectedVote) return;
+
+    const selectedPlayer = match.players.find(
+      (player) => player.id === selectedVote,
+    );
+    if (!selectedPlayer || selectedPlayer.status !== "alive") {
+      dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: null });
+    }
+  }, [dispatch, selectedVote, state.match]);
 
   const handleAbilityClick = useCallback(
     (EffectType: string) => {
@@ -30,6 +42,8 @@ export function useGameActions() {
       if (match.phase === "action" && selectedAbility) {
         dispatch({ type: GAME_ACTIONS.SELECT_TARGET, payload: targetId });
       } else if (match.phase === "voting") {
+        const target = match.players.find((player) => player.id === targetId);
+        if (!target || target.status !== "alive") return;
         dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: targetId });
       }
     },
@@ -46,6 +60,14 @@ export function useGameActions() {
         selectedTarget,
       );
     } else if (selectedVote) {
+      const selectedPlayer = state.match?.players.find(
+        (player) => player.id === selectedVote,
+      );
+      if (!selectedPlayer || selectedPlayer.status !== "alive") {
+        dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: null });
+        return;
+      }
+
       if (voteInFlightRef.current) return;
       voteInFlightRef.current = true;
       setPendingVoteAction("cast");
