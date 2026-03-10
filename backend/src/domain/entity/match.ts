@@ -226,6 +226,7 @@ export class Match {
 
     const result = resolver.resolve(this.actions, this.players, this.templates);
     this.actions = [];
+    this.finishIfWinnerExists();
     return result;
   }
 

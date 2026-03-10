@@ -68,6 +68,13 @@ export class GameSessionService {
       this.gateway.onMatchEnded((matchId) => {
         void this.fetchMatch(matchId);
       }),
+      this.gateway.onInvestigateResult((actorId, targetId, alignment) => {
+        if (actorId !== this.currentPlayerId) return;
+        this.dispatch({
+          type: GAME_ACTIONS.SET_INVESTIGATE_RESULT,
+          payload: { targetId, alignment },
+        });
+      }),
       this.gateway.onError((code, message) => {
         console.error(`WS error [${code}]: ${message}`);
       }),

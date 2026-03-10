@@ -25,7 +25,7 @@ export interface Action {
   id: string;
   actorId: string;
   targetIds: string[];
-  EffectType: string;
+  effectType: string;
 }
 
 export interface Match {

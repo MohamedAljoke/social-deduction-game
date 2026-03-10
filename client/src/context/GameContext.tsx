@@ -20,6 +20,11 @@ interface TemplateConfig {
   abilities: string[];
 }
 
+export interface InvestigateResult {
+  targetId: string;
+  alignment: string;
+}
+
 export interface GameState {
   matchId: string | null;
   playerId: string | null;
@@ -30,6 +35,7 @@ export interface GameState {
   selectedTarget: string | null;
   selectedVote: string | null;
   configuredTemplates: TemplateConfig[];
+  investigateResult: InvestigateResult | null;
 }
 
 export type GameAction =
@@ -58,6 +64,7 @@ export type GameAction =
   | { type: typeof GAME_ACTIONS.REMOVE_TEMPLATE; payload: number }
   | { type: typeof GAME_ACTIONS.ADD_PLAYER; payload: Player }
   | { type: typeof GAME_ACTIONS.REMOVE_PLAYER; payload: string }
+  | { type: typeof GAME_ACTIONS.SET_INVESTIGATE_RESULT; payload: InvestigateResult | null }
   | { type: typeof GAME_ACTIONS.RESET };
 
 const initialState: GameState = {
@@ -70,6 +77,7 @@ const initialState: GameState = {
   selectedTarget: null,
   selectedVote: null,
   configuredTemplates: [],
+  investigateResult: null,
 };
 
 const STORAGE_KEY = "game_session";
@@ -149,6 +157,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case GAME_ACTIONS.REMOVE_PLAYER:
       if (!state.match) return state;
       return { ...state, match: { ...state.match, players: state.match.players.filter(p => p.id !== action.payload) } };
+    case GAME_ACTIONS.SET_INVESTIGATE_RESULT:
+      return { ...state, investigateResult: action.payload };
     case GAME_ACTIONS.RESET:
       return initialState;
     default:

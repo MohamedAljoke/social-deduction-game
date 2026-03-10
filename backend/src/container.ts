@@ -11,6 +11,8 @@ import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "./domain/ports/RealtimePublisher";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
 import { WebSocketPublisher } from "./infrastructure/websocket/WebSocketPublisher";
+import { ActionResolver } from "./domain/services/ActionResolver";
+import { ActionResolverFactory } from "./domain/services/ActionResolverFactory";
 
 const wsPublisher = new WebSocketPublisher();
 
@@ -32,6 +34,7 @@ export const TOKENS = {
   AdvancePhaseUseCase: "AdvancePhaseUseCase" as Token<AdvancePhaseUseCase>,
   SubmitVoteUseCase: "SubmitVoteUseCase" as Token<SubmitVoteUseCase>,
   GetMatchUseCase: "GetMatchUseCase" as Token<GetMatchUseCase>,
+  ActionResolver: "ActionResolver" as Token<ActionResolver>,
 };
 
 export class Container {
@@ -74,6 +77,12 @@ export function buildContainer() {
   );
 
   container.register(
+    TOKENS.ActionResolver,
+    () => ActionResolverFactory.create(),
+    { singleton: true },
+  );
+
+  container.register(
     TOKENS.CreateMatchUseCase,
     (c) => new CreateMatchUseCase(c.resolve(TOKENS.MatchRepository)),
   );
@@ -85,20 +94,13 @@ export function buildContainer() {
 
   container.register(
     TOKENS.JoinMatchUseCase,
-    (c) =>
-      new JoinMatchUseCase(
-        c.resolve(TOKENS.MatchRepository),
-        wsPublisher,
-      ),
+    (c) => new JoinMatchUseCase(c.resolve(TOKENS.MatchRepository), wsPublisher),
   );
 
   container.register(
     TOKENS.StartMatchUseCase,
     (c) =>
-      new StartMatchUseCase(
-        c.resolve(TOKENS.MatchRepository),
-        wsPublisher,
-      ),
+      new StartMatchUseCase(c.resolve(TOKENS.MatchRepository), wsPublisher),
   );
 
   container.register(
@@ -108,12 +110,18 @@ export function buildContainer() {
 
   container.register(
     TOKENS.AdvancePhaseUseCase,
-    (c) => new AdvancePhaseUseCase(c.resolve(TOKENS.MatchRepository), wsPublisher),
+    (c) =>
+      new AdvancePhaseUseCase(
+        c.resolve(TOKENS.MatchRepository),
+        wsPublisher,
+        c.resolve(TOKENS.ActionResolver),
+      ),
   );
 
   container.register(
     TOKENS.SubmitVoteUseCase,
-    (c) => new SubmitVoteUseCase(c.resolve(TOKENS.MatchRepository), wsPublisher),
+    (c) =>
+      new SubmitVoteUseCase(c.resolve(TOKENS.MatchRepository), wsPublisher),
   );
 
   container.register(
@@ -124,10 +132,7 @@ export function buildContainer() {
   container.register(
     TOKENS.LeaveMatchUseCase,
     (c) =>
-      new LeaveMatchUseCase(
-        c.resolve(TOKENS.MatchRepository),
-        wsPublisher,
-      ),
+      new LeaveMatchUseCase(c.resolve(TOKENS.MatchRepository), wsPublisher),
   );
 
   return container;

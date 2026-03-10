@@ -588,6 +588,151 @@ describe("Match E2E", () => {
     });
   });
 
+  describe("Ability Resolution", () => {
+    it("kill: villain kills hero → hero status is dead after resolution", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const hero = findPlayerByAlignment(started, Alignment.Hero);
+      expect(villain).toBeDefined();
+      expect(hero).toBeDefined();
+
+      // Advance to action phase
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await advancePhaseHelper(match.id); // voting -> action
+
+      // Villain kills hero
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [hero!.id]);
+
+      // Advance to resolution
+      const { body: resolved } = await advancePhaseHelper(match.id);
+
+      const deadHero = resolved.players.find((p) => p.id === hero!.id);
+      expect(deadHero?.status).toBe("dead");
+    });
+
+    it("protect: hero protects target, villain kills same target → target survives", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const protector = started.players.find(
+        (p) =>
+          findTemplateAlignment(started, p.id) === Alignment.Hero &&
+          started.templates.find((t) => t.id === p.templateId)?.abilities[0]?.id === EffectType.Protect,
+      );
+      const target = started.players.find(
+        (p) => p.id !== villain?.id && p.id !== protector?.id,
+      );
+      expect(villain).toBeDefined();
+      expect(protector).toBeDefined();
+      expect(target).toBeDefined();
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await advancePhaseHelper(match.id); // voting -> action
+
+      // Protector protects target; villain kills same target
+      await useAbilityHelper(match.id, protector!.id, EffectType.Protect, [target!.id]);
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [target!.id]);
+
+      const { body: resolved } = await advancePhaseHelper(match.id); // action -> resolution
+
+      const survivedPlayer = resolved.players.find((p) => p.id === target!.id);
+      expect(survivedPlayer?.status).toBe("alive");
+    });
+
+    it("roleblock: villain is roleblocked → kill is cancelled, target survives", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Roleblock }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+      ]);
+
+      const started = await getMatch(match.id);
+      const villain = findPlayerByAlignment(started, Alignment.Villain);
+      const blocker = started.players.find(
+        (p) =>
+          findTemplateAlignment(started, p.id) === Alignment.Hero &&
+          started.templates.find((t) => t.id === p.templateId)?.abilities[0]?.id === EffectType.Roleblock,
+      );
+      const killTarget = started.players.find(
+        (p) => p.id !== villain?.id && p.id !== blocker?.id,
+      );
+      expect(villain).toBeDefined();
+      expect(blocker).toBeDefined();
+      expect(killTarget).toBeDefined();
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await advancePhaseHelper(match.id); // voting -> action
+
+      // Blocker roleblocks the villain; villain tries to kill
+      await useAbilityHelper(match.id, blocker!.id, EffectType.Roleblock, [villain!.id]);
+      await useAbilityHelper(match.id, villain!.id, EffectType.Kill, [killTarget!.id]);
+
+      const { body: resolved } = await advancePhaseHelper(match.id); // action -> resolution
+
+      const target = resolved.players.find((p) => p.id === killTarget!.id);
+      expect(target?.status).toBe("alive");
+    });
+
+    it("investigate: detective investigates villain → all alive, match still running", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await joinMatchHelper(match.id, "charlie");
+
+      // 1 villain vs 2 heroes → villain cannot win by parity yet
+      await startMatchWithTemplatesHelper(match.id, [
+        { alignment: Alignment.Villain, abilities: [{ id: EffectType.Kill }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Protect }] },
+        { alignment: Alignment.Hero, abilities: [{ id: EffectType.Investigate }] },
+      ]);
+
+      const started = await getMatch(match.id);
+      const detective = started.players.find(
+        (p) =>
+          started.templates.find((t) => t.id === p.templateId)?.abilities[0]?.id ===
+          EffectType.Investigate,
+      );
+      const suspect = findPlayerByAlignment(started, Alignment.Villain);
+      expect(detective).toBeDefined();
+      expect(suspect).toBeDefined();
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await advancePhaseHelper(match.id); // voting -> action
+
+      // Detective investigates villain; no kill submitted → no one dies
+      await useAbilityHelper(match.id, detective!.id, EffectType.Investigate, [suspect!.id]);
+
+      const { body: resolved } = await advancePhaseHelper(match.id); // action -> resolution
+
+      expect(resolved.players.every((p) => p.status === "alive")).toBe(true);
+      expect(resolved.status).toBe(MatchStatus.STARTED);
+    });
+  });
+
   describe("Win Condition", () => {
     it("should finish the match with hero winner when last villain is eliminated", async () => {
       const { body: match } = await createMatchHelper();

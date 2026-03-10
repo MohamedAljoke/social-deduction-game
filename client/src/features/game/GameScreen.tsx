@@ -3,9 +3,10 @@ import {
   useGameActions,
   useGamePlayer,
   useGameLog,
-  ABILITY_LABELS,
+  useAvailableAbilities,
   PLAYER_COLORS,
 } from "./hooks";
+import { AbilitySelector } from "./components/AbilitySelector";
 
 export function GameScreen() {
   const { service, state } = useGame();
@@ -22,7 +23,16 @@ export function GameScreen() {
     handleCancelAbility,
   } = useGameActions();
   const { actions } = useGameLog();
+  const { availableAbilities } = useAvailableAbilities();
   const isCurrentPlayerAlive = currentPlayer?.status === "alive";
+  const investigateResult = state.investigateResult
+    ? {
+        ...state.investigateResult,
+        targetName:
+          match?.players.find((p) => p.id === state.investigateResult!.targetId)
+            ?.name ?? state.investigateResult.targetId,
+      }
+    : null;
 
   const handleLeave = () => {
     if (confirm("Leave the game?")) {
@@ -95,6 +105,34 @@ export function GameScreen() {
         </div>
         <div className="text-sm opacity-90 mt-1">{phaseConfig.description}</div>
       </div>
+
+      {investigateResult && (
+        <div
+          data-testid="investigate-result-banner"
+          className="rounded-2xl p-4 mb-5 text-center"
+          style={{ backgroundColor: "#1a2e1a", border: "2px solid #4ade80" }}
+        >
+          <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "#4ade80" }}>
+            Investigation Result
+          </div>
+          <div className="text-base font-semibold" style={{ color: "#ffffff" }}>
+            {investigateResult.targetName} is a{" "}
+            <span
+              style={{
+                color:
+                  investigateResult.alignment === "villain"
+                    ? "#e94560"
+                    : investigateResult.alignment === "hero"
+                      ? "#4ade80"
+                      : "#fbbf24",
+                fontWeight: 700,
+              }}
+            >
+              {investigateResult.alignment}
+            </span>
+          </div>
+        </div>
+      )}
 
       {!isCurrentPlayerAlive && (
         <div
@@ -186,36 +224,11 @@ export function GameScreen() {
       </div>
 
       {match.phase === "action" && currentTemplate && isCurrentPlayerAlive && (
-        <div
-          className="rounded-2xl p-5 mb-5"
-          style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}
-        >
-          <div
-            className="text-sm font-semibold mb-3"
-            style={{ color: "#a0a0b8" }}
-          >
-            Your Abilities
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {currentTemplate.abilities.map((ability) => (
-              <button
-                key={ability.id}
-                className="flex items-center gap-2 py-3 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200"
-                style={{
-                  backgroundColor:
-                    selectedAbility === ability.id ? "#e94560" : "#1a1a2e",
-                  border: "2px solid",
-                  borderColor:
-                    selectedAbility === ability.id ? "#e94560" : "#2a2a4a",
-                  color: "#ffffff",
-                }}
-                onClick={() => handleAbilityClick(ability.id)}
-              >
-                {ABILITY_LABELS[ability.id] || ability.id}
-              </button>
-            ))}
-          </div>
-        </div>
+        <AbilitySelector
+          availableAbilities={availableAbilities}
+          selectedAbility={selectedAbility}
+          onAbilityClick={handleAbilityClick}
+        />
       )}
 
       {selectedAbility && selectedTarget && isCurrentPlayerAlive && (

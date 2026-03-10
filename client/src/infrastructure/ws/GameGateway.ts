@@ -115,6 +115,15 @@ export class GameGateway {
     );
   }
 
+  onInvestigateResult(
+    handler: (actorId: string, targetId: string, alignment: string) => void,
+  ): () => void {
+    return this.ws.on<{ actorId: string; targetId: string; alignment: string }>(
+      "investigate_result",
+      (msg) => handler(msg.actorId, msg.targetId, msg.alignment),
+    );
+  }
+
   onError(handler: (code: string, message: string) => void): () => void {
     return this.ws.on<{ code: string; message: string }>("error", (msg) =>
       handler(msg.code, msg.message),

@@ -4,6 +4,7 @@ import {
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../../domain/entity/match";
 import { Alignment } from "../../domain/entity/template";
+import { EffectResult } from "../../domain/services/ResolutionContext";
 import { getWsManager } from "./mod";
 
 export class WebSocketPublisher implements RealtimePublisher {
@@ -58,14 +59,6 @@ export class WebSocketPublisher implements RealtimePublisher {
     });
   }
 
-  playerKilled(matchId: string, playerId: string): void {
-    getWsManager().broadcastToMatch(matchId, {
-      type: "player_killed",
-      matchId,
-      playerId,
-    });
-  }
-
   matchEnded(matchId: string, winner: Alignment): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "match_ended",
@@ -85,5 +78,31 @@ export class WebSocketPublisher implements RealtimePublisher {
       voterId,
       targetId,
     });
+  }
+
+  effectResolved(matchId: string, effect: EffectResult): void {
+    switch (effect.type) {
+      case "kill":
+        getWsManager().broadcastToMatch(matchId, {
+          type: "player_killed",
+          matchId,
+          playerId: effect.targetIds[0],
+        });
+        break;
+      case "investigate": {
+        const alignment = effect.data?.["alignment"] as string | undefined;
+        if (alignment) {
+          getWsManager().sendToPlayer(matchId, effect.actorId, {
+            type: "investigate_result",
+            matchId,
+            actorId: effect.actorId,
+            targetId: effect.targetIds[0],
+            alignment,
+          });
+        }
+        break;
+      }
+      // kill_blocked, protect, roleblock: no notification needed beyond match_updated
+    }
   }
 }

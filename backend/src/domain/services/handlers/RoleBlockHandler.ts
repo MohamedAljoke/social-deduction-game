@@ -5,7 +5,7 @@ import { EffectType } from "../../entity/ability";
 import { EffectHandler } from "../EffectHandler";
 import { ResolutionContext } from "../ResolutionContext";
 
-export class RoleblockHandler implements EffectHandler {
+export class RoleBlockHandler implements EffectHandler {
   public readonly effectType = EffectType.Roleblock;
   public readonly stage = ResolutionStage.CANCELLATION;
 

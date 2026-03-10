@@ -44,4 +44,11 @@ export type ServerEvent =
   | { type: "match_updated"; matchId: string; state: Match }
   | { type: "player_killed"; matchId: string; playerId: string }
   | { type: "match_ended"; matchId: string; winner: Alignment }
+  | {
+      type: "investigate_result";
+      matchId: string;
+      actorId: string;
+      targetId: string;
+      alignment: string;
+    }
   | { type: "error"; code: string; message: string };
