@@ -17,7 +17,8 @@ const PLAYER_NAMES = [
 // action-phase abilities in addition to vote-driven eliminations.
 const ENABLE_ABILITIES_IN_REAL_SCENARIO = false;
 
-const ABILITY_BUTTON_LABEL_PATTERN = /kill|protect|roleblock|investigate/i;
+const ABILITY_BUTTON_LABEL_PATTERN =
+  /kill|protect|vote shield|roleblock|investigate/i;
 
 type MatchAlignment = "hero" | "villain" | "neutral";
 type MatchStatus = "lobby" | "started" | "finished";

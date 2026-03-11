@@ -9,6 +9,7 @@ import { GAME_ACTIONS } from "../../../types/gameActions";
 const ABILITIES = [
   { id: "kill", name: "Kill", icon: "🗡️" },
   { id: "protect", name: "Protect", icon: "🛡️" },
+  { id: "vote_shield", name: "Vote Shield", icon: "🛡️" },
   { id: "roleblock", name: "Roleblock", icon: "🚫" },
   { id: "investigate", name: "Investigate", icon: "🔍" },
 ];

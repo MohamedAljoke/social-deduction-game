@@ -20,7 +20,12 @@ export const LARGE_PLAYER_NAMES = [
 
 export type MatchAlignment = "hero" | "villain" | "neutral";
 export type MatchStatus = "lobby" | "started" | "finished";
-export type AbilityId = "kill" | "protect" | "roleblock" | "investigate";
+export type AbilityId =
+  | "kill"
+  | "protect"
+  | "vote_shield"
+  | "roleblock"
+  | "investigate";
 
 export interface MatchPlayerSnapshot {
   id: string;
@@ -53,6 +58,10 @@ export interface TemplateBuilderConfig {
   abilities: AbilityId[];
   winCondition?: "team_parity" | "eliminate_alignment";
   targetAlignment?: MatchAlignment;
+}
+
+function abilityLabelPattern(abilityId: AbilityId): RegExp {
+  return new RegExp(abilityId.replace(/_/g, "[ _]"), "i");
 }
 
 /** Navigate to home and create a new match, returning the match code shown in the lobby. */
@@ -276,7 +285,7 @@ export async function configureTemplates(
 
     for (const ability of template.abilities) {
       await card.getByTestId("ability-chip").filter({
-        hasText: new RegExp(ability, "i"),
+        hasText: abilityLabelPattern(ability),
       }).click();
     }
   }
@@ -302,7 +311,7 @@ export async function useAbilityOnTarget(
   abilityName: AbilityId,
   targetName: string,
 ): Promise<void> {
-  await page.getByRole("button", { name: new RegExp(abilityName, "i") }).click();
+  await page.getByRole("button", { name: abilityLabelPattern(abilityName) }).click();
   await page.getByTestId(getPlayerCardTestId(targetName)).click();
   await page.getByRole("button", { name: /confirm/i }).click();
 }

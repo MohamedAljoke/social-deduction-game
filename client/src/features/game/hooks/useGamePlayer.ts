@@ -18,6 +18,7 @@ export const PHASE_CONFIG: Record<
 export const ABILITY_LABELS: Record<string, string> = {
   kill: "🗡️ Kill",
   protect: "🛡️ Protect",
+  vote_shield: "🛡️ Vote Shield",
   roleblock: "🚫 Roleblock",
   investigate: "🔍 Investigate",
 };
@@ -84,6 +85,7 @@ export function useGameLog() {
     const verb: Record<string, string> = {
       kill: "killed",
       protect: "protected",
+      vote_shield: "shielded from voting",
       roleblock: "roleblocked",
       investigate: "investigated",
     };

@@ -11,6 +11,7 @@ export enum ResolutionStage {
 export const DEFAULT_STAGE_BY_EFFECT: Record<EffectType, ResolutionStage> = {
   [EffectType.Kill]: ResolutionStage.OFFENSIVE,
   [EffectType.Protect]: ResolutionStage.DEFENSIVE,
+  [EffectType.VoteShield]: ResolutionStage.DEFENSIVE,
   [EffectType.Roleblock]: ResolutionStage.CANCELLATION,
   [EffectType.Investigate]: ResolutionStage.READ,
 };

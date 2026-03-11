@@ -25,6 +25,13 @@ const ABILITY_METADATA: Record<string, AbilityMetadata> = {
     canTargetSelf: true,
     requiresAliveTarget: true,
   },
+  vote_shield: {
+    id: "vote_shield",
+    canUseWhenDead: false,
+    targetCount: 1,
+    canTargetSelf: true,
+    requiresAliveTarget: true,
+  },
   roleblock: {
     id: "roleblock",
     canUseWhenDead: false,

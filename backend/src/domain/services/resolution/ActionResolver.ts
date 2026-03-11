@@ -6,6 +6,7 @@ import { EffectResult, ResolutionContext } from "./ResolutionContext";
 
 export interface ResolutionResult {
   effects: EffectResult[];
+  voteShieldedPlayerIds: string[];
 }
 
 export class ActionResolver {
@@ -52,13 +53,23 @@ export class ActionResolver {
       }
     }
 
+    const voteShieldedPlayerIds = new Set<string>();
+
     for (const change of ctx.getStateChanges()) {
       if (change.type === "pending_death") {
         playersById.get(change.targetId)?.kill();
+        continue;
+      }
+
+      if (change.type === "vote_shield") {
+        voteShieldedPlayerIds.add(change.targetId);
       }
     }
 
-    return { effects: ctx.getResults() };
+    return {
+      effects: ctx.getResults(),
+      voteShieldedPlayerIds: [...voteShieldedPlayerIds],
+    };
   }
 
   private groupByStage(actions: Action[]): Map<ResolutionStage, Action[]> {

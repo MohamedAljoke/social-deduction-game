@@ -1,8 +1,14 @@
-export interface StateChange {
-  type: string;
-  targetId: string;
-  sourceActionActorId: string;
-}
+export type StateChange =
+  | {
+      type: "pending_death";
+      targetId: string;
+      sourceActionActorId: string;
+    }
+  | {
+      type: "vote_shield";
+      targetId: string;
+      sourceActionActorId: string;
+    };
 
 export interface EffectResult {
   type: string;

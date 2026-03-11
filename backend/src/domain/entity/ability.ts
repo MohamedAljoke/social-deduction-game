@@ -11,11 +11,13 @@ export enum EffectType {
   Protect = "protect",
   Roleblock = "roleblock",
   Investigate = "investigate",
+  VoteShield = "vote_shield",
 }
 
 export const DEFAULT_PRIORITY: Record<EffectType, number> = {
   [EffectType.Roleblock]: 3,
   [EffectType.Protect]: 2,
+  [EffectType.VoteShield]: 2,
   [EffectType.Investigate]: 1,
   [EffectType.Kill]: 0,
 };

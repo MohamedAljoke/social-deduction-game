@@ -65,6 +65,7 @@ interface MatchProps {
   winner?: MatchWinner | null;
   winnerAlignment?: Alignment | null;
   endedAt?: Date | null;
+  voteShieldedPlayerIds?: string[];
 }
 
 export class Match {
@@ -87,6 +88,7 @@ export class Match {
   private winner: MatchWinner | null;
   private winnerAlignment: Alignment | null;
   private endedAt: Date | null;
+  private voteShieldedPlayerIds: Set<string>;
   private _domainEvents: MatchDomainEvent[] = [];
 
   public pullEvents(): MatchDomainEvent[] {
@@ -113,6 +115,7 @@ export class Match {
     this.winner = props.winner ?? null;
     this.winnerAlignment = props.winnerAlignment ?? null;
     this.endedAt = props.endedAt ?? null;
+    this.voteShieldedPlayerIds = new Set(props.voteShieldedPlayerIds ?? []);
   }
 
   static create(name: string, config?: Partial<MatchConfig>): Match {
@@ -204,12 +207,16 @@ export class Match {
     if (isVotingPhase) {
       const result = this.voting.resolveRound();
       if (result.eliminatedPlayerId) {
-        const player = this.players.find(
-          (candidate) => candidate.id === result.eliminatedPlayerId,
-        );
-        if (player) {
-          player.eliminate();
-          playerEliminatedThisRound = true;
+        if (this.voteShieldedPlayerIds.has(result.eliminatedPlayerId)) {
+          this.voteShieldedPlayerIds.delete(result.eliminatedPlayerId);
+        } else {
+          const player = this.players.find(
+            (candidate) => candidate.id === result.eliminatedPlayerId,
+          );
+          if (player) {
+            player.eliminate();
+            playerEliminatedThisRound = true;
+          }
         }
       }
 
@@ -234,6 +241,9 @@ export class Match {
 
     const result = resolver.resolve(this.actions, this.players, this.templates);
     this.actions = [];
+    for (const playerId of result.voteShieldedPlayerIds ?? []) {
+      this.voteShieldedPlayerIds.add(playerId);
+    }
     this.finishIfWinnerExists();
     this.emit({ type: "ActionsResolved", matchId: this.id, effects: result.effects });
     return result;
