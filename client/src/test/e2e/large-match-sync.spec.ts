@@ -60,9 +60,11 @@ test.describe("Large match realtime sync", () => {
     }
 
     for (const page of [hostPage, guestPages[guestPages.length - 1]]) {
-      await expect(page.getByTestId("vote-status-panel").getByText(firstVillain)).toBeVisible(
-        { timeout: 8000 },
-      );
+      const panel = page
+        .getByTestId("vote-status-panel")
+        .filter({ hasText: firstVillain })
+        .first();
+      await expect(panel).toBeVisible({ timeout: 8000 });
     }
 
     await advancePhase(hostPage);

@@ -290,12 +290,11 @@ export async function saveTemplatesAndStart(
   await waitForGameRoute(allPages);
 }
 
-export async function castVoteForTarget(
-  page: Page,
-  targetName: string,
-): Promise<void> {
-  await page.getByText(targetName).first().click();
-  await page.getByRole("button", { name: /cast vote/i }).click();
+export async function castVoteForTarget(page: Page, targetName: string): Promise<void> {
+  await page.getByTestId(getPlayerCardTestId(targetName)).click();
+  const castButton = page.getByRole("button", { name: /cast vote/i });
+  await expect(castButton).toBeEnabled({ timeout: 8000 });
+  await castButton.click();
 }
 
 export async function useAbilityOnTarget(
@@ -304,7 +303,7 @@ export async function useAbilityOnTarget(
   targetName: string,
 ): Promise<void> {
   await page.getByRole("button", { name: new RegExp(abilityName, "i") }).click();
-  await page.getByText(targetName).first().click();
+  await page.getByTestId(getPlayerCardTestId(targetName)).click();
   await page.getByRole("button", { name: /confirm/i }).click();
 }
 
@@ -329,6 +328,10 @@ export async function startGame(
     await expect(page).toHaveURL(/\/game/, { timeout: 8000 });
   }
   return code;
+}
+
+function getPlayerCardTestId(name: string): string {
+  return `player-card-${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
 }
 
 /**

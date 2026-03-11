@@ -70,9 +70,14 @@ function PlayerCard({
   const isSelf = player.id === playerId;
   const isClickable = !isDead && canSelectPlayers;
 
+  const testId = `player-card-${player.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")}`;
+
   return (
     <div
       className="rounded-2xl p-4 text-center transition-all duration-200"
+      data-testid={testId}
       style={{
         backgroundColor: "#16213e",
         border: getPlayerCardBorder(isDead, isSelected),
