@@ -7,6 +7,8 @@ export function publishMatchEvents(
   result: MatchResponse,
   publisher: RealtimePublisher,
 ): void {
+  const deferredEvents: MatchDomainEvent[] = [];
+
   for (const event of events) {
     switch (event.type) {
       case "PlayerJoined":
@@ -32,12 +34,16 @@ export function publishMatchEvents(
         }
         break;
       case "MatchEnded":
-        publisher.matchEnded(event.matchId, event.winner);
+        deferredEvents.push(event);
         break;
     }
   }
 
   if (events.length > 0) {
     publisher.matchUpdated(result.id, result);
+  }
+
+  for (const event of deferredEvents) {
+    publisher.matchEnded(event.matchId, event.winner);
   }
 }

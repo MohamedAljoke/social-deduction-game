@@ -1,11 +1,19 @@
+import { PlayerResponse } from "../entity/player";
+import { PhaseType } from "../entity/phase";
 import { Alignment } from "../entity/template";
 import { EffectResult } from "../services/resolution";
+
+export interface MatchPlayerAssignment {
+  playerId: string;
+  templateId: string;
+  alignment: Alignment;
+}
 
 export type MatchDomainEvent =
   | {
       type: "PlayerJoined";
       matchId: string;
-      player: unknown;
+      player: PlayerResponse;
     }
   | {
       type: "PlayerLeft";
@@ -15,7 +23,7 @@ export type MatchDomainEvent =
   | {
       type: "MatchStarted";
       matchId: string;
-      playerAssignments: { playerId: string; templateId: string; alignment: string }[];
+      playerAssignments: MatchPlayerAssignment[];
     }
   | {
       type: "VoteSubmitted";
@@ -26,7 +34,7 @@ export type MatchDomainEvent =
   | {
       type: "PhaseAdvanced";
       matchId: string;
-      phase: string;
+      phase: PhaseType;
     }
   | {
       type: "ActionsResolved";

@@ -12,7 +12,7 @@ import {
   WinConditionEvaluator,
 } from "../services/match";
 import { ActionResolver, ResolutionResult } from "../services/resolution";
-import { MatchDomainEvent } from "../events/match-events";
+import { MatchDomainEvent, MatchPlayerAssignment } from "../events/match-events";
 
 function generateShortCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -139,13 +139,7 @@ export class Match {
     this.winnerAlignment = null;
     this.endedAt = null;
 
-    const playerAssignments = this.players.map((p) => ({
-      playerId: p.id,
-      templateId: p.getTemplateId()!,
-      alignment:
-        this.templates.find((t) => t.id === p.getTemplateId())?.alignment ??
-        "unknown",
-    }));
+    const playerAssignments = this.buildPlayerAssignments();
     this.emit({ type: "MatchStarted", matchId: this.id, playerAssignments });
   }
 
@@ -272,6 +266,30 @@ export class Match {
     this.winnerAlignment = winner;
     this.endedAt ??= new Date();
     this.emit({ type: "MatchEnded", matchId: this.id, winner });
+  }
+
+  private buildPlayerAssignments(): MatchPlayerAssignment[] {
+    return this.players.map((player) => {
+      const templateId = player.getTemplateId();
+      if (!templateId) {
+        throw new Error(
+          `Player ${player.id} is missing a template after match start`,
+        );
+      }
+
+      const template = this.templates.find((candidate) => candidate.id === templateId);
+      if (!template) {
+        throw new Error(
+          `Template ${templateId} assigned to player ${player.id} was not found`,
+        );
+      }
+
+      return {
+        playerId: player.id,
+        templateId,
+        alignment: template.alignment,
+      };
+    });
   }
 
   toJSON() {

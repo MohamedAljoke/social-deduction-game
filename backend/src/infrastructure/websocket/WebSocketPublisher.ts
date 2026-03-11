@@ -3,6 +3,8 @@ import {
   MatchStartedPayload,
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../../domain/entity/match";
+import { PhaseType } from "../../domain/entity/phase";
+import { PlayerResponse } from "../../domain/entity/player";
 import { Alignment } from "../../domain/entity/template";
 import { EffectResult } from "../../domain/services/resolution";
 import { getWsManager } from "./mod";
@@ -20,7 +22,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     getWsManager().broadcastMatchUpdate(matchId, match);
   }
 
-  phaseChanged(matchId: string, phase: string): void {
+  phaseChanged(matchId: string, phase: PhaseType): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "phase_changed",
       matchId,
@@ -28,7 +30,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     });
   }
 
-  playerJoined(matchId: string, player: unknown): void {
+  playerJoined(matchId: string, player: PlayerResponse): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "player_joined",
       matchId,

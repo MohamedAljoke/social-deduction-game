@@ -5,6 +5,7 @@ import { Match, MatchStatus } from "../../domain/entity/match";
 import { Phase } from "../../domain/entity/phase";
 import { Player } from "../../domain/entity/player";
 import { Alignment, Template } from "../../domain/entity/template";
+import { MatchDomainEvent } from "../../domain/events/match-events";
 import {
   MatchAlreadyStarted,
   TargetNotAlive,
@@ -17,6 +18,7 @@ import {
   TemplateAssignmentService,
   WinConditionEvaluator,
 } from "../../domain/services/match";
+import { ActionResolver } from "../../domain/services/resolution";
 
 function createPlayer(id: string, name = id): Player {
   return new Player({ id, name });
@@ -28,6 +30,18 @@ function createTemplate(
   abilities: Ability[] = [],
 ): Template {
   return new Template(id, id, alignment, abilities);
+}
+
+function createStartedMatch(players: Player[], templates: Template[]): Match {
+  return new Match({
+    id: "match-id",
+    name: "Started Match",
+    createdAt: new Date("2026-03-10T12:00:00.000Z"),
+    status: MatchStatus.STARTED,
+    players,
+    phase: new Phase(),
+    templates,
+  });
 }
 
 describe("MatchVoting", () => {
@@ -235,6 +249,179 @@ describe("MatchSnapshotMapper", () => {
 });
 
 describe("Match aggregate regression", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("emits PlayerJoined with a typed serialized player payload", () => {
+    const match = new Match({
+      id: "match-id",
+      name: "Join Events",
+      createdAt: new Date("2026-03-10T12:00:00.000Z"),
+      status: MatchStatus.LOBBY,
+    });
+    const alice = createPlayer("alice", "Alice");
+
+    match.addPlayer(alice);
+
+    expect(match.pullEvents()).toEqual<MatchDomainEvent[]>([
+      {
+        type: "PlayerJoined",
+        matchId: "match-id",
+        player: alice.toJSON(),
+      },
+    ]);
+    expect(match.pullEvents()).toEqual([]);
+  });
+
+  it("emits MatchStarted with invariant-safe player assignments", () => {
+    const alice = createPlayer("alice");
+    const bob = createPlayer("bob");
+    const match = new Match({
+      id: "match-id",
+      name: "Start Events",
+      createdAt: new Date("2026-03-10T12:00:00.000Z"),
+      status: MatchStatus.LOBBY,
+      players: [alice, bob],
+    });
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    match.startWithTemplates([
+      createTemplate("hero", Alignment.Hero),
+      createTemplate("villain", Alignment.Villain),
+    ]);
+
+    const [event] = match.pullEvents();
+
+    expect(event).toMatchObject({
+      type: "MatchStarted",
+      matchId: "match-id",
+    });
+    expect(event?.type).toBe("MatchStarted");
+    if (event?.type !== "MatchStarted") {
+      throw new Error("Expected MatchStarted event");
+    }
+
+    const assignedAlignments = new Map(
+      event.playerAssignments.map((assignment) => [
+        assignment.playerId,
+        assignment.alignment,
+      ]),
+    );
+    expect(assignedAlignments.get("alice")).toBeDefined();
+    expect(assignedAlignments.get("bob")).toBeDefined();
+    expect([...assignedAlignments.values()].sort()).toEqual(
+      [Alignment.Hero, Alignment.Villain].sort(),
+    );
+    expect(event.playerAssignments.every((assignment) => assignment.templateId)).toBe(
+      true,
+    );
+  });
+
+  it("emits VoteSubmitted when a valid vote is recorded", () => {
+    const alice = createPlayer("alice");
+    const bob = createPlayer("bob");
+    alice.assignTemplate("alice-template");
+    bob.assignTemplate("bob-template");
+    const match = createStartedMatch(
+      [alice, bob],
+      [
+        createTemplate("alice-template", Alignment.Hero),
+        createTemplate("bob-template", Alignment.Villain),
+      ],
+    );
+
+    match.advancePhase();
+    match.pullEvents();
+    match.submitVote("alice", "bob");
+
+    expect(match.pullEvents()).toEqual<MatchDomainEvent[]>([
+      {
+        type: "VoteSubmitted",
+        matchId: "match-id",
+        voterId: "alice",
+        targetId: "bob",
+      },
+    ]);
+  });
+
+  it("emits PhaseAdvanced and MatchEnded when voting eliminates the last villain", () => {
+    const hero = createPlayer("hero");
+    const villain = createPlayer("villain");
+    hero.assignTemplate("hero-template");
+    villain.assignTemplate("villain-template");
+    const match = createStartedMatch(
+      [hero, villain],
+      [
+        createTemplate("hero-template", Alignment.Hero),
+        createTemplate("villain-template", Alignment.Villain),
+      ],
+    );
+
+    match.advancePhase();
+    match.pullEvents();
+    match.submitVote("hero", "villain");
+    match.pullEvents();
+
+    expect(match.advancePhase()).toBe("action");
+    expect(match.pullEvents()).toEqual<MatchDomainEvent[]>([
+      {
+        type: "MatchEnded",
+        matchId: "match-id",
+        winner: Alignment.Hero,
+      },
+      {
+        type: "PhaseAdvanced",
+        matchId: "match-id",
+        phase: "action",
+      },
+    ]);
+  });
+
+  it("emits ActionsResolved after resolution effects are applied", () => {
+    const hero = createPlayer("hero");
+    hero.assignTemplate("hero-template");
+    const phase = new Phase();
+    phase.nextPhase();
+    phase.nextPhase();
+    phase.nextPhase();
+    const match = new Match({
+      id: "match-id",
+      name: "Resolution Events",
+      createdAt: new Date("2026-03-10T12:00:00.000Z"),
+      status: MatchStatus.STARTED,
+      players: [hero],
+      phase,
+      templates: [createTemplate("hero-template", Alignment.Hero)],
+      actions: [
+        new Action(
+          "hero",
+          EffectType.Investigate,
+          1,
+          ResolutionStage.READ,
+          ["target"],
+        ),
+      ],
+    });
+    const resolutionEffect = {
+      type: "investigate",
+      actorId: "hero",
+      targetIds: ["target"],
+      data: { alignment: Alignment.Villain },
+    };
+    const resolver = {
+      resolve: vi.fn().mockReturnValue({ effects: [resolutionEffect] }),
+    } as unknown as ActionResolver;
+
+    match.resolveActions(resolver);
+
+    expect(match.pullEvents()).toContainEqual({
+      type: "ActionsResolved",
+      matchId: "match-id",
+      effects: [resolutionEffect],
+    });
+  });
+
   it("advances from voting by eliminating the same player and clearing votes", () => {
     const alice = createPlayer("alice");
     const bob = createPlayer("bob");

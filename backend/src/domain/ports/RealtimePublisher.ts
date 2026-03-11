@@ -1,20 +1,19 @@
 import { MatchResponse } from "../entity/match";
+import { PhaseType } from "../entity/phase";
+import { PlayerResponse } from "../entity/player";
 import { Alignment } from "../entity/template";
+import { MatchPlayerAssignment } from "../events/match-events";
 import { EffectResult } from "../services/resolution";
 
 export interface MatchStartedPayload {
-  playerAssignments: {
-    playerId: string;
-    templateId: string;
-    alignment: string;
-  }[];
+  playerAssignments: MatchPlayerAssignment[];
 }
 
 export interface RealtimePublisher {
   matchStarted(matchId: string, payload: MatchStartedPayload): void;
   matchUpdated(matchId: string, match: MatchResponse): void;
-  phaseChanged(matchId: string, phase: string): void;
-  playerJoined(matchId: string, player: unknown): void;
+  phaseChanged(matchId: string, phase: PhaseType): void;
+  playerJoined(matchId: string, player: PlayerResponse): void;
   playerLeft(matchId: string, playerId: string): void;
   actionSubmitted(
     matchId: string,
