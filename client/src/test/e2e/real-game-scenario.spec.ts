@@ -105,7 +105,9 @@ async function configureTemplatesForEightPlayers(
 
   for (let i = 0; i < 8; i++) {
     const card = templateCards.nth(i);
-    await card.locator("select").selectOption(i < 2 ? "villain" : "hero");
+    await card
+      .getByTestId("template-alignment-select")
+      .selectOption(i < 2 ? "villain" : "hero");
 
     const activeChips = card.locator(
       '[data-testid="ability-chip"][aria-pressed="true"]',

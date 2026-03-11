@@ -5,8 +5,13 @@ import { wsManager } from "./infrastructure/websocket/mod";
 
 export function createApp() {
   const container = buildContainer();
+  const leaveMatchUseCase = container.resolve(TOKENS.LeaveMatchUseCase);
 
-  const ws = wsManager(container.resolve(TOKENS.LeaveMatchUseCase));
+  const ws = wsManager({
+    handle(input) {
+      return leaveMatchUseCase.execute(input).then(() => undefined);
+    },
+  });
   const server = new ExpressServer(ws);
 
   registerRoutes(server, container);

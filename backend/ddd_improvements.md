@@ -199,6 +199,7 @@
 **What to do:**
 - [ ] Inject a callback or port interface into `WebSocketManager` instead of importing the use case directly.
 - [ ] Define a `DisconnectHandler` port in the application layer; implement it in infrastructure.
+  - Implemented via an injected `DisconnectHandler` callback at the composition root so `WebSocketManager` no longer knows about use cases.
 
 **DDD rationale:** Layered architecture — infrastructure must not depend on application.
 

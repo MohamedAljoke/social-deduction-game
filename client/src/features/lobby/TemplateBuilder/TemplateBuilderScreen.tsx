@@ -179,6 +179,7 @@ export function TemplateBuilderScreen() {
                 </div>
                 <div className="flex gap-3 mb-3">
                   <select
+                    data-testid="template-alignment-select"
                     className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
                     style={{
                       backgroundColor: "#1a1a2e",
@@ -197,6 +198,7 @@ export function TemplateBuilderScreen() {
                 </div>
                 <div className="flex gap-3 mb-3">
                   <select
+                    data-testid="template-win-condition-select"
                     className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
                     style={{
                       backgroundColor: "#1a1a2e",
@@ -236,6 +238,7 @@ export function TemplateBuilderScreen() {
                 {template.winCondition === "eliminate_alignment" && (
                   <div className="flex gap-3 mb-3">
                     <select
+                      data-testid="template-target-alignment-select"
                       className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
                       style={{
                         backgroundColor: "#1a1a2e",

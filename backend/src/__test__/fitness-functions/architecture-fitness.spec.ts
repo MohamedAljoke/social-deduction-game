@@ -17,6 +17,7 @@ function getFiles(dir: string, files: string[] = []): string[] {
 
 describe("Clean Architecture Fitness Functions", () => {
   const domainDir = join(process.cwd(), "src/domain");
+  const websocketDir = join(process.cwd(), "src/infrastructure/websocket");
 
   it("domain must not import from infrastructure", () => {
     const domainFiles = getFiles(domainDir);
@@ -47,5 +48,35 @@ describe("Clean Architecture Fitness Functions", () => {
     }
 
     expect(infrastructureImports).toEqual([]);
+  });
+
+  it("websocket infrastructure must not import from application", () => {
+    const websocketFiles = getFiles(websocketDir);
+
+    const applicationImports: string[] = [];
+
+    const importRegex =
+      /import\s+.*?\s+from\s+['"](.*?)['"]|require\s*\(\s*['"](.*?)['"]\s*\)/g;
+
+    for (const file of websocketFiles) {
+      const content = readFileSync(file, "utf-8");
+
+      let match;
+      while ((match = importRegex.exec(content)) !== null) {
+        const importPath = match[1] || match[2];
+        if (
+          importPath &&
+          (importPath.includes("/application") ||
+            importPath.startsWith("application") ||
+            (importPath.startsWith("..") && importPath.includes("application")))
+        ) {
+          applicationImports.push(
+            `${relative(process.cwd(), file)} -> ${importPath}`,
+          );
+        }
+      }
+    }
+
+    expect(applicationImports).toEqual([]);
   });
 });

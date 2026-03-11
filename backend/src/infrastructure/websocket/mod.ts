@@ -68,6 +68,10 @@ export interface Client {
   socket: WebSocket;
 }
 
+export interface DisconnectHandler {
+  handle(input: { matchId: string; playerId: string }): Promise<void> | void;
+}
+
 interface PlayerInfo {
   id: string;
   name: string;
@@ -140,15 +144,8 @@ export class WebSocketManager {
   private rooms: Map<string, MatchRoom> = new Map();
   private clients: Map<string, Client> = new Map();
   private clientCounter = 0;
-  private leaveMatchUseCase: {
-    execute(input: { matchId: string; playerId: string }): Promise<unknown>;
-  };
 
-  constructor(leaveMatchUseCase: {
-    execute(input: { matchId: string; playerId: string }): Promise<unknown>;
-  }) {
-    this.leaveMatchUseCase = leaveMatchUseCase;
-  }
+  constructor(private readonly disconnectHandler?: DisconnectHandler) {}
 
   attach(server: Server): void {
     this.wss = new WebSocketServer({ server, path: "/ws" });
@@ -218,10 +215,13 @@ export class WebSocketManager {
 
       case "leave_match": {
         const room = this.rooms.get(event.matchId);
-        if (room && this.leaveMatchUseCase) {
-          this.leaveMatchUseCase
-            .execute({ matchId: event.matchId, playerId: event.playerId })
-            .catch(console.error);
+        if (room && this.disconnectHandler) {
+          Promise.resolve(
+            this.disconnectHandler.handle({
+              matchId: event.matchId,
+              playerId: event.playerId,
+            }),
+          ).catch(console.error);
         }
         if (room) {
           room.broadcast(
@@ -292,10 +292,10 @@ export class WebSocketManager {
   }
 }
 
-export const wsManager = (leaveMatchUseCase: {
-  execute(input: { matchId: string; playerId: string }): Promise<unknown>;
-}): WebSocketManager => {
-  const instance = new WebSocketManager(leaveMatchUseCase);
+export const wsManager = (
+  disconnectHandler?: DisconnectHandler,
+): WebSocketManager => {
+  const instance = new WebSocketManager(disconnectHandler);
   wsManagerInstance = instance;
   return instance;
 };
