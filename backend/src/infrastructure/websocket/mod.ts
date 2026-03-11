@@ -1,12 +1,13 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { Server } from "http";
+import { DomainError } from "../../domain/errors";
+import { PlayerResponse } from "../../domain/entity/player";
 
 export type ClientEvent =
   | {
       type: "join_match";
       matchId: string;
       playerId: string;
-      player?: { id: string; name: string; isHost: boolean };
     }
   | { type: "leave_match"; matchId: string; playerId: string }
   | {
@@ -25,9 +26,9 @@ export type ClientEvent =
 
 export type ServerEvent =
   | { type: "connected"; clientId: string }
-  | { type: "player_joined"; matchId: string; player: unknown }
+  | { type: "player_joined"; matchId: string; player: PlayerResponse }
   | { type: "player_left"; matchId: string; playerId: string }
-  | { type: "players_synced"; matchId: string; players: unknown[] }
+  | { type: "players_synced"; matchId: string; players: PlayerResponse[] }
   | { type: "match_started"; matchId: string; playerAssignments: Assignment[] }
   | { type: "phase_changed"; matchId: string; phase: string }
   | {
@@ -72,28 +73,26 @@ export interface DisconnectHandler {
   handle(input: { matchId: string; playerId: string }): Promise<void> | void;
 }
 
-interface PlayerInfo {
-  id: string;
-  name: string;
-  isHost: boolean;
+export interface JoinAuthorizer {
+  authorize(
+    input: { matchId: string; playerId: string },
+  ): Promise<PlayerResponse> | PlayerResponse;
 }
 
 class MatchRoom {
   matchId: string;
   private clients: Map<string, Client> = new Map();
-  private players: Map<string, PlayerInfo> = new Map();
+  private players: Map<string, PlayerResponse> = new Map();
 
   constructor(matchId: string) {
     this.matchId = matchId;
   }
 
-  join(playerId: string, client: Client, player?: PlayerInfo): void {
+  join(playerId: string, client: Client, player: PlayerResponse): void {
     client.playerId = playerId;
     client.matchId = this.matchId;
     this.clients.set(playerId, client);
-    if (player) {
-      this.players.set(playerId, player);
-    }
+    this.players.set(playerId, player);
   }
 
   leave(playerId: string): void {
@@ -101,7 +100,7 @@ class MatchRoom {
     this.players.delete(playerId);
   }
 
-  getPlayers(): PlayerInfo[] {
+  getPlayers(): PlayerResponse[] {
     return Array.from(this.players.values());
   }
 
@@ -145,13 +144,22 @@ export class WebSocketManager {
   private clients: Map<string, Client> = new Map();
   private clientCounter = 0;
   private disconnectHandler?: DisconnectHandler;
+  private joinAuthorizer?: JoinAuthorizer;
 
-  constructor(disconnectHandler?: DisconnectHandler) {
+  constructor(
+    disconnectHandler?: DisconnectHandler,
+    joinAuthorizer?: JoinAuthorizer,
+  ) {
     this.disconnectHandler = disconnectHandler;
+    this.joinAuthorizer = joinAuthorizer;
   }
 
   setDisconnectHandler(disconnectHandler: DisconnectHandler): void {
     this.disconnectHandler = disconnectHandler;
+  }
+
+  setJoinAuthorizer(joinAuthorizer: JoinAuthorizer): void {
+    this.joinAuthorizer = joinAuthorizer;
   }
 
   attach(server: Server): void {
@@ -186,47 +194,63 @@ export class WebSocketManager {
     });
   }
 
+  async close(): Promise<void> {
+    for (const client of this.clients.values()) {
+      if (
+        client.socket.readyState === WebSocket.OPEN ||
+        client.socket.readyState === WebSocket.CONNECTING
+      ) {
+        client.socket.terminate();
+      }
+    }
+
+    this.clients.clear();
+    this.rooms.clear();
+
+    if (!this.wss) {
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      this.wss!.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+    this.wss = undefined;
+  }
+
   private handleEvent(client: Client, event: ClientEvent): void {
     switch (event.type) {
       case "join_match": {
-        let room = this.rooms.get(event.matchId);
-        if (!room) {
-          room = new MatchRoom(event.matchId);
-          this.rooms.set(event.matchId, room);
-        }
-        room.join(event.playerId, client, event.player);
-
-        // Send existing players to the new player
-        const existingPlayers = room
-          .getPlayers()
-          .filter((p) => p.id !== event.playerId);
-        room.sendToPlayer(event.playerId, {
-          type: "players_synced",
-          matchId: event.matchId,
-          players: existingPlayers,
-        });
-
-        // Broadcast new player to existing players
-        if (event.player) {
-          room.broadcast(
-            {
-              type: "player_joined",
-              matchId: event.matchId,
-              player: event.player,
-            },
-            event.playerId,
-          );
-        }
+        void this.handleJoinMatch(client, event);
         break;
       }
 
       case "leave_match": {
-        const room = this.rooms.get(event.matchId);
+        if (
+          (client.matchId && client.matchId !== event.matchId) ||
+          (client.playerId && client.playerId !== event.playerId)
+        ) {
+          this.sendErrorAndClose(
+            client,
+            "unauthorized_leave",
+            "Socket identity does not match the requested leave event",
+          );
+          break;
+        }
+
+        const matchId = client.matchId ?? event.matchId;
+        const playerId = client.playerId ?? event.playerId;
+        const room = this.rooms.get(matchId);
         if (room && this.disconnectHandler) {
           Promise.resolve(
             this.disconnectHandler.handle({
-              matchId: event.matchId,
-              playerId: event.playerId,
+              matchId,
+              playerId,
             }),
           ).catch(console.error);
         }
@@ -234,14 +258,14 @@ export class WebSocketManager {
           room.broadcast(
             {
               type: "player_left",
-              matchId: event.matchId,
-              playerId: event.playerId,
+              matchId,
+              playerId,
             },
-            event.playerId,
+            playerId,
           );
-          room.leave(event.playerId);
+          room.leave(playerId);
           if (room.getClientCount() === 0) {
-            this.rooms.delete(event.matchId);
+            this.rooms.delete(matchId);
           }
         }
         break;
@@ -255,6 +279,86 @@ export class WebSocketManager {
             message: `Event type ${(event as ClientEvent).type} not implemented`,
           }),
         );
+    }
+  }
+
+  private async handleJoinMatch(
+    client: Client,
+    event: Extract<ClientEvent, { type: "join_match" }>,
+  ): Promise<void> {
+    if (!this.joinAuthorizer) {
+      this.sendErrorAndClose(
+        client,
+        "join_authorizer_unavailable",
+        "WebSocket join authorization is not configured",
+      );
+      return;
+    }
+
+    try {
+      const player = await this.joinAuthorizer.authorize({
+        matchId: event.matchId,
+        playerId: event.playerId,
+      });
+
+      let room = this.rooms.get(event.matchId);
+      if (!room) {
+        room = new MatchRoom(event.matchId);
+        this.rooms.set(event.matchId, room);
+      }
+      room.join(event.playerId, client, player);
+
+      const existingPlayers = room
+        .getPlayers()
+        .filter((candidate) => candidate.id !== event.playerId);
+      room.sendToPlayer(event.playerId, {
+        type: "players_synced",
+        matchId: event.matchId,
+        players: existingPlayers,
+      });
+
+      room.broadcast(
+        {
+          type: "player_joined",
+          matchId: event.matchId,
+          player,
+        },
+        event.playerId,
+      );
+    } catch (error) {
+      const wsError = this.mapJoinError(error);
+      this.sendErrorAndClose(client, wsError.code, wsError.message);
+    }
+  }
+
+  private mapJoinError(error: unknown): { code: string; message: string } {
+    if (error instanceof DomainError) {
+      return {
+        code: error.code,
+        message: error.message,
+      };
+    }
+
+    return {
+      code: "unauthorized_join",
+      message: "Failed to authorize websocket room join",
+    };
+  }
+
+  private sendErrorAndClose(
+    client: Client,
+    code: string,
+    message: string,
+  ): void {
+    if (client.socket.readyState === WebSocket.OPEN) {
+      client.socket.send(
+        JSON.stringify({
+          type: "error",
+          code,
+          message,
+        }),
+      );
+      client.socket.close();
     }
   }
 
@@ -291,27 +395,4 @@ export class WebSocketManager {
       room.sendToPlayer(playerId, event);
     }
   }
-
-  close(): void {
-    if (this.wss) {
-      this.wss.close();
-    }
-  }
 }
-
-export const wsManager = (
-  disconnectHandler?: DisconnectHandler,
-): WebSocketManager => {
-  const instance = new WebSocketManager(disconnectHandler);
-  wsManagerInstance = instance;
-  return instance;
-};
-
-let wsManagerInstance: WebSocketManager | null = null;
-
-export const getWsManager = (): WebSocketManager => {
-  if (!wsManagerInstance) {
-    throw new Error("wsManager not initialized. Call wsManager() first.");
-  }
-  return wsManagerInstance;
-};

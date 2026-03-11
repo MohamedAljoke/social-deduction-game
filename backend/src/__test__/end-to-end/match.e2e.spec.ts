@@ -30,6 +30,14 @@ describe("Match E2E", () => {
   });
 
   describe("CreateMatch UseCase", () => {
+    it("should expose a health endpoint for readiness checks", async () => {
+      const response = await fetch(`http://localhost:${port}/health`);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ status: "ok" });
+    });
+
     it("should create a match", async () => {
       const { body, response } = await createMatchHelper();
 

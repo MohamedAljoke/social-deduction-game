@@ -13,6 +13,7 @@ import { Server } from "http";
 
 interface WebSocketManager {
   attach(server: Server): void;
+  close?(): Promise<void> | void;
 }
 
 export class ExpressServer implements HttpServer {
@@ -84,6 +85,8 @@ export class ExpressServer implements HttpServer {
   }
 
   async close() {
+    await this.wsManager?.close?.();
+
     return new Promise<void>((resolve, reject) => {
       if (!this.server) return resolve();
       this.server.close((err) => {

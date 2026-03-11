@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: "list",
   // workers: 1,
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: "http://127.0.0.1:5173",
     trace: "on-first-retry",
     headless: true,
     launchOptions: {
@@ -22,14 +22,15 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "npm run dev --prefix ../backend",
-      url: "http://localhost:3000/match",
+      command: "npm run start:e2e --prefix ../backend",
+      url: "http://127.0.0.1:3000/health",
       reuseExistingServer: true,
       timeout: 30_000,
     },
     {
-      command: "npm run dev",
-      url: "http://localhost:5173",
+      command:
+        "VITE_API_URL=http://127.0.0.1:3000 VITE_WS_URL=ws://127.0.0.1:3000/ws npm run dev",
+      url: "http://127.0.0.1:5173",
       reuseExistingServer: true,
       timeout: 15_000,
     },

@@ -1,6 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
-const BASE_URL = "http://localhost:5173";
+const BASE_URL = "http://127.0.0.1:5173";
+const API_BASE_URL = "http://127.0.0.1:3000";
+const DEFAULT_UI_TIMEOUT = 15_000;
 
 const GUEST_NAMES = ["Bob", "Charlie", "Diana", "Eve", "Frank", "Grace"];
 export const LARGE_PLAYER_NAMES = [
@@ -61,7 +63,10 @@ export async function createMatch(
   await page.goto(BASE_URL);
   await page.getByLabel(/your name/i).fill(playerName);
   await page.getByRole("button", { name: /create game/i }).click();
-  await page.waitForURL("**/lobby");
+  await waitForLobbyOrThrow(
+    page,
+    "Failed to create game. Make sure the server is running.",
+  );
   const code = await page.getByTestId("match-id").textContent();
   if (!code) throw new Error("Match ID not found on lobby page");
   return code.trim();
@@ -78,7 +83,10 @@ export async function joinMatch(
   await page.getByLabel(/your name/i).fill(playerName);
   await page.getByLabel(/match id/i).fill(matchId);
   await page.getByRole("button", { name: /join game/i }).click();
-  await page.waitForURL("**/lobby");
+  await waitForLobbyOrThrow(
+    page,
+    "Failed to join game. Check the ID and try again.",
+  );
 }
 
 export async function createAndJoinPlayers(
@@ -138,11 +146,33 @@ export async function waitForGameRoute(pages: Page[]): Promise<void> {
   }
 }
 
+async function waitForLobbyOrThrow(
+  page: Page,
+  expectedErrorMessage: string,
+): Promise<void> {
+  await page.waitForFunction(
+    ({ errorMessage }) =>
+      window.location.pathname === "/lobby" ||
+      document.body.innerText.includes(errorMessage),
+    { errorMessage: expectedErrorMessage },
+    { timeout: DEFAULT_UI_TIMEOUT },
+  );
+
+  if (new URL(page.url()).pathname === "/lobby") {
+    return;
+  }
+
+  const visibleError = await page.getByText(expectedErrorMessage).textContent();
+  throw new Error(
+    `Navigation to /lobby failed: ${visibleError ?? expectedErrorMessage}`,
+  );
+}
+
 export async function getMatchSnapshot(
   page: Page,
   matchId: string,
 ): Promise<MatchSnapshot> {
-  const response = await page.request.get(`http://localhost:3000/match/${matchId}`);
+  const response = await page.request.get(`${API_BASE_URL}/match/${matchId}`);
   if (!response.ok()) {
     throw new Error(`Failed to fetch match ${matchId}`);
   }

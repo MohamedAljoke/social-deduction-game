@@ -56,7 +56,7 @@ test.describe("Route protection (no session)", () => {
     test(`visiting ${route} without a session redirects to home`, async ({
       page,
     }) => {
-      await page.goto(`http://localhost:5173${route}`);
+      await page.goto(`http://127.0.0.1:5173${route}`);
       await expect(page).toHaveURL("/");
     });
   }
@@ -69,7 +69,7 @@ test.describe("Home redirect (active session)", () => {
     await createMatch(page, "Alice");
     await expect(page).toHaveURL(/\/lobby/);
 
-    await page.goto("http://localhost:5173/");
+    await page.goto("http://127.0.0.1:5173/");
 
     await expect(page).toHaveURL(/\/lobby/);
   });
@@ -80,7 +80,7 @@ test.describe("Home redirect (active session)", () => {
     const [hostPage, guestPage] = await createPlayers(2);
     await startGame(hostPage, [guestPage]);
 
-    await guestPage.goto("http://localhost:5173/");
+    await guestPage.goto("http://127.0.0.1:5173/");
 
     await expect(guestPage).toHaveURL(/\/game/);
   });
@@ -97,7 +97,7 @@ test.describe("Leave game", () => {
     await page.getByRole("button", { name: /leave game/i }).click();
 
     await expect(page).toHaveURL("/");
-    await page.goto("http://localhost:5173/lobby");
+    await page.goto("http://127.0.0.1:5173/lobby");
     await expect(page).toHaveURL("/");
   });
 
@@ -111,7 +111,7 @@ test.describe("Leave game", () => {
     await guestPage.getByRole("button", { name: /leave game/i }).click();
 
     await expect(guestPage).toHaveURL("/");
-    await guestPage.goto("http://localhost:5173/game");
+    await guestPage.goto("http://127.0.0.1:5173/game");
     await expect(guestPage).toHaveURL("/");
   });
 });
@@ -123,7 +123,7 @@ test.describe("Status-based route guard", () => {
     await createMatch(page, "Alice");
     await expect(page).toHaveURL(/\/lobby/);
 
-    await page.goto("http://localhost:5173/game");
+    await page.goto("http://127.0.0.1:5173/game");
 
     await expect(page).toHaveURL(/\/lobby/);
   });
@@ -134,7 +134,7 @@ test.describe("Status-based route guard", () => {
     const [hostPage, guestPage] = await createPlayers(2);
     await startGame(hostPage, [guestPage]);
 
-    await guestPage.goto("http://localhost:5173/lobby");
+    await guestPage.goto("http://127.0.0.1:5173/lobby");
 
     await expect(guestPage).toHaveURL(/\/game/);
   });

@@ -203,7 +203,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (state.matchId && state.playerId && state.playerName) {
-      service.connect(state.matchId, state.playerId, { name: state.playerName, isHost: state.isHost });
+      service.connect(state.matchId, state.playerId);
       const matchId = state.matchId;
       const playerId = state.playerId;
       return () => service.disconnect(matchId, playerId);

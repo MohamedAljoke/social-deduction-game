@@ -96,7 +96,7 @@ test.describe("Join match", () => {
   });
 
   test("shows error when joining non-existent match", async ({ page }) => {
-    await page.goto("http://localhost:5173");
+    await page.goto("http://127.0.0.1:5173");
     await page.getByRole("button", { name: /join existing game/i }).click();
     await page.getByLabel(/your name/i).fill("Bob");
     await page.getByLabel(/match id/i).fill("XXXXXX");
@@ -282,7 +282,7 @@ test.describe("Match config", () => {
     createPlayers,
   }) => {
     const [hostPage, guestPage] = await createPlayers(2);
-    await hostPage.goto("http://localhost:5173");
+    await hostPage.goto("http://127.0.0.1:5173");
     await hostPage.getByLabel(/your name/i).fill("Alice");
     await hostPage.getByLabel(/open voting/i).uncheck();
     await hostPage.getByRole("button", { name: /create game/i }).click();

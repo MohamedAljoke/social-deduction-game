@@ -23,7 +23,7 @@ interface MatchSnapshot {
 }
 
 async function getMatchSnapshot(page: Page, matchId: string): Promise<MatchSnapshot> {
-  const res = await page.request.get(`http://localhost:3000/match/${matchId}`);
+  const res = await page.request.get(`http://127.0.0.1:3000/match/${matchId}`);
   if (!res.ok()) throw new Error(`Failed to fetch match ${matchId}`);
   return (await res.json()) as MatchSnapshot;
 }

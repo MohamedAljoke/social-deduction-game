@@ -48,7 +48,7 @@ async function getMatchSnapshot(
   matchId: string,
 ): Promise<MatchSnapshot> {
   const response = await page.request.get(
-    `http://localhost:3000/match/${matchId}`,
+    `http://127.0.0.1:3000/match/${matchId}`,
   );
   if (!response.ok()) {
     throw new Error(`Failed to fetch match ${matchId}`);
