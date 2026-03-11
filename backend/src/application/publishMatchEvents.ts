@@ -2,12 +2,14 @@ import { MatchDomainEvent } from "../domain/events/match-events";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../domain/entity/match";
 
+type MatchEndedEvent = Extract<MatchDomainEvent, { type: "MatchEnded" }>;
+
 export function publishMatchEvents(
   events: MatchDomainEvent[],
   result: MatchResponse,
   publisher: RealtimePublisher,
 ): void {
-  const deferredEvents: MatchDomainEvent[] = [];
+  const deferredEvents: MatchEndedEvent[] = [];
 
   for (const event of events) {
     switch (event.type) {
