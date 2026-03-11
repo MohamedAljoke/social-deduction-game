@@ -2,11 +2,7 @@ import { Player } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Alignment, Template } from "./template";
-import {
-  MatchAlreadyStarted,
-  MatchNotStarted,
-  InvalidPhase,
-} from "../errors";
+import { MatchAlreadyStarted, MatchNotStarted, InvalidPhase } from "../errors";
 import { EffectType } from "./ability";
 import {
   AbilityActionFactory,
@@ -16,6 +12,7 @@ import {
   WinConditionEvaluator,
 } from "../services/match";
 import { ActionResolver, ResolutionResult } from "../services/resolution";
+import { MatchDomainEvent } from "../events/match-events";
 
 function generateShortCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -72,6 +69,17 @@ export class Match {
   private config: MatchConfig;
   private winnerAlignment: Alignment | null;
   private endedAt: Date | null;
+  private _domainEvents: MatchDomainEvent[] = [];
+
+  public pullEvents(): MatchDomainEvent[] {
+    const events = this._domainEvents;
+    this._domainEvents = [];
+    return events;
+  }
+
+  private emit(event: MatchDomainEvent): void {
+    this._domainEvents.push(event);
+  }
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -130,6 +138,15 @@ export class Match {
     this.status = MatchStatus.STARTED;
     this.winnerAlignment = null;
     this.endedAt = null;
+
+    const playerAssignments = this.players.map((p) => ({
+      playerId: p.id,
+      templateId: p.getTemplateId()!,
+      alignment:
+        this.templates.find((t) => t.id === p.getTemplateId())?.alignment ??
+        "unknown",
+    }));
+    this.emit({ type: "MatchStarted", matchId: this.id, playerAssignments });
   }
 
   public addPlayer(player: Player): void {
@@ -138,10 +155,16 @@ export class Match {
     }
 
     this.players.push(player);
+    this.emit({
+      type: "PlayerJoined",
+      matchId: this.id,
+      player: player.toJSON(),
+    });
   }
 
   public removePlayer(playerId: string): void {
     this.players = this.players.filter((p) => p.id !== playerId);
+    this.emit({ type: "PlayerLeft", matchId: this.id, playerId });
   }
 
   public getPhase(): PhaseType {
@@ -150,6 +173,7 @@ export class Match {
 
   public submitVote(voterId: string, targetId: string | null): void {
     this.voting.submitVote(this.phase, this.players, voterId, targetId);
+    this.emit({ type: "VoteSubmitted", matchId: this.id, voterId, targetId });
   }
 
   public advancePhase(): PhaseType {
@@ -179,6 +203,7 @@ export class Match {
       this.finishIfWinnerExists();
     }
 
+    this.emit({ type: "PhaseAdvanced", matchId: this.id, phase: nextPhase });
     return nextPhase;
   }
 
@@ -194,6 +219,7 @@ export class Match {
     const result = resolver.resolve(this.actions, this.players, this.templates);
     this.actions = [];
     this.finishIfWinnerExists();
+    this.emit({ type: "ActionsResolved", matchId: this.id, effects: result.effects });
     return result;
   }
 
@@ -245,6 +271,7 @@ export class Match {
     this.status = MatchStatus.FINISHED;
     this.winnerAlignment = winner;
     this.endedAt ??= new Date();
+    this.emit({ type: "MatchEnded", matchId: this.id, winner });
   }
 
   toJSON() {

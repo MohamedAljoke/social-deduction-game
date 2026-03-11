@@ -158,6 +158,24 @@ describe("Match E2E", () => {
     });
   });
 
+  describe("LeaveMatch UseCase", () => {
+    it("should reject missing playerId", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/leave`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+
   describe("StartMatch UseCase", () => {
     it("should start a match correctly", async () => {
       const { body: match } = await createMatchHelper();
@@ -757,6 +775,25 @@ describe("Match E2E", () => {
   });
 
   describe("SubmitVote UseCase", () => {
+    it("should reject invalid vote body", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+      await advancePhaseHelper(match.id); // discussion -> voting
+
+      const response = await fetch(
+        `http://localhost:${port}/match/${match.id}/vote`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ voterId: "", targetId: 123 }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
     it("should allow an alive player to vote for an alive target", async () => {
       const { body: match } = await createMatchHelper();
       await joinMatchHelper(match.id, "alice");

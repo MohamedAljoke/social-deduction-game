@@ -1,201 +1,215 @@
-# DDD Improvements (Current Backend)
+# DDD Improvements — Remaining Tasks
 
-## Scope
-This document analyzes only the backend code that already exists.
-It does not evaluate planned ability-system refactors.
+## Completed
 
-## Current Domain Snapshot
-- The backend already follows a layered structure (domain, application, infrastructure) and enforces one important dependency rule in tests.
-- The `Match` model is the main aggregate root and currently concentrates many behaviors: player membership, template assignment, voting, phase progression, action queueing, and winner evaluation.
-- Use cases orchestrate persistence and realtime notifications in a clear flow.
+- [x] **Reduce Match Aggregate Responsibility** — Extracted 5 domain services (`TemplateAssignmentService`, `MatchVoting`, `AbilityActionFactory`, `WinConditionEvaluator`, `MatchSnapshotMapper`), built resolution pipeline (`ActionResolver` + 4 handlers), added collaborator tests (`match-collaborators.spec.ts`).
 
-## Priority 1: High Learning Value
+---
 
-### 1) Protect Aggregate Encapsulation
-What we improve:
-- Prevent external code from mutating aggregate internals directly.
-- Return read-only snapshots or query methods instead of raw mutable arrays and entities.
+## Priority 1 — Aggregate Integrity
 
-Why we improve this:
-- In DDD, aggregate invariants must be protected by the aggregate root.
-- Right now invariants can be bypassed because mutable internals are exposed.
+### Task 1: Protect Aggregate Encapsulation
 
-Evidence in current code:
-- `getPlayers()` returns `Player[]` directly: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L102)
-- `getTemplates()` returns `Template[]` directly: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L106)
-- `getActions()` returns `Action[]` directly: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L213)
-- `addAction()` is public, allowing bypass of `useAbility`: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L217)
-- `Action.cancelled` is public mutable state: [action.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/action.ts#L50)
+**Problem:** Getters return mutable internal references; dead-code mutators bypass aggregate rules.
 
-DDD concept strengthened:
-- Aggregate consistency boundary.
+- `getPlayers()` / `getTemplates()` / `getActions()` return live `T[]` — callers can push/splice without aggregate consent.
+- `setTemplates()` and `addAction()` are public but never called outside the aggregate — dead surface area that invites misuse.
+- `Action.cancelled` is a public mutable field (`action.ts`).
 
-### 2) Reduce `Match` Aggregate Responsibility Overload
-What we improve:
-- Keep `Match` as root, but extract domain policies/services for role assignment, voting result calculation, and win-condition evaluation.
+**What to do:**
+- [ ] Return `ReadonlyArray<T>` (or defensive copies) from all collection getters.
+- [ ] Remove or make `setTemplates()` and `addAction()` private.
+- [ ] Make `Action.cancelled` private with a `cancel()` method and `isCancelled` getter.
 
-Why we improve this:
-- A single model with too many responsibilities becomes hard to reason about.
-- Splitting policies makes invariants explicit and easier to test in isolation.
+**DDD rationale:** Aggregate consistency boundary — all state changes must go through the root.
 
-Evidence in current code:
-- Template assignment and randomization: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L118)
-- Voting tally and elimination logic: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L172)
-- Winner evaluation logic: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L321)
+**Acceptance criteria:** No external code can mutate aggregate internals without calling a named domain method; compile-time enforcement via `ReadonlyArray`.
 
-DDD concept strengthened:
-- Clear aggregate model + domain services for cross-entity policy logic.
+---
 
-### 3) Model Phase Rules Inside the Phase Model
-What we improve:
-- Move "what is allowed in each phase" into the `Phase` model instead of string checks spread across `Match`.
-- Express transitions with named domain operations, not only `nextPhase()`.
+### Task 2: Model Phase Rules Inside the Phase Object
 
-Why we improve this:
-- Ubiquitous language improves when phase rules live in one place.
-- Prevents rule duplication and inconsistent validations.
+**Problem:** `Phase` is a passive state holder; callers check `isAction()` / `isVoting()` / `isResolution()` externally and throw `InvalidPhase` themselves.
 
-Evidence in current code:
-- `Phase` currently holds only current value and next transition: [phase.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/phase.ts#L10)
-- Phase checks are distributed in `submitVote` and `useAbility`: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L154), [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L221)
+- Phase checks are scattered across `Match.submitVote`, `Match.useAbility`, and use cases.
+- `Phase` only exposes `currentPhase` value and `nextPhase()` transition.
 
-DDD concept strengthened:
-- Rich value object/state model around lifecycle rules.
+**What to do:**
+- [ ] Add guard methods to `Phase` (e.g. `assertCanVote()`, `assertCanUseAbility()`, `assertCanResolve()`).
+- [ ] Move phase-specific validation into `Phase` so callers call one method instead of `if (!phase.isX()) throw`.
+- [ ] Express transitions with named domain operations, not only `nextPhase()`.
 
-### 4) Clarify and Enforce Participation Invariants
-What we improve:
-- Define explicit policy for when a player can leave a match.
-- Ensure removal behavior matches game lifecycle rules.
+**DDD rationale:** Rich value object / state model — lifecycle rules belong in the model that owns the lifecycle.
 
-Why we improve this:
-- DDD requires business rules to be explicit, not accidental.
-- Current behavior can create ambiguous domain states if leaving is always allowed.
+**Acceptance criteria:** No phase string-checks remain outside `Phase`; adding a new phase requires changes only in `Phase`.
 
-Evidence in current code:
-- `removePlayer` has no lifecycle guard: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L146)
-- `LeaveMatchUseCase` checks existence only, then removes: [LeaveMatch.ts](/home/mohamed/project/social-deduction-game/backend/src/application/LeaveMatch.ts#L216)
+---
 
-DDD concept strengthened:
-- Explicit invariants and consistency rules.
+### Task 3: Enforce Participation Invariants
 
-## Priority 2: Strategic DDD Clarity
+**Problem:** `removePlayer()` has no lifecycle guard — leaving during a STARTED match creates orphan state (assigned template, pending votes/actions referencing a gone player).
 
-### 5) Decide Bounded Context Ownership for Templates
-What we improve:
-- Make a clear strategic decision:
-- Option A: templates belong fully to Match context and are embedded runtime definitions.
-- Option B: templates belong to a separate Rulebook context and are referenced by identity.
+- `LeaveMatchUseCase` checks player existence only, then removes unconditionally.
 
-Why we improve this:
-- The code currently mixes both signals, which weakens boundary language.
+**What to do:**
+- [ ] Define explicit policy: can a player leave during STARTED? If yes, handle cleanup (nullify votes, cancel actions). If no, reject with a domain error.
+- [ ] Add lifecycle guard to `Match.removePlayer()` that enforces the chosen policy.
+- [ ] Add tests for leave-during-each-phase scenarios.
 
-Evidence in current code:
-- `TemplateRepository` exists but is unused: [TemplateRepository.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/ports/persistance/TemplateRepository.ts#L3), [InMemoryTemplateRepository.ts](/home/mohamed/project/social-deduction-game/backend/src/infrastructure/persistence/InMemoryTemplateRepository.ts#L4)
-- `StartMatchUseCase` constructs templates directly from request: [StartMatch.ts](/home/mohamed/project/social-deduction-game/backend/src/application/StartMatch.ts#L34)
+**DDD rationale:** Explicit invariants — business rules must be intentional, not accidental.
 
-DDD concept strengthened:
-- Strategic design and bounded context clarity.
+**Acceptance criteria:** Leaving a match in any phase either succeeds with clean state or fails with a descriptive domain error; no orphan references.
 
-### 6) Align Win-Condition Model With Runtime Behavior
-What we improve:
-- Align `Template.winCondition` and `endsGameOnWin` with actual winner evaluation flow.
-- Either make them operational domain rules or keep winner logic centrally in one policy and remove unused language.
+---
 
-Why we improve this:
-- In DDD, model language should match executable behavior.
-- Unused domain concepts create false ubiquitous language.
+## Priority 2 — Strategic Model Alignment
 
-Evidence in current code:
-- Template has `winCondition` and `endsGameOnWin`: [template.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/template.ts#L74)
-- Winner logic is hardcoded by alignment parity: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L321)
+### Task 4: Decide Template Context Ownership
 
-DDD concept strengthened:
-- High-fidelity domain model.
+**Problem:** `TemplateRepository` and `InMemoryTemplateRepository` exist but are completely unused. `StartMatchUseCase` constructs templates directly from the request payload.
 
-### 7) Introduce Domain Events as Core Language
-What we improve:
-- Raise events from domain actions (for example: `PlayerJoined`, `VoteSubmitted`, `MatchStarted`, `PhaseAdvanced`, `MatchEnded`) and publish from application layer.
+**What to do:**
+- [ ] Choose: (A) templates are embedded runtime definitions within Match context — delete the unused repository and port; or (B) templates are a separate Rulebook context — wire the repository into `StartMatchUseCase`.
+- [ ] Remove or integrate the dead code to match the decision.
 
-Why we improve this:
-- Today orchestration is correct, but event intent is implicit in use-case code.
-- Domain events make integration language explicit and reusable.
+**DDD rationale:** Bounded context clarity — mixed signals about ownership weaken the model's language.
 
-Evidence in current code:
-- Use cases manually call publisher after each operation: [JoinMatch.ts](/home/mohamed/project/social-deduction-game/backend/src/application/JoinMatch.ts#L191), [AdvancePhase.ts](/home/mohamed/project/social-deduction-game/backend/src/application/AdvancePhase.ts#L126), [SubmitVote.ts](/home/mohamed/project/social-deduction-game/backend/src/application/SubmitVote.ts#L160)
+**Acceptance criteria:** Zero unused template infrastructure remains; the chosen ownership model is documented and enforced.
 
-DDD concept strengthened:
-- Explicit domain events and context mapping.
+---
 
-### 8) Make Error Language Context-Specific and Unique
-What we improve:
-- Keep each error code semantically unique.
-- Use error messages that match the exact rule being violated.
+### Task 5: Align Win-Condition Model With Runtime Behavior
 
-Why we improve this:
-- Shared or ambiguous codes hide important domain distinctions.
-- Precise language is central to ubiquitous language and diagnostics.
+**Problem:** `Template.winCondition` and `Template.endsGameOnWin` are declared but never read by `WinConditionEvaluator` — the evaluator hardcodes winner logic by alignment parity.
 
-Evidence in current code:
-- `InvalidPhase` message is ability-specific, but phase validation is reused for voting: [errors.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/errors.ts#L95), [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L154)
-- `PlayerHasNoTemplate` uses `template_not_found` code: [errors.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/errors.ts#L59)
-- `MissingTemplate` and `TemplateNotFound` overlap conceptually: [errors.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/errors.ts#L37), [errors.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/errors.ts#L53)
+**What to do:**
+- [ ] Either make `WinConditionEvaluator` read `winCondition` / `endsGameOnWin` to drive its logic, or remove these fields from `Template`.
+- [ ] If kept, add tests proving the fields influence evaluation outcomes.
 
-DDD concept strengthened:
-- Ubiquitous language precision.
+**DDD rationale:** High-fidelity domain model — model language must match executable behavior.
 
-## Priority 3: Tactical Quality That Supports DDD
+**Acceptance criteria:** Every `Template` field either participates in runtime logic or is removed.
 
-### 9) Define Repository Semantics as Aggregate Persistence
-What we improve:
-- Make repository behavior explicit: persist/reconstitute aggregate state instead of sharing live in-memory object references.
+---
 
-Why we improve this:
-- Shared references can hide lifecycle bugs and produce unrealistic persistence behavior.
-- Better persistence semantics improve aggregate tests and domain confidence.
+### Task 6: Fix Domain Event Publishing Gap
 
-Evidence in current code:
-- `InMemoryMatchRepository` stores and returns direct aggregate object references: [InMemoryMatchRepository.ts](/home/mohamed/project/social-deduction-game/backend/src/infrastructure/persistence/InMemoryMatchRepository.ts#L4)
+**Problem:** All use cases manually call the publisher — but `UseAbilityUseCase` has **no publisher call at all** (confirmed bug). Additionally, events are implicit in use-case orchestration rather than raised by the domain.
 
-DDD concept strengthened:
-- Repository as aggregate boundary, not object cache.
+**What to do:**
+- [ ] Add event publishing to `UseAbilityUseCase` (bug fix).
+- [ ] Consider raising domain events (`PlayerJoined`, `VoteSubmitted`, `MatchStarted`, `PhaseAdvanced`, `MatchEnded`) from the aggregate, published by the application layer.
 
-### 10) Use Typed Domain Identifiers
-What we improve:
-- Introduce typed IDs/value objects for `MatchId`, `PlayerId`, `TemplateId`.
+**DDD rationale:** Explicit domain events make integration language reusable and auditable.
 
-Why we improve this:
-- Plain `string` IDs allow accidental cross-usage and weaken model clarity.
-- Typed IDs improve language safety at compile time.
+**Acceptance criteria:** Every state-changing use case publishes an event; `UseAbilityUseCase` notifies connected clients after ability use.
 
-Evidence in current code:
-- IDs are plain strings across entities and use cases: [match.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/match.ts#L58), [player.ts](/home/mohamed/project/social-deduction-game/backend/src/domain/entity/player.ts#L95), [StartMatch.ts](/home/mohamed/project/social-deduction-game/backend/src/application/StartMatch.ts#L13)
+---
 
-DDD concept strengthened:
-- Value objects and stronger ubiquitous language.
+### Task 7: Make Error Codes Unique and Context-Specific
 
-### 11) Expand Architecture Fitness Functions
-What we improve:
-- Add tests for additional dependency rules, not only "domain must not import infrastructure".
-- Add checks for application depending on ports/contracts rather than concrete adapters.
+**Problem:** Three errors share the code `template_not_found` (`PlayerHasNoTemplate`, `MissingTemplate`, `TemplateNotFound`). `InvalidPhase` message is ability-specific but gets thrown for voting and resolution too.
 
-Why we improve this:
-- Architectural drift is common in growing projects.
-- Fitness functions turn intended boundaries into executable constraints.
+**What to do:**
+- [ ] Assign unique error codes to each error class (e.g. `player_has_no_template`, `missing_template`, `template_not_found`).
+- [ ] Make `InvalidPhase` accept context (the operation attempted) so the message matches the violation.
 
-Evidence in current code:
-- Current architecture test validates only one rule: [architecture-fitness.spec.ts](/home/mohamed/project/social-deduction-game/backend/src/__test__/fitness-functions/architecture-fitness.spec.ts#L21)
+**DDD rationale:** Ubiquitous language precision — distinct domain rules deserve distinct error identities.
 
-DDD concept strengthened:
-- Continuous boundary protection.
+**Acceptance criteria:** No two error classes share the same code; `InvalidPhase` messages reflect the actual failed operation.
+
+---
+
+## Priority 3 — Tactical Quality
+
+### Task 8: Fix Repository Semantics
+
+**Problem:** `InMemoryMatchRepository` stores and returns live object references — `findById` returns the same instance, so mutations bypass `save()`.
+
+**What to do:**
+- [ ] Clone (or snapshot/reconstitute) the aggregate on `save()` and `findById()` so the repository behaves like a real persistence boundary.
+
+**DDD rationale:** Repository as aggregate boundary, not object cache — mutations must be explicit via `save()`.
+
+**Acceptance criteria:** Modifying a returned aggregate does not affect the stored version until `save()` is called again.
+
+---
+
+### Task 9: Introduce Typed Domain Identifiers
+
+**Problem:** All IDs (`matchId`, `playerId`, `templateId`) are plain `string` — nothing prevents passing a `playerId` where a `matchId` is expected.
+
+**What to do:**
+- [ ] Create branded types or value objects for `MatchId`, `PlayerId`, `TemplateId`.
+- [ ] Update entity constructors and use-case signatures.
+
+**DDD rationale:** Value objects and compile-time safety strengthen ubiquitous language.
+
+**Acceptance criteria:** Swapping ID types causes a compile error.
+
+---
+
+### Task 10: Expand Architecture Fitness Functions
+
+**Problem:** Only 1 fitness test exists ("domain must not import infrastructure"). No check for application depending on ports rather than concrete adapters.
+
+**What to do:**
+- [ ] Add fitness test: application layer imports only from `domain/` and `ports/`, never from `infrastructure/`.
+- [ ] Add fitness test: infrastructure never imports from application (except through defined entry points).
+- [ ] Consider adding a test that domain entities do not import from `node_modules` beyond allowed packages.
+
+**DDD rationale:** Continuous boundary protection prevents architectural drift.
+
+**Acceptance criteria:** At least 3 fitness tests covering domain, application, and infrastructure boundaries.
+
+---
+
+### Task 11: Make Domain Services Injectable
+
+**Problem:** `Match` hardcodes 4 service instances via `new` in its constructor — tight coupling that prevents testing with stubs and violates dependency inversion.
+
+**What to do:**
+- [ ] Accept domain services as constructor parameters (or via a factory).
+- [ ] Update `Match` creation sites to inject services.
+
+**DDD rationale:** Dependency inversion — the aggregate should depend on abstractions, not concrete service instantiation.
+
+**Acceptance criteria:** `Match` has zero `new DomainService()` calls; all services are injected.
+
+---
+
+### Task 12: Standardize Input Validation
+
+**Problem:** Vote route has inline Zod validation; leave route uses raw `req.body as X` with no validation.
+
+**What to do:**
+- [ ] Apply consistent Zod schema validation to all routes that accept a body.
+- [ ] Move schemas to a shared location or co-locate with route definitions.
+
+**DDD rationale:** Validation consistency at the system boundary (anti-corruption layer).
+
+**Acceptance criteria:** Every route with a request body validates via Zod before reaching the use case.
+
+---
+
+### Task 13: Break Circular Dependency (WebSocketManager)
+
+**Problem:** `WebSocketManager` (infrastructure) imports `LeaveMatchUseCase` (application) — this is an infra-to-application dependency that inverts the allowed direction.
+
+**What to do:**
+- [ ] Inject a callback or port interface into `WebSocketManager` instead of importing the use case directly.
+- [ ] Define a `DisconnectHandler` port in the application layer; implement it in infrastructure.
+
+**DDD rationale:** Layered architecture — infrastructure must not depend on application.
+
+**Acceptance criteria:** `WebSocketManager` has zero imports from `application/`; the fitness tests (Task 10) enforce this.
+
+---
 
 ## Suggested Implementation Order
-1. Encapsulation and aggregate boundary hardening.
-2. Phase and participation invariants.
-3. Strategic template context decision.
-4. Win-condition model alignment and domain events.
-5. Repository semantics, typed IDs, and fitness-function expansion.
 
-## Expected Learning Outcomes
-- Better understanding of aggregate boundaries and invariant protection.
-- Clearer distinction between strategic design (bounded contexts) and tactical patterns (entities, value objects, repositories, domain events).
-- Stronger ubiquitous language, where model terms and runtime behavior stay aligned.
+1. **Task 6** — Fix `UseAbilityUseCase` missing publisher (bug, quick win).
+2. **Tasks 1-3** — Aggregate integrity (encapsulation, phase rules, participation).
+3. **Tasks 4-5, 7** — Strategic alignment (template context, win-condition, error precision).
+4. **Tasks 11, 13** — Dependency fixes (injectable services, circular dep).
+5. **Tasks 8-10, 12** — Tactical quality (repository semantics, typed IDs, fitness tests, validation).

@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { Container, TOKENS } from "../../../container";
 import { HttpServer } from "../server";
 import {
@@ -6,8 +5,12 @@ import {
   CreateMatchSchema,
   JoinMatchBody,
   JoinMatchSchema,
+  LeaveMatchBody,
+  LeaveMatchSchema,
   StartMatchBody,
   StartMatchSchema,
+  SubmitVoteBody,
+  SubmitVoteSchema,
   UseAbilityBody,
   UseAbilitySchema,
 } from "../validators";
@@ -96,27 +99,23 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     },
   );
 
-  server.register("post", "/match/:matchId/vote", async (req, res) => {
-    const schema = z.object({
-      voterId: z.string(),
-      targetId: z.string().nullable(),
-    });
-    const parsed = schema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid vote body" });
-      return;
-    }
+  server.register(
+    "post",
+    "/match/:matchId/vote",
+    validateBody(SubmitVoteSchema),
+    async (req, res) => {
+      const useCase = container.resolve(TOKENS.SubmitVoteUseCase);
+      const { matchId } = req.params;
+      const body: SubmitVoteBody = req.body;
+      const result = await useCase.execute({
+        matchId,
+        voterId: body.voterId,
+        targetId: body.targetId,
+      });
 
-    const useCase = container.resolve(TOKENS.SubmitVoteUseCase);
-    const { matchId } = req.params;
-    const result = await useCase.execute({
-      matchId,
-      voterId: parsed.data.voterId,
-      targetId: parsed.data.targetId,
-    });
-
-    res.status(200).json(result);
-  });
+      res.status(200).json(result);
+    },
+  );
 
   server.register("post", "/match/:matchId/phase", async (req, res) => {
     const useCase = container.resolve(TOKENS.AdvancePhaseUseCase);
@@ -127,13 +126,18 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     res.status(200).json(result);
   });
 
-  server.register("post", "/match/:matchId/leave", async (req, res) => {
-    const useCase = container.resolve(TOKENS.LeaveMatchUseCase);
-    const { matchId } = req.params;
-    const { playerId } = req.body as { playerId: string };
+  server.register(
+    "post",
+    "/match/:matchId/leave",
+    validateBody(LeaveMatchSchema),
+    async (req, res) => {
+      const useCase = container.resolve(TOKENS.LeaveMatchUseCase);
+      const { matchId } = req.params;
+      const body: LeaveMatchBody = req.body;
 
-    const result = await useCase.execute({ matchId, playerId });
+      const result = await useCase.execute({ matchId, playerId: body.playerId });
 
-    res.status(200).json(result);
-  });
+      res.status(200).json(result);
+    },
+  );
 }

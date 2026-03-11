@@ -2,6 +2,7 @@ import { MatchNotFound, PlayerNotInMatch } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
+import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface LeaveMatchInput {
   matchId: string;
@@ -21,8 +22,7 @@ export class LeaveMatchUseCase {
       throw new MatchNotFound();
     }
 
-    const players = match.getPlayers();
-    const playerExists = players.some((p) => p.id === input.playerId);
+    const playerExists = match.getPlayers().some((p) => p.id === input.playerId);
 
     if (!playerExists) {
       throw new PlayerNotInMatch();
@@ -31,8 +31,9 @@ export class LeaveMatchUseCase {
     match.removePlayer(input.playerId);
     await this.repository.save(match);
 
-    this.publisher.playerLeft(input.matchId, input.playerId);
+    const result = match.toJSON();
+    publishMatchEvents(match.pullEvents(), result, this.publisher);
 
-    return match.toJSON();
+    return result;
   }
 }

@@ -3,6 +3,7 @@ import { MatchResponse } from "../domain/entity/match";
 import { Player } from "../domain/entity/player";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
+import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface JoinMatchInput {
   matchId: string;
@@ -25,9 +26,9 @@ export class JoinMatchUseCase {
     match.addPlayer(Player.create(input.playerName));
     await this.repository.save(match);
 
-    const newPlayer = match.getPlayers()[match.getPlayers().length - 1];
-    this.publisher.playerJoined(input.matchId, newPlayer);
+    const result = match.toJSON();
+    publishMatchEvents(match.pullEvents(), result, this.publisher);
 
-    return match.toJSON();
+    return result;
   }
 }

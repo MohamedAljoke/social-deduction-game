@@ -44,3 +44,16 @@ export const UseAbilitySchema = z.object({
 });
 
 export type UseAbilityBody = z.infer<typeof UseAbilitySchema>;
+
+export const SubmitVoteSchema = z.object({
+  voterId: z.string().min(1, "Voter ID is required"),
+  targetId: z.string().min(1, "Target ID is required").nullable(),
+});
+
+export type SubmitVoteBody = z.infer<typeof SubmitVoteSchema>;
+
+export const LeaveMatchSchema = z.object({
+  playerId: z.string().min(1, "Player ID is required"),
+});
+
+export type LeaveMatchBody = z.infer<typeof LeaveMatchSchema>;

@@ -2,6 +2,7 @@ import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
+import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface SubmitVoteInput {
   matchId: string;
@@ -26,9 +27,9 @@ export class SubmitVoteUseCase {
 
     await this.matchRepository.save(match);
 
-    this.publisher.voteSubmitted(input.matchId, input.voterId, input.targetId);
-    this.publisher.matchUpdated(input.matchId, match.toJSON());
+    const result = match.toJSON();
+    publishMatchEvents(match.pullEvents(), result, this.publisher);
 
-    return match.toJSON();
+    return result;
   }
 }

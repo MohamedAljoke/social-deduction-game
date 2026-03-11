@@ -4,6 +4,7 @@ import { MatchResponse } from "../domain/entity/match";
 import { Alignment, Template } from "../domain/entity/template";
 import { Ability, EffectType } from "../domain/entity/ability";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
+import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface StartMatchInput {
   matchId: string;
@@ -39,17 +40,7 @@ export class StartMatchUseCase {
     await this.matchRepository.save(match);
 
     const result = match.toJSON();
-
-    const playerAssignments = result.players.map((p) => ({
-      playerId: p.id,
-      templateId: p.templateId!,
-      alignment:
-        result.templates.find((t) => t.id === p.templateId)?.alignment ??
-        "unknown",
-    }));
-
-    this.publisher.matchStarted(input.matchId, { playerAssignments });
-    this.publisher.matchUpdated(input.matchId, result);
+    publishMatchEvents(match.pullEvents(), result, this.publisher);
 
     return result;
   }

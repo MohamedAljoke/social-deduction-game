@@ -1,8 +1,9 @@
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchNotFound } from "../domain/errors";
-import { MatchResponse, MatchStatus } from "../domain/entity/match";
+import { MatchResponse } from "../domain/entity/match";
 import { ActionResolver } from "../domain/services/resolution";
+import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface AdvancePhaseInput {
   matchId: string;
@@ -25,26 +26,13 @@ export class AdvancePhaseUseCase {
     const newPhase = match.advancePhase();
 
     if (newPhase === "resolution") {
-      const resolution = match.resolveActions(this.actionResolver);
-      for (const effect of resolution.effects) {
-        this.publisher.effectResolved(input.matchId, effect);
-      }
+      match.resolveActions(this.actionResolver);
     }
 
     await this.matchRepository.save(match);
+
     const result = match.toJSON();
-
-    if (
-      result.status === MatchStatus.FINISHED &&
-      result.winnerAlignment !== null
-    ) {
-      this.publisher.matchUpdated(input.matchId, result);
-      this.publisher.matchEnded(input.matchId, result.winnerAlignment);
-      return result;
-    }
-
-    this.publisher.phaseChanged(input.matchId, newPhase);
-    this.publisher.matchUpdated(input.matchId, result);
+    publishMatchEvents(match.pullEvents(), result, this.publisher);
 
     return result;
   }
