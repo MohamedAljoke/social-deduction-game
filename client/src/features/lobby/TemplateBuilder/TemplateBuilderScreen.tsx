@@ -13,17 +13,28 @@ const ABILITIES = [
   { id: "investigate", name: "Investigate", icon: "🔍" },
 ];
 
+const WIN_CONDITIONS = [
+  { id: "team_parity", name: "Team Victory" },
+  { id: "eliminate_alignment", name: "Eliminate Alignment" },
+] as const;
+
 export function TemplateBuilderScreen() {
   const navigate = useNavigate();
   const { state, dispatch, service } = useGame();
   const [loading, setLoading] = useState(false);
 
   const DEFAULT_TEMPLATES = [
-    { name: "Killer", alignment: "villain" as const, abilities: ["kill"] },
+    {
+      name: "Killer",
+      alignment: "villain" as const,
+      abilities: ["kill"],
+      winCondition: "team_parity" as const,
+    },
     {
       name: "Detective",
       alignment: "hero" as const,
       abilities: ["investigate"],
+      winCondition: "team_parity" as const,
     },
   ];
 
@@ -38,7 +49,12 @@ export function TemplateBuilderScreen() {
   const updateTemplate = (
     index: number,
     field: string,
-    value: string | string[],
+    value:
+      | string
+      | string[]
+      | {
+          targetAlignment?: string;
+        },
   ) => {
     const updated = templates.map((t, i) =>
       i === index ? { ...t, [field]: value } : t,
@@ -63,6 +79,8 @@ export function TemplateBuilderScreen() {
         name: t.name.trim() || undefined,
         alignment: t.alignment,
         abilities: t.abilities.map((id) => ({ id })),
+        winCondition: t.winCondition,
+        winConditionConfig: t.winConditionConfig,
       }));
       await service.startMatch(state.matchId, apiTemplates);
       navigate("/game");
@@ -81,6 +99,7 @@ export function TemplateBuilderScreen() {
         name: `Template ${templates.length + 1}`,
         alignment: "hero" as const,
         abilities: [],
+        winCondition: "team_parity" as const,
       },
     ];
     dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: next });
@@ -176,6 +195,66 @@ export function TemplateBuilderScreen() {
                     <option value="neutral">Neutral</option>
                   </select>
                 </div>
+                <div className="flex gap-3 mb-3">
+                  <select
+                    className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
+                    style={{
+                      backgroundColor: "#1a1a2e",
+                      border: "2px solid #2a2a4a",
+                      color: "#ffffff",
+                    }}
+                    value={template.winCondition}
+                    onChange={(e) => {
+                      const nextWinCondition = e.target.value;
+                      const updated = templates.map((currentTemplate, i) =>
+                        i === index
+                          ? {
+                              ...currentTemplate,
+                              winCondition: nextWinCondition,
+                              winConditionConfig:
+                                nextWinCondition === "eliminate_alignment"
+                                  ? currentTemplate.winConditionConfig ?? {
+                                      targetAlignment: "villain",
+                                    }
+                                  : undefined,
+                            }
+                          : currentTemplate,
+                      );
+                      dispatch({
+                        type: GAME_ACTIONS.SET_TEMPLATES,
+                        payload: updated,
+                      });
+                    }}
+                  >
+                    {WIN_CONDITIONS.map((condition) => (
+                      <option key={condition.id} value={condition.id}>
+                        {condition.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {template.winCondition === "eliminate_alignment" && (
+                  <div className="flex gap-3 mb-3">
+                    <select
+                      className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
+                      style={{
+                        backgroundColor: "#1a1a2e",
+                        border: "2px solid #2a2a4a",
+                        color: "#ffffff",
+                      }}
+                      value={template.winConditionConfig?.targetAlignment ?? "villain"}
+                      onChange={(e) =>
+                        updateTemplate(index, "winConditionConfig", {
+                          targetAlignment: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="hero">Eliminate Heroes</option>
+                      <option value="villain">Eliminate Villains</option>
+                      <option value="neutral">Eliminate Neutrals</option>
+                    </select>
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {ABILITIES.map((ability) => (
                     <div

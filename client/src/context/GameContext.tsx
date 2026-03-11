@@ -12,12 +12,19 @@ import { GameGateway } from "../infrastructure/ws/GameGateway";
 import { ApiClient } from "../infrastructure/http/ApiClient";
 import { GameSessionService } from "./GameSessionService";
 import { GAME_ACTIONS } from "../types/gameActions";
-import type { Match, Player } from "../types/match";
+import type {
+  Match,
+  Player,
+  WinCondition,
+  WinConditionConfig,
+} from "../types/match";
 
 interface TemplateConfig {
   name: string;
   alignment: "hero" | "villain" | "neutral";
   abilities: string[];
+  winCondition: WinCondition;
+  winConditionConfig?: WinConditionConfig;
 }
 
 export interface InvestigateResult {

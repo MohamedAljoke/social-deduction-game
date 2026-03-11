@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { Alignment } from "../../../domain/entity/template";
+import {
+  Alignment,
+  WinCondition,
+} from "../../../domain/entity/template";
 import { EffectType } from "../../../domain/entity/ability";
 
 export const CreateMatchSchema = z
@@ -29,6 +32,34 @@ export const TemplateSchema = z.object({
   name: z.string().min(1).max(20).optional(),
   alignment: z.enum(Alignment),
   abilities: z.array(TemplateAbilitySchema),
+  winCondition: z.enum(WinCondition).optional().default(WinCondition.TeamParity),
+  winConditionConfig: z
+    .object({
+      targetAlignment: z.enum(Alignment),
+    })
+    .optional(),
+}).superRefine((value, ctx) => {
+  if (
+    value.winCondition === WinCondition.EliminateAlignment &&
+    !value.winConditionConfig?.targetAlignment
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["winConditionConfig", "targetAlignment"],
+      message: "Target alignment is required for eliminate_alignment",
+    });
+  }
+
+  if (
+    value.winCondition !== WinCondition.EliminateAlignment &&
+    value.winConditionConfig
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["winConditionConfig"],
+      message: "winConditionConfig is only allowed for eliminate_alignment",
+    });
+  }
 });
 
 export const StartMatchSchema = z.object({

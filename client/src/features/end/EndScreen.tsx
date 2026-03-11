@@ -2,7 +2,7 @@ import { Card, Button, Avatar } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
 import { useGame } from '../../context/GameContext';
-import type { Alignment } from '../../types/match';
+import type { Alignment, MatchWinner } from '../../types/match';
 
 const WINNER_THEME: Record<Alignment, { label: string; gradient: string }> = {
   hero: {
@@ -31,9 +31,8 @@ export function EndScreen() {
     return <div>Loading...</div>;
   }
 
-  const winnerTheme = match.winnerAlignment
-    ? WINNER_THEME[match.winnerAlignment]
-    : null;
+  const winnerTheme = getWinnerTheme(match.winner, match.winnerAlignment);
+  const winnerLabel = getWinnerLabel(match.winner, match.winnerAlignment);
   const endedAtLabel = match.endedAt
     ? new Date(match.endedAt).toLocaleString()
     : null;
@@ -54,7 +53,7 @@ export function EndScreen() {
           >
             <div className="text-sm uppercase tracking-wider opacity-90">Winner</div>
             <div className="text-[28px] font-bold mt-1">
-              {winnerTheme?.label ?? "Game Ended"}
+              {winnerLabel}
             </div>
             {endedAtLabel && (
               <div className="text-xs mt-2 opacity-90">Ended at {endedAtLabel}</div>
@@ -102,4 +101,35 @@ export function EndScreen() {
       </div>
     </ScreenContainer>
   );
+}
+
+function getWinnerTheme(
+  winner: MatchWinner | null | undefined,
+  winnerAlignment: Alignment | null | undefined,
+) {
+  if (winner?.kind === "alignment") {
+    return WINNER_THEME[winner.alignment];
+  }
+
+  if (winner?.kind === "templates") {
+    const primaryAlignment = winner.templates[0]?.alignment;
+    return primaryAlignment ? WINNER_THEME[primaryAlignment] : null;
+  }
+
+  return winnerAlignment ? WINNER_THEME[winnerAlignment] : null;
+}
+
+function getWinnerLabel(
+  winner: MatchWinner | null | undefined,
+  winnerAlignment: Alignment | null | undefined,
+) {
+  if (winner?.kind === "alignment") {
+    return WINNER_THEME[winner.alignment].label;
+  }
+
+  if (winner?.kind === "templates" && winner.templates.length > 0) {
+    return winner.templates.map((template) => template.templateName).join(", ");
+  }
+
+  return winnerAlignment ? WINNER_THEME[winnerAlignment].label : "Game Ended";
 }

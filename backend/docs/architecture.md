@@ -50,8 +50,6 @@ classDiagram
         +id: string
         +alignment: Alignment
         +abilities: Ability[]
-        +winCondition: WinCondition
-        +endsGameOnWin: boolean
     }
 
     class Alignment {

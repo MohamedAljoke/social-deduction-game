@@ -32,6 +32,7 @@ function createMatchResponse(): MatchResponse {
     templates: [],
     votes: [],
     config: { showVotingTransparency: true },
+    winner: { kind: "alignment", alignment: Alignment.Hero },
     winnerAlignment: Alignment.Hero,
     endedAt: new Date("2026-03-10T12:05:00.000Z"),
   };
@@ -69,7 +70,11 @@ describe("publishMatchEvents", () => {
         },
         { type: "PhaseAdvanced", matchId: "match-1", phase: "resolution" },
         { type: "ActionsResolved", matchId: "match-1", effects: [effect] },
-        { type: "MatchEnded", matchId: "match-1", winner: Alignment.Hero },
+        {
+          type: "MatchEnded",
+          matchId: "match-1",
+          winner: { kind: "alignment", alignment: Alignment.Hero },
+        },
       ],
       createMatchResponse(),
       publisher,
@@ -103,7 +108,7 @@ describe("publishMatchEvents", () => {
     );
     expect(publisher.matchEnded).toHaveBeenCalledWith(
       "match-1",
-      Alignment.Hero,
+      { kind: "alignment", alignment: Alignment.Hero },
     );
   });
 

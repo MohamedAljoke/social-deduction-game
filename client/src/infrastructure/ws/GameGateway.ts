@@ -1,7 +1,7 @@
 import type { WebSocketClient } from "./WebSocketClient";
 import type {
-  Alignment,
   Match,
+  MatchWinner,
   Player,
   PlayerAssignment,
 } from "../../types/match";
@@ -107,9 +107,9 @@ export class GameGateway {
   }
 
   onMatchEnded(
-    handler: (matchId: string, winner: Alignment) => void,
+    handler: (matchId: string, winner: MatchWinner) => void,
   ): () => void {
-    return this.ws.on<{ matchId: string; winner: Alignment }>(
+    return this.ws.on<{ matchId: string; winner: MatchWinner }>(
       "match_ended",
       (msg) => handler(msg.matchId, msg.winner),
     );

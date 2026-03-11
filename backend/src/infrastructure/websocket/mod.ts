@@ -45,7 +45,7 @@ export type ServerEvent =
     }
   | { type: "match_updated"; matchId: string; state: unknown }
   | { type: "player_killed"; matchId: string; playerId: string }
-  | { type: "match_ended"; matchId: string; winner: string }
+  | { type: "match_ended"; matchId: string; winner: unknown }
   | {
       type: "investigate_result";
       matchId: string;

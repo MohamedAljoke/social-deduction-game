@@ -31,6 +31,22 @@ export enum MatchStatus {
 
 export type MatchResponse = ReturnType<Match["toJSON"]>;
 
+export interface TemplateWinnerSummary {
+  templateId: string;
+  templateName: string;
+  alignment: Alignment;
+}
+
+export type MatchWinner =
+  | {
+      kind: "alignment";
+      alignment: Alignment;
+    }
+  | {
+      kind: "templates";
+      templates: TemplateWinnerSummary[];
+    };
+
 export interface MatchConfig {
   showVotingTransparency: boolean;
 }
@@ -46,6 +62,7 @@ interface MatchProps {
   votes?: Array<{ voterId: string; targetId: string | null }>;
   status: MatchStatus;
   config?: MatchConfig;
+  winner?: MatchWinner | null;
   winnerAlignment?: Alignment | null;
   endedAt?: Date | null;
 }
@@ -67,6 +84,7 @@ export class Match {
   private templates: Template[];
   private readonly voting: MatchVoting;
   private config: MatchConfig;
+  private winner: MatchWinner | null;
   private winnerAlignment: Alignment | null;
   private endedAt: Date | null;
   private _domainEvents: MatchDomainEvent[] = [];
@@ -92,6 +110,7 @@ export class Match {
     this.templates = props.templates ?? [];
     this.voting = new MatchVoting(props.votes);
     this.config = props.config ?? { showVotingTransparency: true };
+    this.winner = props.winner ?? null;
     this.winnerAlignment = props.winnerAlignment ?? null;
     this.endedAt = props.endedAt ?? null;
   }
@@ -124,6 +143,10 @@ export class Match {
     return this.winnerAlignment;
   }
 
+  public getWinner(): MatchWinner | null {
+    return this.winner;
+  }
+
   public setTemplates(templates: Template[]): void {
     this.templates = templates;
   }
@@ -136,6 +159,7 @@ export class Match {
     );
 
     this.status = MatchStatus.STARTED;
+    this.winner = null;
     this.winnerAlignment = null;
     this.endedAt = null;
 
@@ -259,7 +283,9 @@ export class Match {
     }
 
     this.status = MatchStatus.FINISHED;
-    this.winnerAlignment = winner;
+    this.winner = winner;
+    this.winnerAlignment =
+      winner.kind === "alignment" ? winner.alignment : null;
     this.endedAt ??= new Date();
     this.emit({ type: "MatchEnded", matchId: this.id, winner });
   }
@@ -300,6 +326,7 @@ export class Match {
       templates: this.templates,
       votes: this.voting.getVotes(),
       config: this.config,
+      winner: this.winner,
       winnerAlignment: this.winnerAlignment,
       endedAt: this.endedAt,
     });

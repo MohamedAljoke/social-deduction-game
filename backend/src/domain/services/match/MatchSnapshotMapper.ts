@@ -2,7 +2,7 @@ import { Action } from "../../entity/action";
 import { PhaseType } from "../../entity/phase";
 import { Player, PlayerResponse } from "../../entity/player";
 import { Alignment, Template } from "../../entity/template";
-import type { MatchConfig, MatchStatus } from "../../entity/match";
+import type { MatchConfig, MatchStatus, MatchWinner } from "../../entity/match";
 
 export interface MatchSnapshotSource {
   id: string;
@@ -15,6 +15,7 @@ export interface MatchSnapshotSource {
   templates: Template[];
   votes: Array<{ voterId: string; targetId: string | null }>;
   config: MatchConfig;
+  winner: MatchWinner | null;
   winnerAlignment: Alignment | null;
   endedAt: Date | null;
 }
@@ -44,10 +45,11 @@ export class MatchSnapshotMapper {
           id: ability.id,
         })),
         winCondition: template.winCondition,
-        endsGameOnWin: template.endsGameOnWin,
+        winConditionConfig: template.winConditionConfig ?? null,
       })),
       votes: source.votes,
       config: source.config,
+      winner: source.winner,
       winnerAlignment: source.winnerAlignment,
       endedAt: source.endedAt,
     };

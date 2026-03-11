@@ -1,4 +1,9 @@
-import type { Alignment, Match, Player, PlayerAssignment } from "./match";
+import type {
+  Match,
+  MatchWinner,
+  Player,
+  PlayerAssignment,
+} from "./match";
 
 export type ClientEvent =
   | { type: "join_match"; matchId: string; playerId: string }
@@ -43,7 +48,7 @@ export type ServerEvent =
     }
   | { type: "match_updated"; matchId: string; state: Match }
   | { type: "player_killed"; matchId: string; playerId: string }
-  | { type: "match_ended"; matchId: string; winner: Alignment }
+  | { type: "match_ended"; matchId: string; winner: MatchWinner }
   | {
       type: "investigate_result";
       matchId: string;

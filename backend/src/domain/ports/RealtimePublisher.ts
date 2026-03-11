@@ -1,7 +1,6 @@
-import { MatchResponse } from "../entity/match";
+import { MatchResponse, MatchWinner } from "../entity/match";
 import { PhaseType } from "../entity/phase";
 import { PlayerResponse } from "../entity/player";
-import { Alignment } from "../entity/template";
 import { MatchPlayerAssignment } from "../events/match-events";
 import { EffectResult } from "../services/resolution";
 
@@ -21,7 +20,7 @@ export interface RealtimePublisher {
     EffectType: string,
     targetIds: string[],
   ): void;
-  matchEnded(matchId: string, winner: Alignment): void;
+  matchEnded(matchId: string, winner: MatchWinner): void;
   voteSubmitted(
     matchId: string,
     voterId: string,

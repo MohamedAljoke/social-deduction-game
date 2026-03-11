@@ -1,7 +1,12 @@
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
-import { Alignment, Template } from "../domain/entity/template";
+import {
+  Alignment,
+  Template,
+  WinCondition,
+  WinConditionConfig,
+} from "../domain/entity/template";
 import { Ability, EffectType } from "../domain/entity/ability";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { publishMatchEvents } from "./publishMatchEvents";
@@ -12,6 +17,8 @@ export interface StartMatchInput {
     name?: string;
     alignment: Alignment;
     abilities: { id: EffectType }[];
+    winCondition?: WinCondition;
+    winConditionConfig?: WinConditionConfig;
   }[];
 }
 
@@ -32,7 +39,14 @@ export class StartMatchUseCase {
       const abilities = raw.abilities.map((a) => new Ability(a.id));
       const name = raw.name?.trim() || "Citizen";
 
-      return new Template(name, `template_${index}`, raw.alignment, abilities);
+      return new Template(
+        name,
+        `template_${index}`,
+        raw.alignment,
+        abilities,
+        raw.winCondition ?? WinCondition.TeamParity,
+        raw.winConditionConfig,
+      );
     });
 
     match.startWithTemplates(templates);

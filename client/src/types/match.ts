@@ -1,6 +1,25 @@
 export type Alignment = "hero" | "villain" | "neutral";
 export type PhaseType = "discussion" | "action" | "voting" | "resolution";
 export type MatchStatus = "lobby" | "started" | "finished";
+export type WinCondition = "team_parity" | "eliminate_alignment";
+
+export interface WinConditionConfig {
+  targetAlignment?: Alignment;
+}
+
+export type MatchWinner =
+  | {
+      kind: "alignment";
+      alignment: Alignment;
+    }
+  | {
+      kind: "templates";
+      templates: Array<{
+        templateId: string;
+        templateName: string;
+        alignment: Alignment;
+      }>;
+    };
 
 export interface Player {
   id: string;
@@ -19,6 +38,8 @@ export interface Template {
   name: string;
   alignment: Alignment;
   abilities: Ability[];
+  winCondition?: WinCondition;
+  winConditionConfig?: WinConditionConfig | null;
 }
 
 export interface Action {
@@ -41,6 +62,7 @@ export interface Match {
   config: {
     showVotingTransparency: boolean;
   };
+  winner?: MatchWinner | null;
   winnerAlignment?: Alignment | null;
   endedAt?: string | null;
 }
@@ -55,6 +77,8 @@ export interface TemplateInput {
   name?: string;
   alignment: Alignment;
   abilities: { id: string }[];
+  winCondition?: WinCondition;
+  winConditionConfig?: WinConditionConfig;
 }
 
 export interface CreateMatchInput {

@@ -1,6 +1,7 @@
 import { PlayerResponse } from "../entity/player";
 import { PhaseType } from "../entity/phase";
 import { Alignment } from "../entity/template";
+import type { MatchWinner } from "../entity/match";
 import { EffectResult } from "../services/resolution";
 
 export interface MatchPlayerAssignment {
@@ -44,5 +45,5 @@ export type MatchDomainEvent =
   | {
       type: "MatchEnded";
       matchId: string;
-      winner: Alignment;
+      winner: MatchWinner;
     };

@@ -2,10 +2,9 @@ import {
   RealtimePublisher,
   MatchStartedPayload,
 } from "../../domain/ports/RealtimePublisher";
-import { MatchResponse } from "../../domain/entity/match";
+import { MatchResponse, MatchWinner } from "../../domain/entity/match";
 import { PhaseType } from "../../domain/entity/phase";
 import { PlayerResponse } from "../../domain/entity/player";
-import { Alignment } from "../../domain/entity/template";
 import { EffectResult } from "../../domain/services/resolution";
 import { getWsManager } from "./mod";
 
@@ -61,7 +60,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     });
   }
 
-  matchEnded(matchId: string, winner: Alignment): void {
+  matchEnded(matchId: string, winner: MatchWinner): void {
     getWsManager().broadcastToMatch(matchId, {
       type: "match_ended",
       matchId,

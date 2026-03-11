@@ -4,7 +4,12 @@ import { Action, ResolutionStage } from "../../domain/entity/action";
 import { Match, MatchStatus } from "../../domain/entity/match";
 import { Phase } from "../../domain/entity/phase";
 import { Player } from "../../domain/entity/player";
-import { Alignment, Template } from "../../domain/entity/template";
+import {
+  Alignment,
+  Template,
+  WinCondition,
+  WinConditionConfig,
+} from "../../domain/entity/template";
 import { MatchDomainEvent } from "../../domain/events/match-events";
 import {
   MatchAlreadyStarted,
@@ -28,8 +33,17 @@ function createTemplate(
   id: string,
   alignment: Alignment,
   abilities: Ability[] = [],
+  winCondition: WinCondition = WinCondition.TeamParity,
+  winConditionConfig?: WinConditionConfig,
 ): Template {
-  return new Template(id, id, alignment, abilities);
+  return new Template(
+    id,
+    id,
+    alignment,
+    abilities,
+    winCondition,
+    winConditionConfig,
+  );
 }
 
 function createStartedMatch(players: Player[], templates: Template[]): Match {
@@ -167,13 +181,54 @@ describe("WinConditionEvaluator", () => {
       createTemplate("villain-template", Alignment.Villain),
     ];
 
-    expect(evaluator.evaluate([hero, villain], templates)).toBe(
-      Alignment.Villain,
-    );
+    expect(evaluator.evaluate([hero, villain], templates)).toEqual({
+        kind: "alignment",
+        alignment: Alignment.Villain,
+      });
 
     villain.kill();
 
-    expect(evaluator.evaluate([hero, villain], templates)).toBe(Alignment.Hero);
+    expect(evaluator.evaluate([hero, villain], templates)).toEqual({
+      kind: "alignment",
+      alignment: Alignment.Hero,
+    });
+  });
+
+  it("allows a custom role to win by eliminating a target alignment", () => {
+    const evaluator = new WinConditionEvaluator();
+    const heroKiller = createPlayer("hero-killer");
+    const citizen = createPlayer("citizen");
+    const villain = createPlayer("villain");
+    heroKiller.assignTemplate("hero-killer-template");
+    citizen.assignTemplate("citizen-template");
+    villain.assignTemplate("villain-template");
+
+    const templates = [
+      createTemplate(
+        "hero-killer-template",
+        Alignment.Hero,
+        [new Ability(EffectType.Kill)],
+        WinCondition.EliminateAlignment,
+        { targetAlignment: Alignment.Villain },
+      ),
+      createTemplate("citizen-template", Alignment.Hero),
+      createTemplate("villain-template", Alignment.Villain),
+    ];
+
+    expect(evaluator.evaluate([heroKiller, citizen, villain], templates)).toBeNull();
+
+    villain.kill();
+
+    expect(evaluator.evaluate([heroKiller, citizen, villain], templates)).toEqual({
+      kind: "templates",
+      templates: [
+        {
+          templateId: "hero-killer-template",
+          templateName: "hero-killer-template",
+          alignment: Alignment.Hero,
+        },
+      ],
+    });
   });
 });
 
@@ -204,6 +259,7 @@ describe("MatchSnapshotMapper", () => {
       ],
       votes: [{ voterId: "player", targetId: "target" }],
       config: { showVotingTransparency: true },
+      winner: null,
       winnerAlignment: null,
       endedAt: null,
     });
@@ -236,12 +292,13 @@ describe("MatchSnapshotMapper", () => {
           name: "citizen",
           alignment: "hero",
           abilities: [{ id: "investigate" }],
-          winCondition: "default",
-          endsGameOnWin: true,
+          winCondition: "team_parity",
+          winConditionConfig: null,
         },
       ],
       votes: [{ voterId: "player", targetId: "target" }],
       config: { showVotingTransparency: true },
+      winner: null,
       winnerAlignment: null,
       endedAt: null,
     });
@@ -368,7 +425,10 @@ describe("Match aggregate regression", () => {
       {
         type: "MatchEnded",
         matchId: "match-id",
-        winner: Alignment.Hero,
+        winner: {
+          kind: "alignment",
+          alignment: Alignment.Hero,
+        },
       },
       {
         type: "PhaseAdvanced",
@@ -462,6 +522,10 @@ describe("Match aggregate regression", () => {
       createdAt: new Date("2026-03-10T12:00:00.000Z"),
       status: MatchStatus.LOBBY,
       players: [alice, bob],
+      winner: {
+        kind: "alignment",
+        alignment: Alignment.Villain,
+      },
       winnerAlignment: Alignment.Villain,
       endedAt: new Date("2026-03-10T13:00:00.000Z"),
     });
@@ -474,6 +538,7 @@ describe("Match aggregate regression", () => {
 
     const snapshot = match.toJSON();
     expect(snapshot.status).toBe("started");
+    expect(snapshot.winner).toBeNull();
     expect(snapshot.winnerAlignment).toBeNull();
     expect(snapshot.endedAt).toBeNull();
     expect(snapshot.players.every((player) => player.templateId)).toBe(true);

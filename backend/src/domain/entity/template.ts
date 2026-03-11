@@ -6,7 +6,14 @@ export enum Alignment {
   Neutral = "neutral",
 }
 
-export type WinCondition = "default" | "vote_eliminated";
+export enum WinCondition {
+  TeamParity = "team_parity",
+  EliminateAlignment = "eliminate_alignment",
+}
+
+export interface WinConditionConfig {
+  targetAlignment?: Alignment;
+}
 
 export class Template {
   constructor(
@@ -14,8 +21,8 @@ export class Template {
     readonly id: string,
     readonly alignment: Alignment,
     readonly abilities: Ability[],
-    readonly winCondition: WinCondition = "default",
-    readonly endsGameOnWin: boolean = true,
+    readonly winCondition: WinCondition = WinCondition.TeamParity,
+    readonly winConditionConfig?: WinConditionConfig,
   ) {}
 
   static default(id: string): Template {
