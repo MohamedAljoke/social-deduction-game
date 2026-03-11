@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { publishMatchEvents } from "../../application/publishMatchEvents";
-import { MatchResponse } from "../../domain/entity/match";
-import { PlayerResponse } from "../../domain/entity/player";
+import { MatchResponse, MatchStatus } from "../../domain/entity/match";
+import { PlayerResponse, PlayerStatus } from "../../domain/entity/player";
 import { Alignment } from "../../domain/entity/template";
 import { EffectResult } from "../../domain/services/resolution";
 import { RealtimePublisher } from "../../domain/ports/RealtimePublisher";
@@ -25,7 +25,7 @@ function createMatchResponse(): MatchResponse {
     id: "match-1",
     name: "Test Match",
     createdAt: new Date("2026-03-10T12:00:00.000Z"),
-    status: "finished",
+    status: MatchStatus.FINISHED,
     players: [],
     phase: "resolution",
     actions: [],
@@ -43,7 +43,7 @@ describe("publishMatchEvents", () => {
     const player: PlayerResponse = {
       id: "player-1",
       name: "Alice",
-      status: "alive",
+      status: PlayerStatus.ALIVE,
       templateId: "template-1",
     };
     const effect: EffectResult = {
@@ -85,7 +85,10 @@ describe("publishMatchEvents", () => {
         },
       ],
     });
-    expect(publisher.phaseChanged).toHaveBeenCalledWith("match-1", "resolution");
+    expect(publisher.phaseChanged).toHaveBeenCalledWith(
+      "match-1",
+      "resolution",
+    );
     expect(publisher.effectResolved).toHaveBeenCalledWith("match-1", effect);
 
     const matchUpdatedOrder = vi.mocked(publisher.matchUpdated).mock
