@@ -1,3 +1,5 @@
+import { InvalidPhase } from "../errors";
+
 export const PHASE_ORDER = [
   "discussion",
   "voting",
@@ -28,6 +30,24 @@ export class Phase {
 
   public isResolution(): boolean {
     return this.current === "resolution";
+  }
+
+  public assertCanVote(): void {
+    if (!this.isVoting()) {
+      throw new InvalidPhase();
+    }
+  }
+
+  public assertCanUseAbility(): void {
+    if (!this.isAction()) {
+      throw new InvalidPhase();
+    }
+  }
+
+  public assertCanResolve(): void {
+    if (!this.isResolution()) {
+      throw new InvalidPhase();
+    }
   }
 
   public nextPhase(): PhaseType {

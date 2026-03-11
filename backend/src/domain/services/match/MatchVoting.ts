@@ -1,5 +1,4 @@
 import {
-  InvalidPhase,
   PlayerIsDeadError,
   PlayerNotInMatch,
   TargetNotAlive,
@@ -27,9 +26,7 @@ export class MatchVoting {
     voterId: string,
     targetId: string | null,
   ): void {
-    if (!phase.isVoting()) {
-      throw new InvalidPhase();
-    }
+    phase.assertCanVote();
 
     const playersById = new Map(players.map((player) => [player.id, player]));
     const voter = playersById.get(voterId);

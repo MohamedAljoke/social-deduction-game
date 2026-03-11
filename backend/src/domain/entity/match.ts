@@ -2,7 +2,7 @@ import { Player } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Alignment, Template } from "./template";
-import { MatchAlreadyStarted, MatchNotStarted, InvalidPhase } from "../errors";
+import { MatchAlreadyStarted, MatchNotStarted } from "../errors";
 import { EffectType } from "./ability";
 import {
   AbilityActionFactory,
@@ -206,9 +206,7 @@ export class Match {
       throw new MatchNotStarted();
     }
 
-    if (!this.phase.isResolution()) {
-      throw new InvalidPhase();
-    }
+    this.phase.assertCanResolve();
 
     const result = resolver.resolve(this.actions, this.players, this.templates);
     this.actions = [];
@@ -234,9 +232,7 @@ export class Match {
       throw new MatchNotStarted();
     }
 
-    if (!this.phase.isAction()) {
-      throw new InvalidPhase();
-    }
+    this.phase.assertCanUseAbility();
 
     this.actions.push(
       this.abilityActionFactory.create(
