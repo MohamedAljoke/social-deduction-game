@@ -6,11 +6,19 @@ import { MatchResponse, MatchWinner } from "../../domain/entity/match";
 import { PhaseType } from "../../domain/entity/phase";
 import { PlayerResponse } from "../../domain/entity/player";
 import { EffectResult } from "../../domain/services/resolution";
-import { getWsManager } from "./mod";
+import { ServerEvent } from "./mod";
+
+export interface MatchBroadcaster {
+  broadcastToMatch(matchId: string, event: ServerEvent): void;
+  broadcastMatchUpdate(matchId: string, state: unknown): void;
+  sendToPlayer(matchId: string, playerId: string, event: ServerEvent): void;
+}
 
 export class WebSocketPublisher implements RealtimePublisher {
+  constructor(private readonly broadcaster: MatchBroadcaster) {}
+
   matchStarted(matchId: string, payload: MatchStartedPayload): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "match_started",
       matchId,
       ...payload,
@@ -18,11 +26,11 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   matchUpdated(matchId: string, match: MatchResponse): void {
-    getWsManager().broadcastMatchUpdate(matchId, match);
+    this.broadcaster.broadcastMatchUpdate(matchId, match);
   }
 
   phaseChanged(matchId: string, phase: PhaseType): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "phase_changed",
       matchId,
       phase,
@@ -30,7 +38,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   playerJoined(matchId: string, player: PlayerResponse): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "player_joined",
       matchId,
       player,
@@ -38,7 +46,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   playerLeft(matchId: string, playerId: string): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "player_left",
       matchId,
       playerId,
@@ -51,7 +59,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     EffectType: string,
     targetIds: string[],
   ): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "action_submitted",
       matchId,
       actorId,
@@ -61,7 +69,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   }
 
   matchEnded(matchId: string, winner: MatchWinner): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "match_ended",
       matchId,
       winner,
@@ -73,7 +81,7 @@ export class WebSocketPublisher implements RealtimePublisher {
     voterId: string,
     targetId: string | null,
   ): void {
-    getWsManager().broadcastToMatch(matchId, {
+    this.broadcaster.broadcastToMatch(matchId, {
       type: "vote_submitted",
       matchId,
       voterId,
@@ -84,7 +92,7 @@ export class WebSocketPublisher implements RealtimePublisher {
   effectResolved(matchId: string, effect: EffectResult): void {
     switch (effect.type) {
       case "kill":
-        getWsManager().broadcastToMatch(matchId, {
+        this.broadcaster.broadcastToMatch(matchId, {
           type: "player_killed",
           matchId,
           playerId: effect.targetIds[0],
@@ -93,7 +101,7 @@ export class WebSocketPublisher implements RealtimePublisher {
       case "investigate": {
         const alignment = effect.data?.["alignment"] as string | undefined;
         if (alignment) {
-          getWsManager().sendToPlayer(matchId, effect.actorId, {
+          this.broadcaster.sendToPlayer(matchId, effect.actorId, {
             type: "investigate_result",
             matchId,
             actorId: effect.actorId,

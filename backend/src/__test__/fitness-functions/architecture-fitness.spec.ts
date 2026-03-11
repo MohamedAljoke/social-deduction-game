@@ -18,6 +18,10 @@ function getFiles(dir: string, files: string[] = []): string[] {
 describe("Clean Architecture Fitness Functions", () => {
   const domainDir = join(process.cwd(), "src/domain");
   const websocketDir = join(process.cwd(), "src/infrastructure/websocket");
+  const publisherFile = join(
+    process.cwd(),
+    "src/infrastructure/websocket/WebSocketPublisher.ts",
+  );
 
   it("domain must not import from infrastructure", () => {
     const domainFiles = getFiles(domainDir);
@@ -78,5 +82,11 @@ describe("Clean Architecture Fitness Functions", () => {
     }
 
     expect(applicationImports).toEqual([]);
+  });
+
+  it("websocket publisher must not depend on global websocket manager lookup", () => {
+    const content = readFileSync(publisherFile, "utf-8");
+
+    expect(content).not.toContain("getWsManager(");
   });
 });

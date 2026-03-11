@@ -144,8 +144,15 @@ export class WebSocketManager {
   private rooms: Map<string, MatchRoom> = new Map();
   private clients: Map<string, Client> = new Map();
   private clientCounter = 0;
+  private disconnectHandler?: DisconnectHandler;
 
-  constructor(private readonly disconnectHandler?: DisconnectHandler) {}
+  constructor(disconnectHandler?: DisconnectHandler) {
+    this.disconnectHandler = disconnectHandler;
+  }
+
+  setDisconnectHandler(disconnectHandler: DisconnectHandler): void {
+    this.disconnectHandler = disconnectHandler;
+  }
 
   attach(server: Server): void {
     this.wss = new WebSocketServer({ server, path: "/ws" });
