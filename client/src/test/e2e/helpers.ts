@@ -235,14 +235,15 @@ export async function configureTemplates(
   await hostPage.getByRole("button", { name: /configure templates/i }).click();
   await hostPage.waitForURL("**/templates");
 
-  const currentCards = hostPage.getByTestId("template-card");
-  const currentCount = await currentCards.count();
+  const templateCards = hostPage.getByTestId("template-card");
+  await expect(templateCards.first()).toBeVisible();
 
-  for (let index = currentCount; index < templates.length; index++) {
+  while ((await templateCards.count()) < templates.length) {
+    const nextCount = (await templateCards.count()) + 1;
     await hostPage.getByRole("button", { name: /add template/i }).click();
+    await expect(templateCards).toHaveCount(nextCount);
   }
 
-  const templateCards = hostPage.getByTestId("template-card");
   await expect(templateCards).toHaveCount(templates.length);
 
   for (const [index, template] of templates.entries()) {
