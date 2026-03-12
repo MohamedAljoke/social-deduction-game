@@ -114,6 +114,7 @@ function PlayerCard({
       </div>
       {showVoteCount && voteCount > 0 && (
         <div
+          data-testid="vote-count-badge"
           className="mt-1 text-[11px] font-bold rounded-full px-2 py-0.5 inline-block"
           style={{ backgroundColor: "#e94560", color: "#fff" }}
         >

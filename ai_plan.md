@@ -7,221 +7,216 @@ This project is both:
 - a portfolio project
 - a real game used with friends
 
-That means AI should add something visible and interesting, but it should not make the game fragile, expensive, or confusing. The core game engine must stay deterministic and trustworthy.
+That means AI should add something visible and fun without making the game fragile, expensive, or hard to trust.
 
-The project already has a strong architecture style, so AI should follow the same approach:
+## Domain Placement
 
-- clean boundaries
-- swappable infrastructure
-- domain rules remain independent from AI providers
+Using the current architecture and DDD boundaries, the domains should stay separated like this:
+
+- Core domain: match rules, phases, votes, abilities, win conditions
+- Supporting domain: AI narration orchestration and public-event translation
+- Generic domain: model provider integration, HTTP client, auth/config, retries
+
+Important rule:
+
+The AI feature must not enter the core domain. Match rules stay deterministic and fully non-AI.
 
 ## Product Direction
 
-The best first AI use case for this project is an optional AI game master.
+The best first AI feature is an optional AI game master.
 
-Why this is the best first step:
+Why:
 
-- it is fun and visible in a portfolio
-- it improves the game experience without controlling the rules
-- it fits the custom template system well because the narrator can use player names, template names, and match events
-- it avoids the higher complexity of AI bots or full autonomous agents
+- it is visible in a portfolio
+- it adds flavor without changing rules
+- it fits the existing template-based match system
+- it is much lower risk than AI bots
 
-The AI game master should be optional per match, enabled by the host with a toggle in the client.
+The host should enable it per match with a config toggle.
 
-## V1 Goal: AI Game Master
+## Provider Strategy
 
-The first version should be a public narrator that turns game events into short story-like commentary.
+The first provider should be `OpenRouter`, because it offers a free starting path.
 
-Examples of what it can narrate:
+But the implementation must not be tied to `OpenRouter`.
+
+The required decision is:
+
+- `OpenRouter` is the initial provider in v1
+- provider/model selection must sit behind a small backend interface
+- switching later to `OpenAI`, `Anthropic`, or a local model must not require changes to match logic
+
+## V1 Goal
+
+V1 should ship a public narrator that turns public match events into short story-like commentary.
+
+Good narration triggers:
 
 - match start
-- phase transitions
-- public action outcomes
-- deaths or eliminations that are visible to all players
-- end-game winner summary
+- phase changes
+- public kill or elimination outcomes
+- public action resolution summaries
+- winner summary at the end
 
-Examples of what it should not do in v1:
+Out of scope for v1:
 
-- reveal hidden roles
-- reveal private investigation results
-- make decisions for the game engine
-- change match outcomes
-- act as a bot player
+- AI bots
+- hidden-info narration
+- private investigations
+- AI making gameplay decisions
+- heavy RAG or vector database work
 
-The AI output must be presentation only. The backend remains the single source of truth for rules and match state.
-
-## Why Not Bots First
-
-Bots are interesting, but they should not be the first AI feature.
-
-Reasons:
-
-- they require strategy, hidden-information handling, and fairness decisions
-- they change gameplay much more than narration does
-- they create more testing and balancing work
-- they are a worse first step if the goal is a simple free AI feature
-
-Bots can be a future phase after the AI narrator is stable.
-
-## RAG Decision
+## Why Not Full RAG
 
 Full RAG is not the right starting point for this project.
 
-For v1, the main AI input should be structured game state and public match events, not retrieval from a large knowledge base.
-
-The narrator mostly needs:
+For narration, the model mostly needs fresh structured state:
 
 - current phase
-- player list and public statuses
-- public outcomes from actions and votes
-- template names and safe descriptions
-- winner information at the end
+- public player statuses
+- public effects and eliminations
+- template names already present in the match
+- winner information
 
-That is better handled with structured prompting than with a full retrieval system.
+That is a structured prompting problem, not a retrieval problem.
 
-### Recommended approach for v1
+Light retrieval can be added later for rule Q&A, using local docs and rule text. Full RAG should only be considered if the project later grows a large body of custom content or searchable match history.
 
-Use structured state prompting only.
+## Implementation Direction
 
-That means:
+### Existing seam to build on
 
-- build a safe narration context from backend events
-- pass only public information to the model
-- generate short narration messages
+The current flow already gives a clean path:
 
-### When light retrieval makes sense
+1. Domain emits `MatchDomainEvent`
+2. `publishMatchEvents` translates those events for realtime publishing
+3. `RealtimePublisher` pushes websocket events
+4. The client `GameGateway` and `GameSessionService` consume those events
 
-Light retrieval becomes useful if a later feature allows players to ask things like:
+The AI feature should extend that flow rather than create a parallel architecture.
 
-- what does this ability do
-- what does this phase mean
-- what are the rules of this match
+### Required backend boundary
 
-For that, a simple retrieval layer over local rules/docs/template text is enough at first.
+Add a narrow application-layer AI boundary with responsibilities like:
 
-### When full RAG might be justified
+- `AiNarrator`
+  - takes a public narration payload
+  - returns a short narration message
+- `NarrationContextBuilder`
+  - converts match state plus domain events into safe public AI input
+- `PublicNarrationEventMapper`
+  - translates raw domain events and effects into public-only narration triggers
 
-Only consider full RAG later if the project gains a large amount of retrievable content, such as:
+Important implementation rule:
 
-- many rule documents
-- large template libraries
-- match history summaries
-- custom lore or world-building content
+Do not send raw `ActionsResolved` effect data directly to the model. Some effects contain private information, so narration input must come from a public-only translation step.
 
-Until then, full RAG would add complexity without enough benefit.
+### Suggested data flow
 
-## Architecture Direction
+1. Match flow completes normally.
+2. Domain events are emitted as they are today.
+3. Application layer maps eligible events into `PublicNarrationEvent`.
+4. If `aiGameMasterEnabled` is false, stop there.
+5. If enabled, build narration context from:
+   - match id and name
+   - current public match snapshot
+   - public event summary
+   - safe template names
+6. Call the configured AI provider through the narrator interface.
+7. Publish the returned narration as a new realtime event.
+8. If AI fails or times out, log it and continue gameplay normally.
 
-AI should be integrated through a backend boundary, not directly inside domain logic or UI components.
+### Suggested contracts
 
-Recommended shape:
+Match config should grow:
 
-1. Domain emits deterministic match events.
-2. Application layer builds a sanitized public narration context.
-3. AI provider adapter generates narration text.
-4. Transport layer publishes narration to clients.
-5. Client renders narration in a dedicated game master feed.
+- `aiGameMasterEnabled: boolean`
 
-### Important architecture rules
+Backend realtime publisher should grow a public narration method:
 
-- domain rules must never depend on AI output
-- AI failures must not break gameplay
-- hidden information must be filtered before prompt creation
-- model/provider choice must be replaceable
+- `gameMasterMessage(matchId, payload)`
 
-## Suggested Backend Design
+Suggested websocket event shape:
 
-Add an AI port/interface in the backend application layer.
+- `type: "game_master_message"`
+- `matchId: string`
+- `messageId: string`
+- `kind: "start" | "phase" | "resolution" | "elimination" | "end"`
+- `message: string`
+- `createdAt: string`
 
-Example responsibilities:
+Client state should grow a separate narration feed instead of mixing AI text into the existing action list.
 
-- `AiNarrator`: generate public narration for a match event
-- `NarrationContextBuilder`: convert match events and match state into safe prompt input
+### OpenRouter-specific v1 notes
 
-Behind that port, use provider adapters so the implementation can change later without changing the rest of the app.
+The first adapter should be an `OpenRouterNarrationProvider`.
 
-This keeps the current DDD style intact:
+Keep the provider-specific concerns in infrastructure only:
 
-- domain = rules
-- application = orchestration
-- infrastructure = model/provider integration
+- API key handling
+- base URL
+- model id
+- request/response mapping
+- timeout and retry policy
 
-## Suggested Client Design
+Suggested environment config for v1:
 
-Add a new game master feed in the game screen.
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL`
+- optional request timeout config
 
-This feed should:
+## Safety Rules
 
-- show AI narration messages in order
-- be visible only when AI is enabled for the match
-- not replace existing system/game state UI
+The narrator must only know what every player is allowed to know publicly.
 
-The narration feed should complement the current game UI, not become the only way players understand what happened.
+Never include:
 
-## Model Strategy
+- hidden roles that are not publicly revealed
+- investigation results
+- future actions
+- private votes beyond what the game already exposes
+- private ability targets
 
-The first model setup should be free or very low cost, but the code should not be tied to one provider.
+AI output is presentation only. It must never mutate match state or decide outcomes.
 
-Priority order:
+## Client Direction
 
-1. simple integration
-2. safe architecture
-3. low cost
-4. better model quality later if needed
+The client should add a dedicated game master feed on the game screen.
 
-The project should be able to start with a basic provider and switch later to a better hosted or self-hosted model.
+Requirements:
 
-## Risks
-
-Main risks for this feature:
-
-- hidden information leaking through prompts or generated text
-- slow responses during live matches
-- poor narration quality from cheap models
-- coupling the app too tightly to one provider
-
-These risks are manageable if the AI layer stays narrow and public-only in v1.
+- render messages in order
+- show nothing when the match config disables AI
+- keep existing match state UI as the source of truth
+- tolerate delayed or missing narration
 
 ## Success Criteria
 
 The first AI milestone is successful if:
 
 - the host can enable AI per match
-- the AI game master produces narration for important public events
-- narration never affects the actual game rules or state
-- AI failures degrade gracefully
-- the feature is fun enough to use with friends
-- the feature is clear and impressive enough to show in a portfolio
+- a narration message appears for key public match events
+- narration never leaks hidden information
+- provider failures do not break gameplay
+- `OpenRouter` is replaceable without touching core match logic
 
 ## Future Phases
 
-Possible follow-up phases after v1:
+Phase 2:
 
-### Phase 2
+- rules and ability Q&A
+- lightweight retrieval over local docs and ability text
 
-- ask-the-game-master rule Q&A
-- ability explanations
-- phase explanations
+Phase 3:
 
-This is the point where light retrieval over docs and template text may be useful.
+- post-game recap
+- richer end-of-match summaries
 
-### Phase 3
+Phase 4:
 
-- post-game summaries
-- dramatic recaps of who did what
-- match timeline narration
-
-### Phase 4
-
-- AI bot players
-- AI-assisted balancing suggestions for templates
-- smarter role or template generation tools
+- AI bots
+- template generation or balancing helpers
 
 ## Final Recommendation
 
-Start with an optional AI game master that narrates public events.
-
-Do not start with full RAG.
-Do not start with bots.
-
-Use structured state prompting first, preserve clean architecture boundaries, and leave room to add lightweight retrieval later if rule Q&A becomes a real product need.
+Start with an optional AI game master, use `OpenRouter` first, keep the provider swappable, and implement narration through a public-event translation layer in the application boundary.

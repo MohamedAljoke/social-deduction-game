@@ -1,7 +1,12 @@
-// Language configuration - change CURRENT_LANGUAGE to switch between 'en' and 'pt-br'
-const CURRENT_LANGUAGE = 'pt-br';
+// Language can be overridden by Vite env for tests or deployment.
+const DEFAULT_LANGUAGE = "pt-br";
+const configuredLanguage = import.meta.env.VITE_LANGUAGE;
+const CURRENT_LANGUAGE =
+  configuredLanguage === "en" || configuredLanguage === "pt-br"
+    ? configuredLanguage
+    : DEFAULT_LANGUAGE;
 
-type Language = 'en' | 'pt-br';
+type Language = "en" | "pt-br";
 
 interface Translations {
   home: {
@@ -240,8 +245,8 @@ const translations: Record<Language, Translations> = {
       noAbilities: '(No abilities available)',
       youLabel: ' (You)',
       voteCount: {
-        singular: ' vote',
-        plural: ' votes',
+        singular: 'vote',
+        plural: 'votes',
       },
       phases: {
         discussion: {
@@ -380,8 +385,8 @@ const translations: Record<Language, Translations> = {
       noAbilities: '(Nenhuma habilidade disponível)',
       youLabel: ' (Você)',
       voteCount: {
-        singular: ' voto',
-        plural: ' votos',
+        singular: 'voto',
+        plural: 'votos',
       },
       phases: {
         discussion: {
