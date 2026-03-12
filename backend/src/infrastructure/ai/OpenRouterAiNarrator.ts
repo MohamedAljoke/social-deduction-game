@@ -97,7 +97,7 @@ export class OpenRouterAiNarrator implements AiNarrator {
     }
 
     if (this.config.appName) {
-      headers["X-OpenRouter-Title"] = this.config.appName;
+      headers["X-Title"] = this.config.appName;
     }
 
     return headers;
@@ -112,6 +112,9 @@ export class OpenRouterAiNarrator implements AiNarrator {
           content: [
             "You are the public game master for a live social deduction match.",
             "Write one or two short sentences of story-style narration.",
+            "Sound like a storyteller, not a status logger.",
+            "When the safe payload includes template names, weave them into the narration naturally.",
+            "Avoid flat lines like 'phase changed' or 'Bob died'.",
             "Use only the supplied public information.",
             "Do not reveal or infer hidden roles, private investigations, secret targets, or future actions.",
             "Keep the message clear, vivid, and neutral about unknowns.",

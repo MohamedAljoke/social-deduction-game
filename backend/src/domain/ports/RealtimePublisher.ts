@@ -8,6 +8,13 @@ export interface MatchStartedPayload {
   playerAssignments: MatchPlayerAssignment[];
 }
 
+export interface GameMasterMessagePayload {
+  messageId: string;
+  kind: "start" | "phase" | "resolution" | "elimination" | "end";
+  message: string;
+  createdAt: string;
+}
+
 export interface RealtimePublisher {
   matchStarted(matchId: string, payload: MatchStartedPayload): void;
   matchUpdated(matchId: string, match: MatchResponse): void;
@@ -27,4 +34,5 @@ export interface RealtimePublisher {
     targetId: string | null,
   ): void;
   effectResolved(matchId: string, effect: EffectResult): void;
+  gameMasterMessage(matchId: string, payload: GameMasterMessagePayload): void;
 }

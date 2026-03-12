@@ -91,7 +91,7 @@ describe("OpenRouterAiNarrator", () => {
       Authorization: "Bearer test-key",
       "Content-Type": "application/json",
       "HTTP-Referer": "https://portfolio.example",
-      "X-OpenRouter-Title": "Social Deduction Game",
+      "X-Title": "Social Deduction Game",
     });
 
     const body = JSON.parse(String(init?.body));

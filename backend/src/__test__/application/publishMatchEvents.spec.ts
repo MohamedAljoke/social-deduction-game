@@ -17,6 +17,7 @@ function createPublisher(): RealtimePublisher {
     matchEnded: vi.fn(),
     voteSubmitted: vi.fn(),
     effectResolved: vi.fn(),
+    gameMasterMessage: vi.fn(),
   };
 }
 

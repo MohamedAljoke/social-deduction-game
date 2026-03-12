@@ -123,6 +123,7 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
       new StartMatchUseCase(
         c.resolve(TOKENS.MatchRepository),
         c.resolve(TOKENS.RealtimePublisher),
+        c.resolve(TOKENS.AiNarrator),
       ),
   );
 
@@ -138,6 +139,7 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
         c.resolve(TOKENS.MatchRepository),
         c.resolve(TOKENS.RealtimePublisher),
         c.resolve(TOKENS.ActionResolver),
+        c.resolve(TOKENS.AiNarrator),
       ),
   );
 

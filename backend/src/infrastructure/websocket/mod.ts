@@ -48,6 +48,14 @@ export type ServerEvent =
   | { type: "player_killed"; matchId: string; playerId: string }
   | { type: "match_ended"; matchId: string; winner: unknown }
   | {
+      type: "game_master_message";
+      matchId: string;
+      messageId: string;
+      kind: "start" | "phase" | "resolution" | "elimination" | "end";
+      message: string;
+      createdAt: string;
+    }
+  | {
       type: "investigate_result";
       matchId: string;
       actorId: string;

@@ -1,3 +1,5 @@
+import { AiNarrator } from "./ai/AiNarrator";
+import { publishMatchNarration } from "./ai/publishMatchNarration";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
@@ -26,6 +28,7 @@ export class StartMatchUseCase {
   constructor(
     private readonly matchRepository: MatchRepository,
     private readonly publisher: RealtimePublisher,
+    private readonly narrator: AiNarrator,
   ) {}
 
   async execute(input: StartMatchInput): Promise<MatchResponse> {
@@ -54,7 +57,9 @@ export class StartMatchUseCase {
     await this.matchRepository.save(match);
 
     const result = match.toJSON();
-    publishMatchEvents(match.pullEvents(), result, this.publisher);
+    const events = match.pullEvents();
+    publishMatchEvents(events, result, this.publisher);
+    void publishMatchNarration(events, result, this.narrator, this.publisher);
 
     return result;
   }

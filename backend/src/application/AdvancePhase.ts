@@ -1,3 +1,5 @@
+import { AiNarrator } from "./ai/AiNarrator";
+import { publishMatchNarration } from "./ai/publishMatchNarration";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchNotFound } from "../domain/errors";
@@ -14,6 +16,7 @@ export class AdvancePhaseUseCase {
     private readonly matchRepository: MatchRepository,
     private readonly publisher: RealtimePublisher,
     private readonly actionResolver: ActionResolver,
+    private readonly narrator: AiNarrator,
   ) {}
 
   async execute(input: AdvancePhaseInput): Promise<MatchResponse> {
@@ -32,7 +35,9 @@ export class AdvancePhaseUseCase {
     await this.matchRepository.save(match);
 
     const result = match.toJSON();
-    publishMatchEvents(match.pullEvents(), result, this.publisher);
+    const events = match.pullEvents();
+    publishMatchEvents(events, result, this.publisher);
+    void publishMatchNarration(events, result, this.narrator, this.publisher);
 
     return result;
   }
