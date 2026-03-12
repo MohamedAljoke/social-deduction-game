@@ -5,7 +5,7 @@ async function bootstrap() {
   const server = createApp();
 
   if (process.env.NODE_ENV === "production") {
-    const clientDist = path.join(__dirname, "../../client/dist");
+    const clientDist = path.join(__dirname, "../../../client");
     server.serveStatic(clientDist);
   }
 

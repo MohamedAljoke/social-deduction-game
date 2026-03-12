@@ -12,7 +12,7 @@
     "build:client": "npm run build --prefix ./client",
     "build:server": "npm run build --prefix ./backend",
     "build": "npm run build:server && npm run build:client",
-    "start": "NODE_ENV=production node ./backend/dist/backend/src/main.js",
+    "start": "NODE_ENV=production NODE_PATH=./backend/node_modules node ./dist/server/backend/src/main.js",
     "test:client": "npm run test --prefix ./client",
     "test:server": "npm run test --prefix ./backend",
     "dev:client": "npm run dev --prefix ./client",
