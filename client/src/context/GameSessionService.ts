@@ -93,7 +93,10 @@ export class GameSessionService {
 
   async createMatch(
     name: string,
-    config?: { showVotingTransparency?: boolean },
+    config?: {
+      showVotingTransparency?: boolean;
+      aiGameMasterEnabled?: boolean;
+    },
   ): Promise<void> {
     const created = await this.api.createMatch({ name, config });
     const joined = await this.api.joinMatch(created.id, name);

@@ -12,11 +12,13 @@ export function HomeScreen() {
     playerName,
     matchCode,
     openVoting,
+    aiGameMasterEnabled,
     loading,
     error,
     setPlayerName,
     setMatchCode,
     setOpenVoting,
+    setAiGameMasterEnabled,
     toggleMode,
     submit,
   } = useHomeScreen();
@@ -64,33 +66,63 @@ export function HomeScreen() {
             )}
 
             {isCreate && (
-              <div
-                className="mb-5 p-4 rounded-xl flex items-center justify-between"
-                style={{
-                  backgroundColor: "#1a1a2e",
-                  border: "2px solid #2a2a4a",
-                }}
-              >
-                <div>
-                  <div
-                    className="text-xs uppercase tracking-wider"
-                    style={{ color: "#a0a0b8" }}
-                  >
-                    {t('home.openVoting')}
+              <>
+                <div
+                  className="mb-4 p-4 rounded-xl flex items-center justify-between"
+                  style={{
+                    backgroundColor: "#1a1a2e",
+                    border: "2px solid #2a2a4a",
+                  }}
+                >
+                  <div>
+                    <div
+                      className="text-xs uppercase tracking-wider"
+                      style={{ color: "#a0a0b8" }}
+                    >
+                      {t('home.openVoting')}
+                    </div>
+                    <div className="text-sm" style={{ color: "#6b6b80" }}>
+                      {t('home.openVotingDesc')}
+                    </div>
                   </div>
-                  <div className="text-sm" style={{ color: "#6b6b80" }}>
-                    {t('home.openVotingDesc')}
-                  </div>
+                  <input
+                    id="openVoting"
+                    type="checkbox"
+                    checked={openVoting}
+                    onChange={(e) => setOpenVoting(e.target.checked)}
+                    aria-label={t('home.openVoting')}
+                    className="w-5 h-5 cursor-pointer accent-[#e94560]"
+                  />
                 </div>
-                <input
-                  id="openVoting"
-                  type="checkbox"
-                  checked={openVoting}
-                  onChange={(e) => setOpenVoting(e.target.checked)}
-                  aria-label="Open Voting"
-                  className="w-5 h-5 cursor-pointer accent-[#e94560]"
-                />
-              </div>
+
+                <div
+                  className="mb-5 p-4 rounded-xl flex items-center justify-between"
+                  style={{
+                    backgroundColor: "#1a1a2e",
+                    border: "2px solid #2a2a4a",
+                  }}
+                >
+                  <div>
+                    <div
+                      className="text-xs uppercase tracking-wider"
+                      style={{ color: "#a0a0b8" }}
+                    >
+                      {t('home.aiGameMaster')}
+                    </div>
+                    <div className="text-sm" style={{ color: "#6b6b80" }}>
+                      {t('home.aiGameMasterDesc')}
+                    </div>
+                  </div>
+                  <input
+                    id="aiGameMasterEnabled"
+                    type="checkbox"
+                    checked={aiGameMasterEnabled}
+                    onChange={(e) => setAiGameMasterEnabled(e.target.checked)}
+                    aria-label={t('home.aiGameMaster')}
+                    className="w-5 h-5 cursor-pointer accent-[#e94560]"
+                  />
+                </div>
+              </>
             )}
 
             <Button type="submit" loading={loading}>

@@ -11,6 +11,7 @@ export const CreateMatchSchema = z
     config: z
       .object({
         showVotingTransparency: z.boolean().optional(),
+        aiGameMasterEnabled: z.boolean().optional(),
       })
       .optional(),
   })

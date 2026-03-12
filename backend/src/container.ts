@@ -1,4 +1,5 @@
 import { CreateMatchUseCase } from "./application/CreateMatch";
+import { AiNarrator } from "./application/ai/AiNarrator";
 import { ListMatchesUseCase } from "./application/ListMatchs";
 import { JoinMatchUseCase } from "./application/JoinMatch";
 import { LeaveMatchUseCase } from "./application/LeaveMatch";
@@ -15,6 +16,7 @@ import {
   MatchBroadcaster,
   WebSocketPublisher,
 } from "./infrastructure/websocket/WebSocketPublisher";
+import { NoopAiNarrator } from "./infrastructure/ai/NoopAiNarrator";
 import { ActionResolver, ActionResolverFactory } from "./domain/services/resolution";
 
 // Branded token type used for type-safe dependency resolution.
@@ -27,6 +29,7 @@ export type Token<T> = string & { __type?: T };
 export const TOKENS = {
   MatchRepository: "MatchRepository" as Token<MatchRepository>,
   RealtimePublisher: "RealtimePublisher" as Token<RealtimePublisher>,
+  AiNarrator: "AiNarrator" as Token<AiNarrator>,
   CreateMatchUseCase: "CreateMatchUseCase" as Token<CreateMatchUseCase>,
   ListMatchesUseCase: "ListMatchesUseCase" as Token<ListMatchesUseCase>,
   JoinMatchUseCase: "JoinMatchUseCase" as Token<JoinMatchUseCase>,
@@ -90,6 +93,10 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
     () => new WebSocketPublisher(matchBroadcaster),
     { singleton: true },
   );
+
+  container.register(TOKENS.AiNarrator, () => new NoopAiNarrator(), {
+    singleton: true,
+  });
 
   container.register(
     TOKENS.CreateMatchUseCase,

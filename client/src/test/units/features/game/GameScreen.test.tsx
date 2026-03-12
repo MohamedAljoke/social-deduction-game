@@ -48,7 +48,7 @@ const match: Match = {
   actions: [],
   votes: [],
   createdAt: "2026-01-01T00:00:00.000Z",
-  config: { showVotingTransparency: true },
+  config: { showVotingTransparency: true, aiGameMasterEnabled: false },
 };
 
 describe("GameScreen", () => {

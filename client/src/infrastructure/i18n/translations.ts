@@ -20,6 +20,8 @@ interface Translations {
     matchIdPlaceholder: string;
     openVoting: string;
     openVotingDesc: string;
+    aiGameMaster: string;
+    aiGameMasterDesc: string;
     createBtn: string;
     joinBtn: string;
     joinGameTitle: string;
@@ -162,6 +164,8 @@ const translations: Record<Language, Translations> = {
       matchIdPlaceholder: 'Enter match ID',
       openVoting: 'Open Voting',
       openVotingDesc: 'Show who votes for whom in real time',
+      aiGameMaster: 'AI Game Master',
+      aiGameMasterDesc: 'Enable public story-style narration during the match',
       createBtn: 'Create Game',
       joinBtn: 'Join Game',
       joinGameTitle: 'Join Existing Game',
@@ -302,6 +306,8 @@ const translations: Record<Language, Translations> = {
       matchIdPlaceholder: 'Digite o ID da partida',
       openVoting: 'Votação Aberta',
       openVotingDesc: 'Mostrar quem vota em quem em tempo real',
+      aiGameMaster: 'Mestre de Jogo IA',
+      aiGameMasterDesc: 'Ativar narração pública em estilo de história durante a partida',
       createBtn: 'Criar Jogo',
       joinBtn: 'Entrar no Jogo',
       joinGameTitle: 'Entrar em Jogo Existente',

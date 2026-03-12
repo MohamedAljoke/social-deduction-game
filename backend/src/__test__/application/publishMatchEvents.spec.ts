@@ -31,7 +31,7 @@ function createMatchResponse(): MatchResponse {
     actions: [],
     templates: [],
     votes: [],
-    config: { showVotingTransparency: true },
+    config: { showVotingTransparency: true, aiGameMasterEnabled: false },
     winner: { kind: "alignment", alignment: Alignment.Hero },
     winnerAlignment: Alignment.Hero,
     endedAt: new Date("2026-03-10T12:05:00.000Z"),

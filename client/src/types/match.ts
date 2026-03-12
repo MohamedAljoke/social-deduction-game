@@ -61,6 +61,7 @@ export interface Match {
   votes?: Array<{ voterId: string; targetId: string | null }>;
   config: {
     showVotingTransparency: boolean;
+    aiGameMasterEnabled: boolean;
   };
   winner?: MatchWinner | null;
   winnerAlignment?: Alignment | null;
@@ -85,5 +86,6 @@ export interface CreateMatchInput {
   name: string;
   config?: {
     showVotingTransparency?: boolean;
+    aiGameMasterEnabled?: boolean;
   };
 }
