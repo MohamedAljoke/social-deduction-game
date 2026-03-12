@@ -104,6 +104,12 @@ export class MatchNotStarted extends DomainError {
   }
 }
 
+export class MatchNotFinished extends DomainError {
+  constructor() {
+    super("Match must be finished to start a rematch", "match_not_finished");
+  }
+}
+
 export class PlayerNotInMatch extends DomainError {
   constructor() {
     super("Player is not part of this match", "player_not_in_match");

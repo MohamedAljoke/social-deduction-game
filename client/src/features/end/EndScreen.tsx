@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, Button, Avatar } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
@@ -23,9 +24,18 @@ const WINNER_THEME: Record<Alignment, { label: string; gradient: string }> = {
 export function EndScreen() {
   const { state, service } = useGame();
   const { match } = state;
+  const [loading, setLoading] = useState(false);
 
-  const handlePlayAgain = () => {
-    service.leave();
+  const handlePlayAgain = async () => {
+    if (!match) return;
+    setLoading(true);
+    try {
+      await service.rematch(match.id);
+    } catch {
+      alert(t('end.errorRematch'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!match) {
@@ -95,8 +105,24 @@ export function EndScreen() {
             })}
           </div>
 
-          <Button onClick={handlePlayAgain}>
-            {t('end.playAgain')}
+          {state.isHost ? (
+            <Button onClick={() => void handlePlayAgain()} loading={loading}>
+              {loading ? t('end.startingRematch') : t('end.playAgain')}
+            </Button>
+          ) : (
+            <div
+              className="rounded-xl px-4 py-3 text-sm text-center mb-3"
+              style={{ backgroundColor: '#1a1a2e', color: '#a0a0b8' }}
+            >
+              {t('end.waitingForHostRematch')}
+            </div>
+          )}
+          <Button
+            onClick={() => service.leave()}
+            variant="secondary"
+            className={state.isHost ? "mt-3" : ""}
+          >
+            {t('end.leaveGame')}
           </Button>
         </Card>
       </div>

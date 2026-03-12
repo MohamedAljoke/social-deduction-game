@@ -15,6 +15,7 @@ import { GAME_ACTIONS } from "../types/gameActions";
 import type {
   Match,
   Player,
+  Template,
   WinCondition,
   WinConditionConfig,
 } from "../types/match";
@@ -118,7 +119,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         match: action.payload.match,
       };
     case GAME_ACTIONS.UPDATE_MATCH:
-      return { ...state, match: action.payload };
+      return {
+        ...state,
+        match: action.payload,
+        configuredTemplates:
+          action.payload.status === "lobby" && action.payload.templates.length > 0
+            ? action.payload.templates.map(mapTemplateToConfig)
+            : state.configuredTemplates,
+        selectedAbility:
+          action.payload.status === "lobby" ? null : state.selectedAbility,
+        selectedTarget:
+          action.payload.status === "lobby" ? null : state.selectedTarget,
+        selectedVote:
+          action.payload.status === "lobby" ? null : state.selectedVote,
+        investigateResult:
+          action.payload.status === "lobby" ? null : state.investigateResult,
+      };
     case GAME_ACTIONS.SET_PHASE:
       if (!state.match) return state;
       return {
@@ -254,3 +270,13 @@ export function useGameContext(): GameContextValue {
 }
 
 export const useGame = useGameContext;
+
+function mapTemplateToConfig(template: Template): TemplateConfig {
+  return {
+    name: template.name,
+    alignment: template.alignment,
+    abilities: template.abilities.map((ability) => ability.id),
+    winCondition: template.winCondition ?? "team_parity",
+    winConditionConfig: template.winConditionConfig ?? undefined,
+  };
+}

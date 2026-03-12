@@ -1,44 +1,53 @@
-# Status: DONE (2026-03-11) — all 4 scaling risks addressed.
-See commit history for implementation details.
+# Plan: Same-Lobby Rematch
 
----
+## Goal
 
-It will scale to 10 more abilities, but only if you tighten a few boundaries now.
+Allow a finished match to start another round in the same lobby code, keeping the same player roster, host, config, and template setup.
 
-The good part is the core shape is sound:
+## Product Behavior
 
-- ability identity lives in EffectType
-- execution is delegated to per-ability handlers
-- ActionResolver gives you stage-based ordering
-- Match remains the authority for cross-phase rules
+- Only the host can trigger rematch from the end screen.
+- Rematch keeps the same match code instead of creating a linked/new match.
+- Connected players are moved back to the lobby through the normal `match_updated` flow.
+- Previous templates are preserved and prefilled so the host can edit them or start immediately.
+- Players can still leave instead of waiting for the next round.
+- Disconnected players rely only on the existing reconnect/session behavior.
 
-That is a reasonable foundation for a dozen or two abilities.
+## Backend Changes
 
-The main scaling risks are these:
+- Add `POST /match/:matchId/rematch`.
+- Allow rematch only when the match status is `finished`.
+- Reset the existing match in place:
+  - `status -> lobby`
+  - `phase -> discussion`
+  - clear winner, winnerAlignment, endedAt
+  - clear votes, actions, and temporary round statuses
+  - reset all players to `alive`
+  - clear previous round template assignments
+- Keep match id, player order, config, and templates unchanged.
+- Publish the updated lobby snapshot through the existing realtime update path.
 
-- Too many duplicated ability registries.
-  You already have backend enum/stage/priority plus frontend labels/metadata/template lists/test unions. Adding abilities will keep causing drift. This is the first
-  place the design will hurt.
-- ResolutionContext is still stringly typed.
-  modifiers, EffectResult.type, and parts of StateChange are loosely modeled. That gets fragile once abilities start composing.
-- Cross-phase state will accumulate inside Match.
-  voteShieldedPlayerIds is fine by itself, but if you add 5-6 persistent effects, Match can turn into a bag of special-case sets/maps unless you introduce a clearer
-  status/effect model.
-- Stages are coarse.
-  TARGET_MUTATION / DEFENSIVE / CANCELLATION / OFFENSIVE / READ is enough for now, but more reactive abilities can create awkward ordering disputes.
+## Frontend Changes
 
-My recommendation:
+- Add rematch support to the REST client and session service.
+- Change the host end-screen action from leave-home to rematch.
+- Keep a leave action on the end screen for all players.
+- When the match snapshot returns to `lobby`, clear round-only local UI state and hydrate template-builder state from the preserved templates.
+- Reuse the existing route guards so `/end` transitions back to `/lobby` automatically.
 
-- Keep the handler-based model.
-- Centralize ability definitions into one shared capability registry per layer.
-- Make resolution types stricter.
-- Introduce a dedicated persisted status/effect model before you add many more cross-phase abilities.
+## Tests
 
-Concretely, if you keep expanding this system, I’d do these next:
+- Backend:
+  - finished match resets to same lobby with same id, players, and templates
+  - rematch rejects matches that are not finished
+- Frontend:
+  - host end screen calls rematch
+  - non-host end screen waits for host
+  - reducer clears round selections and restores configured templates on rematch
 
-1. Create a backend ABILITY_DEFINITIONS registry that owns stage, priority, targeting rules, and maybe display metadata.
-2. Derive frontend metadata from a shared contract or generated schema instead of hand-maintaining parallel maps.
-3. Replace freeform modifier/result strings with unions or typed objects.
-4. If more persistent effects are coming, add something like matchEffects or playerStatuses rather than one field per ability.
+## Acceptance Criteria
 
-So: yes, it scales moderately well from here, but it will start degrading if you keep adding abilities without consolidating configuration and persistent-effect
+- A completed match can be restarted without creating a new code.
+- All players in the room return to the lobby when the host triggers rematch.
+- Template setup is preserved for the next round.
+- The implementation adds no separate lobby aggregate, reservation system, or linked-match flow.

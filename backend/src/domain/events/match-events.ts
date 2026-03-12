@@ -46,4 +46,8 @@ export type MatchDomainEvent =
       type: "MatchEnded";
       matchId: string;
       winner: MatchWinner;
+    }
+  | {
+      type: "MatchRematched";
+      matchId: string;
     };

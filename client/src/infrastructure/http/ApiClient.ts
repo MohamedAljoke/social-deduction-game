@@ -48,6 +48,15 @@ export class ApiClient {
     return response.json();
   }
 
+  async rematch(matchId: string): Promise<Match> {
+    const response = await fetch(`${this.baseUrl}/match/${matchId}/rematch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to start rematch");
+    return response.json();
+  }
+
   async useAbility(
     matchId: string,
     actorId: string,

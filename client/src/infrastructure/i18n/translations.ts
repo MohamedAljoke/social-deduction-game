@@ -127,6 +127,10 @@ interface Translations {
     endedAt: string;
     roleReveal: string;
     playAgain: string;
+    startingRematch: string;
+    waitingForHostRematch: string;
+    leaveGame: string;
+    errorRematch: string;
     heroesWin: string;
     villainsWin: string;
     neutralsWin: string;
@@ -265,6 +269,10 @@ const translations: Record<Language, Translations> = {
       endedAt: 'Ended at ',
       roleReveal: 'Role Reveal',
       playAgain: 'Play Again',
+      startingRematch: 'Starting Rematch...',
+      waitingForHostRematch: 'Waiting for the host to start a rematch',
+      leaveGame: 'Leave Game',
+      errorRematch: 'Failed to start rematch',
       heroesWin: 'Heroes win',
       villainsWin: 'Villains win',
       neutralsWin: 'Neutrals win',
@@ -401,6 +409,10 @@ const translations: Record<Language, Translations> = {
       endedAt: 'Terminou em ',
       roleReveal: 'Revelação de Papéis',
       playAgain: 'Jogar Novamente',
+      startingRematch: 'Iniciando Nova Partida...',
+      waitingForHostRematch: 'Aguardando o anfitrião iniciar uma nova partida',
+      leaveGame: 'Sair do Jogo',
+      errorRematch: 'Falha ao iniciar nova partida',
       heroesWin: 'Heróis vencem',
       villainsWin: 'Vilões vencem',
       neutralsWin: 'Neutros vencem',

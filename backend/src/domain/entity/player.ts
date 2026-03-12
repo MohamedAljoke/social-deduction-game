@@ -51,6 +51,11 @@ export class Player {
     return this.templateId;
   }
 
+  public resetForRematch(): void {
+    this.status = PlayerStatus.ALIVE;
+    this.templateId = undefined;
+  }
+
   public toJSON() {
     return {
       id: this.id,

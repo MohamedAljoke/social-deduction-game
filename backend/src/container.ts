@@ -7,6 +7,7 @@ import { UseAbilityUseCase } from "./application/UseAbility";
 import { AdvancePhaseUseCase } from "./application/AdvancePhase";
 import { SubmitVoteUseCase } from "./application/SubmitVote";
 import { GetMatchUseCase } from "./application/GetMatch";
+import { RematchMatchUseCase } from "./application/RematchMatch";
 import { RealtimePublisher } from "./domain/ports/RealtimePublisher";
 import { MatchRepository } from "./domain/ports/persistance/MatchRepository";
 import { InMemoryMatchRepository } from "./infrastructure/persistence/InMemoryMatchRepository";
@@ -35,6 +36,7 @@ export const TOKENS = {
   AdvancePhaseUseCase: "AdvancePhaseUseCase" as Token<AdvancePhaseUseCase>,
   SubmitVoteUseCase: "SubmitVoteUseCase" as Token<SubmitVoteUseCase>,
   GetMatchUseCase: "GetMatchUseCase" as Token<GetMatchUseCase>,
+  RematchMatchUseCase: "RematchMatchUseCase" as Token<RematchMatchUseCase>,
   ActionResolver: "ActionResolver" as Token<ActionResolver>,
 };
 
@@ -144,6 +146,15 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
   container.register(
     TOKENS.GetMatchUseCase,
     (c) => new GetMatchUseCase(c.resolve(TOKENS.MatchRepository)),
+  );
+
+  container.register(
+    TOKENS.RematchMatchUseCase,
+    (c) =>
+      new RematchMatchUseCase(
+        c.resolve(TOKENS.MatchRepository),
+        c.resolve(TOKENS.RealtimePublisher),
+      ),
   );
 
   container.register(

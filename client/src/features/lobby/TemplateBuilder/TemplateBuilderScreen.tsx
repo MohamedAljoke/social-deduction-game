@@ -6,6 +6,7 @@ import { Logo } from "../../../shared/ui/Logo";
 import { useGame } from "../../../context/GameContext";
 import { GAME_ACTIONS } from "../../../types/gameActions";
 import { t } from "@/infrastructure/i18n/translations";
+import type { Template } from "@/types/match";
 
 const ABILITY_IDS = [
   { id: "kill", icon: "🗡️" },
@@ -83,6 +84,8 @@ export function TemplateBuilderScreen() {
   const templates =
     state.configuredTemplates.length > 0
       ? state.configuredTemplates
+      : state.match && state.match.templates.length > 0
+        ? state.match.templates.map(mapMatchTemplateToBuilderTemplate)
       : DEFAULT_TEMPLATES;
 
   const updateTemplate = (
@@ -357,4 +360,14 @@ export function TemplateBuilderScreen() {
       </div>
     </ScreenContainer>
   );
+}
+
+function mapMatchTemplateToBuilderTemplate(template: Template) {
+  return {
+    name: template.name,
+    alignment: template.alignment,
+    abilities: template.abilities.map((ability) => ability.id),
+    winCondition: template.winCondition ?? "team_parity",
+    winConditionConfig: template.winConditionConfig ?? undefined,
+  };
 }

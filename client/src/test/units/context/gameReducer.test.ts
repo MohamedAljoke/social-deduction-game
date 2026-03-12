@@ -26,6 +26,7 @@ const baseState: GameState = {
   selectedTarget: null,
   selectedVote: null,
   configuredTemplates: [],
+  investigateResult: null,
 };
 
 const newPlayer: Player = { id: "player-2", name: "Bob", status: "alive" };
@@ -95,5 +96,53 @@ describe("gameReducer — REMOVE_PLAYER", () => {
       payload: "player-1",
     });
     expect(next).toBe(noMatch);
+  });
+});
+
+describe("gameReducer — UPDATE_MATCH", () => {
+  it("hydrates configured templates and clears round selections when match returns to lobby", () => {
+    const startedState: GameState = {
+      ...baseState,
+      selectedAbility: "kill",
+      selectedTarget: "player-2",
+      selectedVote: "player-2",
+      investigateResult: { targetId: "player-2", alignment: "villain" },
+      match: {
+        ...baseMatch,
+        status: "finished",
+      },
+    };
+
+    const next = gameReducer(startedState, {
+      type: GAME_ACTIONS.UPDATE_MATCH,
+      payload: {
+        ...baseMatch,
+        status: "lobby",
+        templates: [
+          {
+            id: "template-1",
+            name: "Guardian",
+            alignment: "hero",
+            abilities: [{ id: "protect" }],
+            winCondition: "team_parity",
+            winConditionConfig: null,
+          },
+        ],
+      },
+    });
+
+    expect(next.selectedAbility).toBeNull();
+    expect(next.selectedTarget).toBeNull();
+    expect(next.selectedVote).toBeNull();
+    expect(next.investigateResult).toBeNull();
+    expect(next.configuredTemplates).toEqual([
+      {
+        name: "Guardian",
+        alignment: "hero",
+        abilities: ["protect"],
+        winCondition: "team_parity",
+        winConditionConfig: undefined,
+      },
+    ]);
   });
 });

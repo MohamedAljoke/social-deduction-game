@@ -92,6 +92,7 @@ features/ (UI)                    infrastructure/http  (REST)
 - REST for match creation and commands (start, ability, phase)
 - WebSocket for real-time domain events pushed to all room members
 - Backend is authoritative — frontend renders state received from server
+- Finished matches can be reset into the same lobby code for another round, preserving players and template setup
 
 ---
 

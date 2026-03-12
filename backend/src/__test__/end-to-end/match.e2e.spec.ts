@@ -6,6 +6,7 @@ import { EffectType } from "../../domain/entity/ability";
 import {
   InsufficientPlayers,
   MatchAlreadyStarted,
+  MatchNotFinished,
   MatchNotFound,
   InvalidPhase,
   AbilityDoesNotBelongToUser,
@@ -365,6 +366,101 @@ describe("Match E2E", () => {
           }),
         ]),
       );
+    });
+  });
+
+  describe("RematchMatch UseCase", () => {
+    it("should reset a finished match back to the same lobby", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+
+      const { body: started } = await startMatchWithTemplatesHelper(match.id, [
+        {
+          name: "Assassin",
+          alignment: Alignment.Villain,
+          abilities: [{ id: EffectType.Kill }],
+        },
+        {
+          name: "Guardian",
+          alignment: Alignment.Hero,
+          abilities: [{ id: EffectType.Protect }],
+        },
+      ]);
+
+      const villain = started.players.find(
+        (player) => findTemplateAlignment(started, player.id) === Alignment.Villain,
+      );
+      const hero = started.players.find(
+        (player) => findTemplateAlignment(started, player.id) === Alignment.Hero,
+      );
+
+      expect(villain).toBeDefined();
+      expect(hero).toBeDefined();
+
+      await advancePhaseHelper(match.id); // discussion -> voting
+      await submitVoteHelper(match.id, hero!.id, villain!.id);
+      const { body: finished } = await advancePhaseHelper(match.id); // voting -> action
+
+      expect(finished.status).toBe(MatchStatus.FINISHED);
+      expect(finished.endedAt).toEqual(expect.any(String));
+
+      const { response, body: rematched } = await rematchMatchHelper(match.id);
+
+      expect(response.status).toBe(200);
+      expect(rematched).toMatchObject({
+        id: match.id,
+        status: MatchStatus.LOBBY,
+        winner: null,
+        winnerAlignment: null,
+        endedAt: null,
+      });
+      expect(rematched.phase).toBe("discussion");
+      expect(rematched.actions).toEqual([]);
+      expect(rematched.votes).toEqual([]);
+      expect(rematched.players).toEqual([
+        expect.objectContaining({
+          id: started.players[0].id,
+          name: started.players[0].name,
+          status: "alive",
+          templateId: undefined,
+        }),
+        expect.objectContaining({
+          id: started.players[1].id,
+          name: started.players[1].name,
+          status: "alive",
+          templateId: undefined,
+        }),
+      ]);
+      expect(rematched.templates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: "Assassin",
+            alignment: Alignment.Villain,
+            abilities: [{ id: EffectType.Kill }],
+          }),
+          expect.objectContaining({
+            name: "Guardian",
+            alignment: Alignment.Hero,
+            abilities: [{ id: EffectType.Protect }],
+          }),
+        ]),
+      );
+    });
+
+    it("should reject rematch when the match is not finished", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+
+      const { response, body } = await rematchMatchHelper(match.id);
+
+      expect(response.status).toBe(400);
+      expect(body).toMatchObject({
+        error: new MatchNotFinished().code,
+        message: new MatchNotFinished().message,
+      });
     });
   });
 
@@ -1203,6 +1299,7 @@ async function startMatchHelper(matchId: string): Promise<{
 async function startMatchWithTemplatesHelper(
   matchId: string,
   templates: {
+    name?: string;
     alignment: Alignment;
     abilities: { id: EffectType }[];
   }[],
@@ -1220,6 +1317,25 @@ async function startMatchWithTemplatesHelper(
       body: JSON.stringify({
         templates,
       }),
+    },
+  );
+
+  const body = (await response.json()) as MatchResponse;
+
+  return { body, response };
+}
+
+async function rematchMatchHelper(matchId: string): Promise<{
+  body: MatchResponse;
+  response: Response;
+}> {
+  const response = await fetch(
+    `http://localhost:${port}/match/${matchId}/rematch`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
     },
   );
 

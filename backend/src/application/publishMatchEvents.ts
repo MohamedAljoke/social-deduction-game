@@ -38,6 +38,8 @@ export function publishMatchEvents(
       case "MatchEnded":
         deferredEvents.push(event);
         break;
+      case "MatchRematched":
+        break;
     }
   }
 

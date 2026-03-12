@@ -2,7 +2,11 @@ import { Player, type MatchPlayerStatus } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Alignment, Template } from "./template";
-import { MatchAlreadyStarted, MatchNotStarted } from "../errors";
+import {
+  MatchAlreadyStarted,
+  MatchNotFinished,
+  MatchNotStarted,
+} from "../errors";
 import { EffectType } from "./ability";
 import {
   AbilityActionFactory,
@@ -168,6 +172,27 @@ export class Match {
 
     const playerAssignments = this.buildPlayerAssignments();
     this.emit({ type: "MatchStarted", matchId: this.id, playerAssignments });
+  }
+
+  public rematch(): void {
+    if (this.status !== MatchStatus.FINISHED) {
+      throw new MatchNotFinished();
+    }
+
+    this.status = MatchStatus.LOBBY;
+    this.phase = new Phase();
+    this.actions = [];
+    this.voting.clear();
+    this.winner = null;
+    this.winnerAlignment = null;
+    this.endedAt = null;
+    this.playerStatuses.clear();
+
+    for (const player of this.players) {
+      player.resetForRematch();
+    }
+
+    this.emit({ type: "MatchRematched", matchId: this.id });
   }
 
   public addPlayer(player: Player): void {

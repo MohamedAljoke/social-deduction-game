@@ -43,6 +43,15 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     res.status(200).json(match);
   });
 
+  server.register("post", "/match/:matchId/rematch", async (req, res) => {
+    const useCase = container.resolve(TOKENS.RematchMatchUseCase);
+    const { matchId } = req.params;
+
+    const result = await useCase.execute({ matchId });
+
+    res.status(200).json(result);
+  });
+
   server.register(
     "post",
     "/match/:matchId/join",

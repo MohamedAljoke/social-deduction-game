@@ -132,6 +132,11 @@ export class GameSessionService {
     this.dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: match });
   }
 
+  async rematch(matchId: string): Promise<void> {
+    const match = await this.api.rematch(matchId);
+    this.dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: match });
+  }
+
   async useAbility(
     matchId: string,
     playerId: string,
