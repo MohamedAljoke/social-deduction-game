@@ -1,124 +1,227 @@
 # Social Deduction Game
 
-A real-time multiplayer social deduction game built with:
+**Live Demo:**\
+https://social-deduction-game-tvek.onrender.com/
+
+A **real-time multiplayer social deduction game** built to explore
+**clean architecture, real-time systems, and scalable backend design**
+using TypeScript.
+
+Players join a lobby, receive secret roles, and attempt to uncover the
+impostors through discussion, abilities, and voting.
+
+This project focuses on **engineering architecture**, not just gameplay.
+
+---
+
+# Preview
+
+Features a **live multiplayer session**, including:
+
+- Lobby creation and player join
+- Role assignment
+- Game phases (night/day)
+- Voting system
+- Player abilities
+- AI-generated game narration
+- Rematch system
+
+---
+
+# Tech Stack
+
+## Backend
 
 - TypeScript
-- Clean Architecture (DDD-inspired backend)
-- WebSockets for real-time gameplay
-- Feature-oriented frontend structure
+- Node.js
+- WebSockets
+- Clean Architecture (DDD-inspired)
+- Vitest
+
+## Frontend
+
+- React
+- Vite
+- TypeScript
+- Playwright (E2E tests)
+
+## AI Integration
+
+Optional **AI Game Master** capable of narrating events using:
+
+- Gemini
+- OpenRouter
+- Failover provider strategy
 
 ---
 
-## Quick Navigation
+# Architecture Overview
 
-| What you need                        | Where to look                            |
-| ------------------------------------ | ---------------------------------------- |
-| Backend architecture & key files     | [`backend/README.md`](backend/README.md) |
-| Frontend architecture & WS lifecycle | [`client/README.md`](client/README.md)   |
+Frontend Backend ────────────────────────────────────────────────────
+React UI REST API features/ infrastructure/http ↓ ↓ GameSessionService →
+application use cases ↓ ↓ GameGateway (WebSocket) ← domain events ↓ ↓
+React state domain entities Match Player GamePhase
 
----
+### Key Principles
 
-## Monorepo Structure
-
-```
-social-deduction-game/
-├── backend/     # DDD-based API + WebSocket server (port 3000)
-├── client/      # React frontend (Vite)
-├── docs/
-└── package.json
-```
-
-### Key Source Files
-
-**Backend**
-
-| File                                                       | Purpose                                                                  |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `backend/src/domain/entity/match.ts`                       | Core Match aggregate (start, rematch, advancePhase, resolveActions…)    |
-| `backend/src/application/`                                 | Use cases: CreateMatch, JoinMatch, StartMatch, UseAbility, SubmitVote, AdvancePhase, LeaveMatch, RematchMatch |
-| `backend/src/application/ai/`                              | AI narrator pipeline (context builder, narration publisher, port)        |
-| `backend/src/infrastructure/ai/`                           | AI narrator adapters: Gemini, OpenRouter, Failover, Noop                 |
-| `backend/src/infrastructure/websocket/mod.ts`              | WebSocket server & room management                                       |
-| `backend/src/infrastructure/http/routes/match.ts`          | REST routes                                                              |
-| `backend/src/container.ts`                                 | Dependency injection wiring                                              |
-
-**Frontend**
-
-| File                                          | Purpose                               |
-| --------------------------------------------- | ------------------------------------- |
-| `client/src/context/GameContext.tsx`          | React context + reducer + Provider    |
-| `client/src/context/GameSessionService.ts`    | Orchestrates gateway + API + dispatch |
-| `client/src/infrastructure/ws/GameGateway.ts` | Domain-aware WebSocket bridge         |
-| `client/src/infrastructure/http/ApiClient.ts` | Typed REST client                     |
-| `client/src/types/events.ts`                  | ClientEvent / ServerEvent union types |
+- Backend authoritative state
+- Event-driven real-time updates
+- Separation between domain and infrastructure
+- Use-case oriented application layer
 
 ---
 
-## Development
+# Monorepo Structure
 
-```bash
-# Install all dependencies
-npm install
-npm run install:client
-npm run install:server
-
-# Run both servers (concurrently)
-npm run dev
-```
-
-Backend runs on `http://localhost:3000` / `ws://localhost:3000/ws`.
+    social-deduction-game/
+    ├── backend/     # API + WebSocket server
+    ├── client/      # React frontend
+    ├── docs/        # Architecture notes
+    └── package.json
 
 ---
 
-## Testing
+# Key Source Files
 
-```bash
-npm run test --prefix backend -- --run   # Backend (Vitest)
-npm run test:e2e --prefix client         # Frontend (Playwright e2e)
-```
+## Backend
 
----
-
-## Architecture at a Glance
-
-```
-Frontend                          Backend
-────────────────────────────────────────────────────
-features/ (UI)                    infrastructure/http  (REST)
-  └── hooks → GameSessionService ──→ application/ (use cases)
-                 ↕                       ├── domain/ (Match, Player…)
-            GameGateway ←──────────── infrastructure/websocket
-            (WS events)               (broadcasts domain events)
-                                         └── application/ai/
-                                             (AI narrator pipeline)
-                                             └── infrastructure/ai/
-                                                 (Gemini / OpenRouter / Failover)
-```
-
-- REST for match creation and commands (start, ability, phase, rematch)
-- WebSocket for real-time domain events pushed to all room members
-- Backend is authoritative — frontend renders state received from server
-- Finished matches can be reset into the same lobby code for another round, preserving players and template setup
-- Optional AI narrator (`aiGameMasterEnabled`) generates Portuguese game-master messages for key events (match start, phase changes, eliminations, match end) with automatic provider failover
+File Purpose
 
 ---
 
-## Project Goals
-
-- Clean separation of concerns
-- Highly testable architecture
-- Scalable real-time engine
-- Easy migration to PostgreSQL
-- Easily extendable ability system
-
-## E2E test errors
-
-if an error happens you can find the error context in /client/test-results/error-context.md
+backend/src/domain/entity/match.ts Core Match aggregate
+backend/src/application/ Game use cases
+backend/src/application/ai/ AI narrator pipeline
+backend/src/infrastructure/websocket/mod.ts WebSocket server
+backend/src/infrastructure/http/routes/match.ts REST endpoints
+backend/src/container.ts Dependency injection
 
 ---
 
-## Contributing
+## Frontend
 
-- Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR.
-- Pull requests use [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
-- Issues use templates in [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
+File Purpose
+
+---
+
+client/src/context/GameContext.tsx Game state management
+client/src/context/GameSessionService.ts Session orchestration
+client/src/infrastructure/ws/GameGateway.ts WebSocket gateway
+client/src/infrastructure/http/ApiClient.ts REST client
+client/src/types/events.ts Event contracts
+
+---
+
+# Development
+
+Install dependencies:
+
+    npm install
+    npm run install:client
+    npm run install:server
+
+Run both servers:
+
+    npm run dev
+
+Backend:
+
+    http://localhost:3000
+    ws://localhost:3000/ws
+
+---
+
+# Testing
+
+Backend tests:
+
+    npm run test --prefix backend -- --run
+
+Frontend E2E tests:
+
+    npm run test:e2e --prefix client
+
+---
+
+# AI Game Master
+
+The game optionally supports an **AI narrator** that describes important
+events such as:
+
+- Game start
+- Phase transitions
+- Eliminations
+- Game results
+
+Providers supported:
+
+- Gemini
+- OpenRouter
+- Fallback / failover strategy
+
+Example configuration:
+
+    AI_GAME_MASTER_ENABLED=true
+    GEMINI_MODEL=
+    OPENROUTER_MODEL=
+
+---
+
+# Engineering Focus
+
+This project was built to demonstrate:
+
+- Real-time multiplayer architecture
+- Domain-driven design patterns
+- WebSocket event modeling
+- Separation of domain / application / infrastructure layers
+- Testable backend architecture
+- Frontend real-time state orchestration
+
+---
+
+# Future Improvements
+
+Possible improvements include:
+
+- PostgreSQL persistence
+- Match history
+- Spectator mode
+- Public matchmaking
+- Role customization
+- Player statistics
+
+---
+
+# Contributing
+
+Before contributing please read:
+
+    CONTRIBUTING.md
+
+Pull requests use:
+
+    .github/PULL_REQUEST_TEMPLATE.md
+
+Issue templates:
+
+    .github/ISSUE_TEMPLATE/
+
+---
+
+# Author
+
+**Mohamed Aljoke**
+
+Backend engineer focused on:
+
+- Node.js
+- TypeScript
+- Real-time systems
+- AWS architecture
+
+Blog:\
+https://devmohami.hashnode.dev/
+
+YouTube:\
+https://www.youtube.com/channel/UCkUgsd4IUob6IUVF1EP13eA
