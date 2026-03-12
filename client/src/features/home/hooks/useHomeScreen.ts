@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "@/context/GameContext";
+import { t } from "@/infrastructure/i18n/translations";
 
 type Mode = "create" | "join";
 
@@ -43,8 +44,8 @@ export function useHomeScreen() {
       } catch (err) {
         setError(
           mode === "create"
-            ? "Failed to create game. Make sure the server is running."
-            : "Failed to join game. Check the ID and try again.",
+            ? t('errors.failedCreateGame')
+            : t('errors.failedJoinGame'),
         );
       } finally {
         setLoading(false);

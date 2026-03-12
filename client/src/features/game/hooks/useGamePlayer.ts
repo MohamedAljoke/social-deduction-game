@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { t } from "@/infrastructure/i18n/translations";
 import { useGame } from "../../../context/GameContext";
 import type { GameLogEntry } from "../components/gameScreenShared";
 import { ABILITY_DEFINITIONS, type EffectTypeId } from "@shared/ability-definitions";
@@ -8,12 +9,12 @@ export const PHASE_CONFIG: Record<
   { title: string; description: string }
 > = {
   discussion: {
-    title: "Discussion",
-    description: "Discuss with other players",
+    title: t('game.phases.discussion.name'),
+    description: t('game.phases.discussion.desc'),
   },
-  action: { title: "Action", description: "Use your abilities" },
-  voting: { title: "Voting", description: "Vote to eliminate a player" },
-  resolution: { title: "Resolution", description: "Processing results..." },
+  action: { title: t('game.phases.action.name'), description: t('game.phases.action.desc') },
+  voting: { title: t('game.phases.voting.name'), description: t('game.phases.voting.desc') },
+  resolution: { title: t('game.phases.resolution.name'), description: t('game.phases.resolution.desc') },
 };
 
 export const ABILITY_LABELS: Record<string, string> = {

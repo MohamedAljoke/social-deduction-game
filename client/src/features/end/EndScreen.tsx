@@ -1,20 +1,21 @@
 import { Card, Button, Avatar } from '../../shared/components';
 import { ScreenContainer } from '../../shared/ui/ScreenContainer';
 import { Logo } from '../../shared/ui/Logo';
+import { t } from '@/infrastructure/i18n/translations';
 import { useGame } from '../../context/GameContext';
 import type { Alignment, MatchWinner } from '../../types/match';
 
 const WINNER_THEME: Record<Alignment, { label: string; gradient: string }> = {
   hero: {
-    label: "Heroes win",
+    label: t('end.heroesWin'),
     gradient: "linear-gradient(135deg, #4ade80, #22c55e)",
   },
   villain: {
-    label: "Villains win",
+    label: t('end.villainsWin'),
     gradient: "linear-gradient(135deg, #e94560, #be123c)",
   },
   neutral: {
-    label: "Neutrals win",
+    label: t('end.neutralsWin'),
     gradient: "linear-gradient(135deg, #fbbf24, #f59e0b)",
   },
 };
@@ -40,7 +41,7 @@ export function EndScreen() {
   return (
     <ScreenContainer>
       <div className="fade-in">
-        <Logo title="Game Over" subtitle="Thanks for playing!" />
+        <Logo title={t('end.gameOver')} subtitle={t('end.thankYou')} />
         
         <Card>
           <div 
@@ -51,16 +52,16 @@ export function EndScreen() {
                 "linear-gradient(135deg, #6b7280, #4b5563)",
             }}
           >
-            <div className="text-sm uppercase tracking-wider opacity-90">Winner</div>
+            <div className="text-sm uppercase tracking-wider opacity-90">{t('end.winner')}</div>
             <div className="text-[28px] font-bold mt-1">
               {winnerLabel}
             </div>
             {endedAtLabel && (
-              <div className="text-xs mt-2 opacity-90">Ended at {endedAtLabel}</div>
+              <div className="text-xs mt-2 opacity-90">{t('end.endedAt')} {endedAtLabel}</div>
             )}
           </div>
 
-          <div className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: '#a0a0b8' }}>Role Reveal</div>
+          <div className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: '#a0a0b8' }}>{t('end.roleReveal')}</div>
           <div className="mb-6">
             {match.players.map((player, index) => {
               const template = match.templates.find(t => t.id === player.templateId);
@@ -73,14 +74,14 @@ export function EndScreen() {
                   <Avatar name={player.name} index={index} />
                   <div className="flex-1">
                     <div className="font-medium">{player.name}</div>
-                    <div 
+                    <div
                       className="text-xs"
-                      style={{ 
-                        color: template?.alignment === 'hero' ? '#4ade80' : 
+                      style={{
+                        color: template?.alignment === 'hero' ? '#4ade80' :
                                template?.alignment === 'villain' ? '#e94560' : '#fbbf24'
                       }}
                     >
-                      {template?.name || 'Unknown'} - {template?.alignment || 'unknown'}
+                      {template?.name || t('end.unknownTemplate')} - {template?.alignment || t('end.unknownAlignment')}
                     </div>
                   </div>
                   <div 
@@ -95,7 +96,7 @@ export function EndScreen() {
           </div>
 
           <Button onClick={handlePlayAgain}>
-            Play Again
+            {t('end.playAgain')}
           </Button>
         </Card>
       </div>
@@ -131,5 +132,5 @@ function getWinnerLabel(
     return winner.templates.map((template) => template.templateName).join(", ");
   }
 
-  return winnerAlignment ? WINNER_THEME[winnerAlignment].label : "Game Ended";
+  return winnerAlignment ? WINNER_THEME[winnerAlignment].label : t('end.gameEnded');
 }

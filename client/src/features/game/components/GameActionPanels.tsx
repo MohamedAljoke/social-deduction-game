@@ -1,4 +1,5 @@
 import type { Match, Player } from "../../../types/match";
+import { t } from "@/infrastructure/i18n/translations";
 import {
   type GameLogEntry,
   MUTED_TEXT,
@@ -7,9 +8,9 @@ import {
 
 function getVoteTargetLabel(match: Match, player: Player): string {
   const vote = match.votes?.find((entry) => entry.voterId === player.id);
-  if (vote === undefined) return "Waiting...";
-  if (vote.targetId === null) return "Skip";
-  return match.players.find((entry) => entry.id === vote.targetId)?.name ?? "?";
+  if (vote === undefined) return t('game.waiting');
+  if (vote.targetId === null) return t('game.skip');
+  return match.players.find((entry) => entry.id === vote.targetId)?.name ?? t('game.unknownPlayer');
 }
 
 export function ActionConfirmation({
@@ -21,13 +22,13 @@ export function ActionConfirmation({
 }) {
   return (
     <div className="rounded-2xl p-5 mb-5 text-center" style={PANEL_STYLE}>
-      <div className="text-base mb-4">Confirm your action</div>
+      <div className="text-base mb-4">{t('game.confirmAction')}</div>
       <button
         className="py-3 px-8 border-none rounded-lg text-white text-sm font-semibold cursor-pointer"
         style={{ backgroundColor: "#4ade80" }}
         onClick={onConfirm}
       >
-        Confirm
+        {t('game.confirm')}
       </button>
       <button
         className="py-3 px-8 rounded-lg text-sm cursor-pointer ml-3"
@@ -38,7 +39,7 @@ export function ActionConfirmation({
         }}
         onClick={onCancel}
       >
-        Cancel
+        {t('game.cancel')}
       </button>
     </div>
   );
@@ -63,7 +64,7 @@ export function VoteStatusPanel({
         className="text-xs font-semibold uppercase tracking-wider mb-3"
         style={{ color: "#6b6b80" }}
       >
-        Vote Status
+        {t('game.voteStatus')}
       </div>
       {alivePlayers.map((player) => {
         const vote = match.votes?.find((entry) => entry.voterId === player.id);
@@ -114,14 +115,14 @@ export function VotingControls({
 }) {
   return (
     <div className="rounded-2xl p-5 mb-5 text-center" style={PANEL_STYLE}>
-      <div className="text-base mb-4">Vote to eliminate a player</div>
+      <div className="text-base mb-4">{t('game.voteInstruction')}</div>
       <button
         className="py-3 px-8 border-none rounded-lg text-white text-sm font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ backgroundColor: "#4ade80" }}
         disabled={isCastVoteDisabled}
         onClick={onConfirm}
       >
-        {pendingVoteAction === "cast" ? "Casting Vote..." : "Cast Vote"}
+        {pendingVoteAction === "cast" ? t('game.castingVote') : t('game.castVote')}
       </button>
       <button
         className="py-3 px-8 rounded-lg text-sm font-semibold cursor-pointer ml-3 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -133,7 +134,7 @@ export function VotingControls({
         disabled={isVoteSubmitting}
         onClick={onSkipVote}
       >
-        {pendingVoteAction === "skip" ? "Skipping Vote..." : "Skip Vote"}
+        {pendingVoteAction === "skip" ? t('game.skippingVote') : t('game.skipVote')}
       </button>
     </div>
   );
@@ -149,14 +150,14 @@ export function GameLogPanel({ actions }: { actions: GameLogEntry[] }) {
         className="text-xs font-semibold uppercase tracking-wider mb-3"
         style={{ color: "#6b6b80" }}
       >
-        Game Log
+        {t('game.gameLog')}
       </div>
       {actions.length === 0 ? (
         <div
           className="text-sm py-1.5"
           style={{ color: MUTED_TEXT, borderBottom: "1px solid #2a2a4a" }}
         >
-          Game started. Waiting for actions...
+          {t('game.gameStartedWaiting')}
         </div>
       ) : (
         actions.map((action, index) => (

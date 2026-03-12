@@ -1,4 +1,5 @@
 import { useGame } from "../../context/GameContext";
+import { t } from "@/infrastructure/i18n/translations";
 import { AbilitySelector } from "./components/AbilitySelector";
 import {
   ActionConfirmation,
@@ -56,7 +57,7 @@ export function GameScreen() {
   const investigateResult = getInvestigateBannerData(match, state.investigateResult);
 
   const handleLeave = () => {
-    if (confirm("Leave the game?")) {
+    if (confirm(t('game.confirmLeave'))) {
       service.leave();
     }
   };
@@ -76,7 +77,7 @@ export function GameScreen() {
           style={{ color: MUTED_TEXT }}
           onClick={handleLeave}
         >
-          ← Leave Game
+          {t('game.leaveGame')}
         </button>
       </div>
 

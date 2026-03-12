@@ -5,6 +5,7 @@ import { ScreenContainer } from "../../shared/ui/ScreenContainer";
 import { Logo } from "../../shared/ui/Logo";
 import { useLobby } from "./hooks";
 import { useGame } from "../../context/GameContext";
+import { t } from "@/infrastructure/i18n/translations";
 
 export function LobbyScreen() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export function LobbyScreen() {
   return (
     <ScreenContainer>
       <div className="fade-in min-w-100">
-        <Logo title="Game Lobby" subtitle="Waiting for players to join" />
+        <Logo title={t('lobby.title')} subtitle={t('lobby.waitingForPlayers')} />
 
         <Card>
           <div
@@ -42,7 +43,7 @@ export function LobbyScreen() {
               className="w-2 h-2 rounded-full animate-pulse"
               style={{ backgroundColor: "#4ade80" }}
             ></span>
-            {isHost ? "Ready to start" : "Waiting for host to start"}
+            {isHost ? t('lobby.readyToStart') : t('lobby.waitingForHost')}
           </div>
 
           <button
@@ -57,7 +58,7 @@ export function LobbyScreen() {
               className="text-xs uppercase tracking-widest mb-2"
               style={{ color: "#6b6b80" }}
             >
-              Game Code
+              {t('lobby.gameCode')}
             </div>
             <div
               data-testid="match-id"
@@ -70,7 +71,7 @@ export function LobbyScreen() {
               className="text-xs mt-2 transition-opacity duration-150"
               style={{ color: "#6b6b80", opacity: copied ? 1 : 0.5 }}
             >
-              {copied ? "Copied!" : "Click to copy"}
+              {copied ? t('lobby.copied') : t('lobby.clickToCopy')}
             </div>
           </button>
 
@@ -79,7 +80,7 @@ export function LobbyScreen() {
               className="text-xs uppercase tracking-wider mb-3"
               style={{ color: "#6b6b80" }}
             >
-              Players (<span>{match.players.length}</span>)
+              {t('lobby.playersLabel')} (<span>{match.players.length}</span>)
             </div>
             {match.players.map((player, index) => (
               <div
@@ -89,7 +90,7 @@ export function LobbyScreen() {
               >
                 <Avatar name={player.name} index={index} />
                 <span className="font-medium">{player.name}</span>
-                {index === 0 && <Badge variant="host">Host</Badge>}
+                {index === 0 && <Badge variant="host">{t('lobby.host')}</Badge>}
               </div>
             ))}
           </div>
@@ -100,25 +101,25 @@ export function LobbyScreen() {
                 onClick={() => navigate("/templates")}
                 variant="secondary"
               >
-                Configure Templates
+                {t('lobby.configTemplates')}
               </Button>
               <Button
                 onClick={handleStartGame}
                 loading={loading}
                 className="mt-3"
               >
-                Start Game
+                {t('lobby.startBtn')}
               </Button>
             </>
           )}
           <Button
             onClick={() => {
-              if (confirm("Leave the lobby?")) service.leave();
+              if (confirm(t('lobby.confirmLeave'))) service.leave();
             }}
             variant="secondary"
             className="mt-3"
           >
-            Leave Game
+            {t('lobby.leaveBtn')}
           </Button>
         </Card>
       </div>

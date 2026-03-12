@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useGame } from "../../../context/GameContext";
+import { t } from "@/infrastructure/i18n/translations";
 
 export function useLobby() {
   const { state, service } = useGame();
@@ -11,7 +12,7 @@ export function useLobby() {
     try {
       await service.startMatch(state.matchId, []);
     } catch (err) {
-      alert("Failed to start game");
+      alert(t('lobby.errorStarting'));
     } finally {
       setLoading(false);
     }

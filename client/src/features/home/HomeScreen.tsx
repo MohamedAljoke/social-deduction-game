@@ -4,6 +4,7 @@ import { Logo } from "@/shared/ui/Logo";
 import { ScreenContainer } from "@/shared/ui/ScreenContainer";
 import { useHomeScreen } from "./hooks/useHomeScreen";
 import { Divider } from "@/shared/components/divider";
+import { t } from "@/infrastructure/i18n/translations";
 
 export function HomeScreen() {
   const {
@@ -26,8 +27,8 @@ export function HomeScreen() {
     <ScreenContainer>
       <div className="fade-in">
         <Logo
-          title="Social Deduction"
-          subtitle="Create or join a game with friends"
+          title={t('home.title')}
+          subtitle={t('home.subtitle')}
         />
 
         <Card>
@@ -37,13 +38,13 @@ export function HomeScreen() {
                 className="w-1 h-5 rounded-sm"
                 style={!isCreate ? { backgroundColor: "#e94560" } : undefined}
               />
-              {isCreate ? "Create New Game" : "Enter Game Details"}
+              {isCreate ? t('home.createGameBtn') : t('home.enterGameDetails')}
             </div>
 
             <Input
               id="playerName"
-              label="Your Name"
-              placeholder="Enter your name"
+              label={t('home.yourName')}
+              placeholder={t('home.yourNamePlaceholder')}
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               maxLength={20}
@@ -53,8 +54,8 @@ export function HomeScreen() {
             {!isCreate && (
               <Input
                 id="gameCode"
-                label="Match ID"
-                placeholder="Enter match ID"
+                label={t('home.matchId')}
+                placeholder={t('home.matchIdPlaceholder')}
                 value={matchCode}
                 onChange={(e) => setMatchCode(e.target.value)}
                 maxLength={10}
@@ -75,10 +76,10 @@ export function HomeScreen() {
                     className="text-xs uppercase tracking-wider"
                     style={{ color: "#a0a0b8" }}
                   >
-                    Open Voting
+                    {t('home.openVoting')}
                   </div>
                   <div className="text-sm" style={{ color: "#6b6b80" }}>
-                    Show who votes for whom in real time
+                    {t('home.openVotingDesc')}
                   </div>
                 </div>
                 <input
@@ -93,7 +94,7 @@ export function HomeScreen() {
             )}
 
             <Button type="submit" loading={loading}>
-              {isCreate ? "Create Game" : "Join Game"}
+              {isCreate ? t('home.createBtn') : t('home.joinBtn')}
             </Button>
           </form>
 
@@ -102,7 +103,7 @@ export function HomeScreen() {
           <Divider />
 
           <Button variant="secondary" onClick={toggleMode}>
-            {isCreate ? "Join Existing Game" : "Back to Create"}
+            {isCreate ? t('home.joinGameTitle') : t('home.backBtn')}
           </Button>
         </Card>
       </div>

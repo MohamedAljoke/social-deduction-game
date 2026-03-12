@@ -1,4 +1,5 @@
 import type { Template } from "../../../types/match";
+import { t } from "@/infrastructure/i18n/translations";
 import {
   getAlignmentColor,
   type InvestigateBannerData,
@@ -15,7 +16,7 @@ export function RoleCard({ template }: { template: Template }) {
         className="text-xs uppercase tracking-widest"
         style={{ color: "#6b6b80" }}
       >
-        Your Role
+        {t('game.yourRole')}
       </div>
       <div className="text-xl font-bold my-1" style={{ color: "#e94560" }}>
         {template.name}
@@ -63,10 +64,10 @@ export function InvestigationBanner({
         className="text-xs uppercase tracking-widest mb-1"
         style={{ color: "#4ade80" }}
       >
-        Investigation Result
+        {t('game.investigationResult')}
       </div>
       <div className="text-base font-semibold" style={{ color: "#ffffff" }}>
-        {result.targetName} is a{" "}
+        {result.targetName} {t('game.investigationConnector')}{" "}
         <span
           style={{
             color: getAlignmentColor(result.alignment),
@@ -87,10 +88,10 @@ export function EliminatedBanner() {
       style={{ backgroundColor: "#1a1a2e", border: "2px solid #e94560" }}
     >
       <div className="text-lg font-semibold" style={{ color: "#e94560" }}>
-        You have been eliminated
+        {t('game.eliminated')}
       </div>
       <div className="text-sm mt-1" style={{ color: MUTED_TEXT }}>
-        You can continue watching, but you can no longer vote or use abilities.
+        {t('game.eliminatedMessage')}
       </div>
     </div>
   );
@@ -111,7 +112,7 @@ export function NextPhaseButton({
         disabled={isAdvancing}
         onClick={onAdvance}
       >
-        {isAdvancing ? "Advancing..." : "Next Phase →"}
+        {isAdvancing ? t('game.advancing') : t('game.nextPhase')}
       </button>
     </div>
   );

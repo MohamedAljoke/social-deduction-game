@@ -1,4 +1,5 @@
 import type { Match, Player } from "../../../types/match";
+import { t } from "@/infrastructure/i18n/translations";
 import { PLAYER_COLORS } from "../hooks";
 
 function getPlayerCardBorder(isDead: boolean, isSelected: boolean): string {
@@ -101,7 +102,7 @@ function PlayerCard({
       </div>
       <div className="font-semibold text-sm mb-1">
         {player.name}
-        {isSelf ? " (You)" : ""}
+        {isSelf ? t('game.youLabel') : ""}
       </div>
       <div
         className="text-[11px] uppercase"
@@ -116,7 +117,7 @@ function PlayerCard({
           className="mt-1 text-[11px] font-bold rounded-full px-2 py-0.5 inline-block"
           style={{ backgroundColor: "#e94560", color: "#fff" }}
         >
-          {voteCount} vote{voteCount !== 1 ? "s" : ""}
+          {voteCount} {voteCount !== 1 ? t('game.voteCount.plural') : t('game.voteCount.singular')}
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { ABILITY_LABELS } from "../hooks";
+import { t } from "@/infrastructure/i18n/translations";
 import type { AvailableAbility } from "../hooks/useAvailableAbilities";
 
 interface AbilitySelectorProps {
@@ -22,7 +23,7 @@ export function AbilitySelector({
       style={{ backgroundColor: "#16213e", border: "2px solid #2a2a4a" }}
     >
       <div className="text-sm font-semibold mb-3" style={{ color: "#a0a0b8" }}>
-        Your Abilities {!canUseAny && "(No abilities available)"}
+        {t('game.yourAbilities')} {!canUseAny && t('game.noAbilities')}
       </div>
       <div className="flex flex-wrap gap-2">
         {availableAbilities.map((ability) => (
