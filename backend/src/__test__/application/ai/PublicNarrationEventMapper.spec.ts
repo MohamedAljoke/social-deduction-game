@@ -38,19 +38,19 @@ describe("PublicNarrationEventMapper", () => {
         kind: "start",
         matchId: "match-1",
         playerCount: 2,
-        summary: "The match has started.",
+        summary: "A partida comecou.",
       },
       {
         kind: "phase",
         matchId: "match-1",
         phase: "action",
-        summary: "The match advanced to the action phase.",
+        summary: "A partida avancou para a fase de action.",
       },
       {
         kind: "end",
         matchId: "match-1",
         winner: { kind: "alignment", alignment: Alignment.Hero },
-        summary: "The match has ended.",
+        summary: "A partida terminou.",
       },
     ]);
   });
@@ -81,14 +81,14 @@ describe("PublicNarrationEventMapper", () => {
         kind: "resolution",
         matchId: "match-1",
         eliminationCount: 1,
-        summary: "A public elimination was resolved.",
+        summary: "Uma eliminacao publica foi resolvida.",
       },
       {
         kind: "elimination",
         matchId: "match-1",
         playerId: "player-2",
         cause: "kill",
-        summary: "A player was eliminated during resolution.",
+        summary: "Um jogador caiu durante a resolucao.",
       },
     ]);
   });

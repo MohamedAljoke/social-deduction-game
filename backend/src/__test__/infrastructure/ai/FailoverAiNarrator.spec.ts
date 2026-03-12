@@ -9,6 +9,7 @@ import {
   NarrationResult,
 } from "../../../application/ai/AiNarrator";
 import { Alignment } from "../../../domain/entity/template";
+import { EffectType } from "../../../domain/entity/ability";
 
 function createContext(): NarrationContext {
   return {
@@ -17,8 +18,6 @@ function createContext(): NarrationContext {
     phase: "discussion",
     players: [
       {
-        id: "player-1",
-        name: "Alice",
         status: "alive",
         templateName: "Oracle",
       },
@@ -28,6 +27,7 @@ function createContext(): NarrationContext {
         id: "template-1",
         name: "Oracle",
         alignment: Alignment.Hero,
+        abilities: [EffectType.Investigate],
       },
     ],
     event: {

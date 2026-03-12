@@ -70,7 +70,7 @@ export class PublicNarrationEventMapper {
       kind: "start",
       matchId: event.matchId,
       playerCount: event.playerAssignments.length,
-      summary: "The match has started.",
+      summary: "A partida comecou.",
     };
   }
 
@@ -79,7 +79,7 @@ export class PublicNarrationEventMapper {
       kind: "phase",
       matchId: event.matchId,
       phase: event.phase,
-      summary: `The match advanced to the ${event.phase} phase.`,
+      summary: `A partida avancou para a fase de ${event.phase}.`,
     };
   }
 
@@ -102,15 +102,15 @@ export class PublicNarrationEventMapper {
         eliminationCount: eliminatedPlayerIds.length,
         summary:
           eliminatedPlayerIds.length === 1
-            ? "A public elimination was resolved."
-            : `${eliminatedPlayerIds.length} public eliminations were resolved.`,
+            ? "Uma eliminacao publica foi resolvida."
+            : `${eliminatedPlayerIds.length} eliminacoes publicas foram resolvidas.`,
       },
       ...eliminatedPlayerIds.map((playerId) => ({
         kind: "elimination" as const,
         matchId: event.matchId,
         playerId,
         cause: "kill" as const,
-        summary: "A player was eliminated during resolution.",
+        summary: "Um jogador caiu durante a resolucao.",
       })),
     ];
   }
@@ -120,7 +120,7 @@ export class PublicNarrationEventMapper {
       kind: "end",
       matchId: event.matchId,
       winner: event.winner,
-      summary: "The match has ended.",
+      summary: "A partida terminou.",
     };
   }
 

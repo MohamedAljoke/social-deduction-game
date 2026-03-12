@@ -26,6 +26,7 @@ interface OpenRouterSuccessResponse {
     message?: {
       content?: string | null;
     };
+    text?: string | null;
   }>;
 }
 
@@ -72,9 +73,15 @@ export class OpenRouterAiNarrator implements AiNarrator {
       }
 
       const payload = (await response.json()) as OpenRouterSuccessResponse;
-      const message = payload.choices?.[0]?.message?.content?.trim();
+      const choice = payload.choices?.[0];
+      const message =
+        choice?.message?.content?.trim() ?? choice?.text?.trim() ?? null;
 
       if (!message) {
+        console.warn("[ai][openrouter] successful response had no parsable message", {
+          model: this.config.model,
+          payloadPreview: JSON.stringify(payload).slice(0, 500),
+        });
         console.warn("[ai][openrouter] response did not include a message", {
           model: this.config.model,
         });
@@ -129,14 +136,16 @@ export class OpenRouterAiNarrator implements AiNarrator {
         {
           role: "system",
           content: [
-            "You are the public game master for a live social deduction match.",
-            "Write one or two short sentences of story-style narration.",
-            "Sound like a storyteller, not a status logger.",
-            "When the safe payload includes template names, weave them into the narration naturally.",
-            "Avoid flat lines like 'phase changed' or 'Bob died'.",
-            "Use only the supplied public information.",
-            "Do not reveal or infer hidden roles, private investigations, secret targets, or future actions.",
-            "Keep the message clear, vivid, and neutral about unknowns.",
+            "Voce e o mestre do jogo publico de uma partida ao vivo de deducao social.",
+            "Escreva sempre em portugues do Brasil.",
+            "Produza uma ou duas frases curtas de narracao com tom de historia.",
+            "Soe como um narrador, nao como um log de sistema.",
+            "Quando o payload seguro incluir nomes de templates, use esses nomes naturalmente na narracao.",
+            "Evite linhas secas como 'a fase mudou' ou 'Bob morreu'.",
+            "Use apenas as informacoes publicas fornecidas.",
+            "Nunca mencione nomes ou identificadores de jogadores; foque em templates, fases e resultados visiveis.",
+            "Nao revele nem deduza papeis ocultos, investigacoes privadas, alvos secretos ou acoes futuras.",
+            "Mantenha a mensagem clara, viva e neutra sobre o que nao e conhecido.",
           ].join(" "),
         },
         {

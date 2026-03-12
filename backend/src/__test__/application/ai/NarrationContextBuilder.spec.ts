@@ -73,7 +73,7 @@ describe("NarrationContextBuilder", () => {
       matchId: "match-1",
       playerId: "player-2",
       cause: "kill",
-      summary: "A player was eliminated during resolution.",
+      summary: "Um jogador caiu durante a resolucao.",
     };
 
     expect(builder.build(match, event)).toEqual({
@@ -82,14 +82,10 @@ describe("NarrationContextBuilder", () => {
       phase: "resolution",
       players: [
         {
-          id: "player-1",
-          name: "Alice",
           status: "alive",
           templateName: "Detective",
         },
         {
-          id: "player-2",
-          name: "Bob",
           status: "dead",
           templateName: "Assassin",
         },
@@ -99,16 +95,18 @@ describe("NarrationContextBuilder", () => {
           id: "template-1",
           name: "Detective",
           alignment: Alignment.Hero,
+          abilities: [EffectType.Investigate],
         },
         {
           id: "template-2",
           name: "Assassin",
           alignment: Alignment.Villain,
+          abilities: [EffectType.Kill],
         },
       ],
       event: {
         kind: "elimination",
-        summary: "Bob was eliminated during resolution.",
+        summary: "Um jogador caiu durante a resolucao.",
         occurredAt: "2026-03-12T04:00:00.000Z",
       },
       winner: null,
@@ -130,14 +128,14 @@ describe("NarrationContextBuilder", () => {
           },
         ],
       },
-      summary: "The match has ended.",
+      summary: "A partida terminou.",
     };
 
     const context = builder.build(match, event);
 
     expect(context.event).toEqual({
       kind: "end",
-      summary: "Detective won the match.",
+      summary: "Detective venceu a partida.",
       occurredAt: "2026-03-12T04:00:00.000Z",
     });
     expect(context.winner).toEqual(event.winner);
@@ -149,13 +147,13 @@ describe("NarrationContextBuilder", () => {
       kind: "resolution",
       matchId: "match-1",
       eliminationCount: 1,
-      summary: "A public elimination was resolved.",
+      summary: "Uma eliminacao publica foi resolvida.",
     };
 
     const context = builder.build(match, event);
 
     expect("actions" in context).toBe(false);
     expect("votes" in context).toBe(false);
-    expect(context.event.summary).toBe("One public elimination was resolved.");
+    expect(context.event.summary).toBe("Uma eliminacao publica foi resolvida.");
   });
 });

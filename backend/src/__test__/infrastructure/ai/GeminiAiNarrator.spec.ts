@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { GeminiAiNarrator } from "../../../infrastructure/ai/GeminiAiNarrator";
 import { NarrationContext } from "../../../application/ai/AiNarrator";
 import { Alignment } from "../../../domain/entity/template";
+import { EffectType } from "../../../domain/entity/ability";
 
 function createContext(): NarrationContext {
   return {
@@ -10,8 +11,6 @@ function createContext(): NarrationContext {
     phase: "voting",
     players: [
       {
-        id: "player-1",
-        name: "Alice",
         status: "alive",
         templateName: "Oracle",
       },
@@ -21,11 +20,12 @@ function createContext(): NarrationContext {
         id: "template-1",
         name: "Oracle",
         alignment: Alignment.Hero,
+        abilities: [EffectType.Investigate],
       },
     ],
     event: {
       kind: "phase",
-      summary: "The match has entered voting.",
+      summary: "A partida entrou em votacao.",
       occurredAt: "2026-03-12T00:00:00.000Z",
     },
     winner: null,
@@ -88,7 +88,7 @@ describe("GeminiAiNarrator", () => {
 
     const [, request] = fetchImpl.mock.calls[0];
     const body = JSON.parse(String(request?.body)) as {
-      system_instruction?: { parts?: Array<{ text?: string }> };
+      systemInstruction?: { parts?: Array<{ text?: string }> };
       contents?: Array<{ role?: string; parts?: Array<{ text?: string }> }>;
       generationConfig?: {
         temperature?: number;
@@ -96,8 +96,8 @@ describe("GeminiAiNarrator", () => {
       };
     };
 
-    expect(body.system_instruction?.parts?.[0]?.text).toContain(
-      "public game master",
+    expect(body.systemInstruction?.parts?.[0]?.text).toContain(
+      "mestre do jogo publico",
     );
     expect(body.contents?.[0]?.role).toBe("user");
     expect(body.contents?.[0]?.parts?.[0]?.text).toContain('"matchId": "match-1"');

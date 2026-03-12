@@ -1,6 +1,7 @@
 import { MatchWinner } from "../../domain/entity/match";
 import { PhaseType } from "../../domain/entity/phase";
 import { Alignment } from "../../domain/entity/template";
+import { EffectType } from "../../domain/entity/ability";
 
 export type NarrationKind =
   | "start"
@@ -10,8 +11,6 @@ export type NarrationKind =
   | "end";
 
 export interface NarrationPlayerSummary {
-  id: string;
-  name: string;
   status: "alive" | "dead" | "eliminated";
   templateName?: string;
 }
@@ -20,6 +19,7 @@ export interface NarrationTemplateSummary {
   id: string;
   name: string;
   alignment: Alignment;
+  abilities: EffectType[];
 }
 
 export interface NarrationEventSummary {

@@ -8,13 +8,28 @@ import { AiNarrator, NarrationContext } from "./AiNarrator";
 import { NarrationContextBuilder } from "./NarrationContextBuilder";
 import { PublicNarrationEventMapper } from "./PublicNarrationEvent";
 
+function formatPhase(phase: string): string {
+  switch (phase) {
+    case "discussion":
+      return "discussao";
+    case "voting":
+      return "votacao";
+    case "action":
+      return "acao";
+    case "resolution":
+      return "resolucao";
+    default:
+      return phase;
+  }
+}
+
 function formatWinnerText(winner: MatchWinner | null | undefined): string {
   if (!winner) {
-    return "the board";
+    return "o tabuleiro";
   }
 
   if (winner.kind === "alignment") {
-    return `the ${winner.alignment} alignment`;
+    return `o alinhamento ${winner.alignment}`;
   }
 
   return winner.templates.map((template) => template.templateName).join(", ");
@@ -26,32 +41,19 @@ function buildFallbackMessage(context: NarrationContext): string {
       const templateNames = context.templates.map((template) => template.name);
       const cast =
         templateNames.length > 0
-          ? ` The cast circles around ${templateNames.join(", ")}.`
+          ? ` O elenco gira em torno de ${templateNames.join(", ")}.`
           : "";
-      return `The game master is sleeping, but ${context.matchName} has begun.${cast}`;
+      return `O mestre do jogo esta dormindo, mas ${context.matchName} comecou.${cast}`;
     }
     case "phase":
-      return `The game master is sleeping, but the story moves into ${context.phase}.`;
+      return `O mestre do jogo esta dormindo, mas a historia avanca para a fase de ${formatPhase(context.phase)}.`;
     case "resolution":
-      return "The game master is sleeping, but resolution still carves its mark across the table.";
+      return "O mestre do jogo esta dormindo, mas a resolucao ainda deixa sua marca sobre a mesa.";
     case "elimination": {
-      const playerName = context.event.summary.split(" was ")[0];
-      const eliminatedPlayer = context.players.find(
-        (player) => player.name === playerName,
-      );
-
-      if (eliminatedPlayer?.templateName) {
-        return `The game master is sleeping, but ${eliminatedPlayer.name} the ${eliminatedPlayer.templateName} has fallen.`;
-      }
-
-      if (eliminatedPlayer) {
-        return `The game master is sleeping, but ${eliminatedPlayer.name} has fallen.`;
-      }
-
-      return "The game master is sleeping, but someone has fallen from the story.";
+      return `O mestre do jogo esta dormindo, mas ${context.event.summary.toLowerCase()}`;
     }
     case "end":
-      return `The game master is sleeping, but ${formatWinnerText(context.winner)} claims the final chapter.`;
+      return `O mestre do jogo esta dormindo, mas ${formatWinnerText(context.winner)} toma o capitulo final.`;
   }
 }
 
@@ -78,14 +80,30 @@ export async function publishMatchNarration(
   } = {},
 ): Promise<void> {
   if (!match.config.aiGameMasterEnabled) {
+    console.info("[ai] narration skipped because aiGameMasterEnabled is false", {
+      matchId: match.id,
+    });
     return;
   }
 
   const mapper = options.mapper ?? new PublicNarrationEventMapper();
   const contextBuilder =
     options.contextBuilder ?? new NarrationContextBuilder();
+  const publicEvents = mapper.mapEvents(events);
 
-  for (const publicEvent of mapper.mapEvents(events)) {
+  console.info("[ai] processing narration events", {
+    matchId: match.id,
+    domainEventCount: events.length,
+    narrationEventCount: publicEvents.length,
+  });
+
+  if (publicEvents.length === 0) {
+    console.warn("[ai] no public narration events were mapped", {
+      matchId: match.id,
+    });
+  }
+
+  for (const publicEvent of publicEvents) {
     const context = contextBuilder.build(match, publicEvent);
     const narration = await narrator.generateNarration(context).catch(() => null);
     const message = narration?.message?.trim() || buildFallbackMessage(context);

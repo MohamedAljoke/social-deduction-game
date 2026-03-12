@@ -188,7 +188,7 @@ describe("publishMatchNarration", () => {
       expect.objectContaining({
         kind: "elimination",
         message:
-          "The game master is sleeping, but Bob the Nightblade has fallen.",
+          "O mestre do jogo esta dormindo, mas um jogador caiu durante a resolucao.",
       }),
     );
   });

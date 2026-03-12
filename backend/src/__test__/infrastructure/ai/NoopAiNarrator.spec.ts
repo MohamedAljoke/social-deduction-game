@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NoopAiNarrator } from "../../../infrastructure/ai/NoopAiNarrator";
 import { Alignment } from "../../../domain/entity/template";
+import { EffectType } from "../../../domain/entity/ability";
 
 describe("NoopAiNarrator", () => {
   it("returns null so gameplay can remain unchanged until a provider is configured", async () => {
@@ -11,9 +12,16 @@ describe("NoopAiNarrator", () => {
       matchName: "Test Match",
       phase: "discussion",
       players: [
-        { id: "player-1", name: "Alice", status: "alive", templateName: "Seer" },
+        { status: "alive", templateName: "Seer" },
       ],
-      templates: [{ id: "template-1", name: "Seer", alignment: Alignment.Hero }],
+      templates: [
+        {
+          id: "template-1",
+          name: "Seer",
+          alignment: Alignment.Hero,
+          abilities: [EffectType.Investigate],
+        },
+      ],
       event: {
         kind: "start",
         summary: "The match has started.",

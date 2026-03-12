@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Alignment } from "../../../domain/entity/template";
+import { EffectType } from "../../../domain/entity/ability";
 import { OpenRouterAiNarrator } from "../../../infrastructure/ai/OpenRouterAiNarrator";
 
 function createContext() {
@@ -9,13 +10,11 @@ function createContext() {
     phase: "resolution" as const,
     players: [
       {
-        id: "player-1",
         name: "Alice",
         status: "alive" as const,
         templateName: "Detective",
       },
       {
-        id: "player-2",
         name: "Bob",
         status: "dead" as const,
         templateName: "Assassin",
@@ -26,16 +25,18 @@ function createContext() {
         id: "template-1",
         name: "Detective",
         alignment: Alignment.Hero,
+        abilities: [EffectType.Investigate],
       },
       {
         id: "template-2",
         name: "Assassin",
         alignment: Alignment.Villain,
+        abilities: [EffectType.Kill],
       },
     ],
     event: {
       kind: "elimination" as const,
-      summary: "Bob was eliminated during resolution.",
+      summary: "Um jogador caiu durante a resolucao.",
       occurredAt: "2026-03-12T04:00:00.000Z",
     },
     winner: null,
@@ -106,7 +107,7 @@ describe("OpenRouterAiNarrator", () => {
     expect(body.messages[0]).toMatchObject({ role: "system" });
     expect(body.messages[1]).toMatchObject({ role: "user" });
     expect(body.messages[1].content).toContain('"matchName": "Friday Night Match"');
-    expect(body.messages[1].content).toContain('"summary": "Bob was eliminated during resolution."');
+    expect(body.messages[1].content).toContain('"summary": "Um jogador caiu durante a resolucao."');
   });
 
   it("returns null when the provider responds with an error", async () => {
@@ -125,5 +126,38 @@ describe("OpenRouterAiNarrator", () => {
     );
 
     await expect(narrator.generateNarration(createContext())).resolves.toBeNull();
+  });
+
+  it("accepts non-chat text responses from OpenRouter", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              text: "A cidade prende a respiracao enquanto o Assassino cai.",
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    const narrator = new OpenRouterAiNarrator(
+      {
+        provider: "openrouter",
+        apiKey: "test-key",
+        model: "test-model",
+        timeoutMs: 5000,
+      },
+      fetchMock,
+    );
+
+    await expect(narrator.generateNarration(createContext())).resolves.toEqual({
+      kind: "elimination",
+      message: "A cidade prende a respiracao enquanto o Assassino cai.",
+    });
   });
 });

@@ -37,7 +37,15 @@ export class AdvancePhaseUseCase {
     const result = match.toJSON();
     const events = match.pullEvents();
     publishMatchEvents(events, result, this.publisher);
-    void publishMatchNarration(events, result, this.narrator, this.publisher);
+    void publishMatchNarration(events, result, this.narrator, this.publisher).catch(
+      (error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("[ai] advance-phase narration pipeline failed", {
+          matchId: result.id,
+          message,
+        });
+      },
+    );
 
     return result;
   }

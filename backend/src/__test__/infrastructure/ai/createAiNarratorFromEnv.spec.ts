@@ -55,7 +55,7 @@ describe("createAiNarratorFromEnv", () => {
       OPENROUTER_API_KEY: "test-key",
     });
 
-    expect(narrator).toBeInstanceOf(NoopAiNarrator);
+    expect(narrator).toBeInstanceOf(OpenRouterAiNarrator);
   });
 
   it("returns the Gemini narrator when Gemini is configured", () => {
@@ -64,6 +64,19 @@ describe("createAiNarratorFromEnv", () => {
         AI_PROVIDER: "gemini",
         GEMINI_API_KEY: "test-key",
         GEMINI_MODEL: "gemini-2.5-flash",
+      },
+      vi.fn<typeof fetch>(),
+    );
+
+    expect(narrator).toBeInstanceOf(GeminiAiNarrator);
+  });
+
+  it("remaps legacy Gemini latest model aliases to a supported default", () => {
+    const narrator = createAiNarratorFromEnv(
+      {
+        AI_PROVIDER: "gemini",
+        GEMINI_API_KEY: "test-key",
+        GEMINI_MODEL: "gemini-1.5-flash-latest",
       },
       vi.fn<typeof fetch>(),
     );
@@ -99,6 +112,6 @@ describe("createAiNarratorFromEnv", () => {
       GEMINI_API_KEY: "test-key",
     });
 
-    expect(narrator).toBeInstanceOf(NoopAiNarrator);
+    expect(narrator).toBeInstanceOf(GeminiAiNarrator);
   });
 });

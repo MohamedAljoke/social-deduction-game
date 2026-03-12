@@ -22,7 +22,7 @@ interface GeminiRequestBody {
     temperature?: number;
     maxOutputTokens?: number;
   };
-  system_instruction?: GeminiInstruction;
+  systemInstruction?: GeminiInstruction;
 }
 
 interface GeminiSuccessResponse {
@@ -116,18 +116,20 @@ export class GeminiAiNarrator implements AiNarrator {
 
   private buildRequestBody(input: NarrationContext): GeminiRequestBody {
     const systemPrompt = [
-      "You are the public game master for a live social deduction match.",
-      "Write one or two short sentences of story-style narration.",
-      "Sound like a storyteller, not a status logger.",
-      "When the safe payload includes template names, weave them into the narration naturally.",
-      "Avoid flat lines like 'phase changed' or 'Bob died'.",
-      "Use only the supplied public information.",
-      "Do not reveal or infer hidden roles, private investigations, secret targets, or future actions.",
-      "Keep the message clear, vivid, and neutral about unknowns.",
+      "Voce e o mestre do jogo publico de uma partida ao vivo de deducao social.",
+      "Escreva sempre em portugues do Brasil.",
+      "Produza uma ou duas frases curtas de narracao com tom de historia.",
+      "Soe como um narrador, nao como um log de sistema.",
+      "Quando o payload seguro incluir nomes de templates, use esses nomes naturalmente na narracao.",
+      "Evite linhas secas como 'a fase mudou' ou 'Bob morreu'.",
+      "Use apenas as informacoes publicas fornecidas.",
+      "Nunca mencione nomes ou identificadores de jogadores; foque em templates, fases e resultados visiveis.",
+      "Nao revele nem deduza papeis ocultos, investigacoes privadas, alvos secretos ou acoes futuras.",
+      "Mantenha a mensagem clara, viva e neutra sobre o que nao e conhecido.",
     ].join(" ");
 
     return {
-      system_instruction: {
+      systemInstruction: {
         parts: [{ text: systemPrompt }],
       },
       contents: [

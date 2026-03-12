@@ -5,6 +5,17 @@ import { NoopAiNarrator } from "./NoopAiNarrator";
 import { OpenRouterAiNarrator } from "./OpenRouterAiNarrator";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_OPENROUTER_MODEL = "openrouter/free";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
+const OPENROUTER_MODEL_ALIASES: Record<string, string> = {
+  "mistralai/mistral-7b-instruct": DEFAULT_OPENROUTER_MODEL,
+};
+
+const GEMINI_MODEL_ALIASES: Record<string, string> = {
+  "gemini-1.5-flash": DEFAULT_GEMINI_MODEL,
+  "gemini-1.5-flash-latest": DEFAULT_GEMINI_MODEL,
+};
 
 function parseNumber(value: string | undefined): number | undefined {
   if (!value) {
@@ -13,6 +24,37 @@ function parseNumber(value: string | undefined): number | undefined {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function resolveModel(
+  provider: "openrouter" | "gemini",
+  rawModel: string | undefined,
+): string | undefined {
+  const value = rawModel?.trim();
+  const defaultModel =
+    provider === "openrouter" ? DEFAULT_OPENROUTER_MODEL : DEFAULT_GEMINI_MODEL;
+
+  if (!value) {
+    console.info("[ai] using default model for provider", {
+      provider,
+      model: defaultModel,
+    });
+    return defaultModel;
+  }
+
+  const aliases =
+    provider === "openrouter" ? OPENROUTER_MODEL_ALIASES : GEMINI_MODEL_ALIASES;
+  const normalized = aliases[value.toLowerCase()] ?? value;
+
+  if (normalized !== value) {
+    console.warn("[ai] remapped legacy model to supported model", {
+      provider,
+      originalModel: value,
+      normalizedModel: normalized,
+    });
+  }
+
+  return normalized;
 }
 
 export function createAiNarratorFromEnv(
@@ -59,7 +101,7 @@ function getConfiguredNarrators(
   const narrators: NamedAiNarrator[] = [];
 
   const openRouterApiKey = env.OPENROUTER_API_KEY?.trim();
-  const openRouterModel = env.OPENROUTER_MODEL?.trim();
+  const openRouterModel = resolveModel("openrouter", env.OPENROUTER_MODEL);
   if (openRouterApiKey && openRouterModel) {
     narrators.push({
       provider: "openrouter",
@@ -82,7 +124,7 @@ function getConfiguredNarrators(
   }
 
   const geminiApiKey = env.GEMINI_API_KEY?.trim();
-  const geminiModel = env.GEMINI_MODEL?.trim();
+  const geminiModel = resolveModel("gemini", env.GEMINI_MODEL);
   if (geminiApiKey && geminiModel) {
     narrators.push({
       provider: "gemini",
