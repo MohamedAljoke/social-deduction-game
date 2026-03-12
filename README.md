@@ -28,6 +28,26 @@ Features a **live multiplayer session**, including:
 
 ---
 
+## Project Management
+
+This project is organized using a GitHub Project board to track development progress.
+
+**Project Board**
+
+https://github.com/users/MohamedAljoke/projects/2
+
+The board is used to manage:
+
+- Feature development
+- Bug tracking
+- Architecture improvements
+- Future roadmap items
+
+<p align="center">
+  <img src="docs/images/project-board.png" width="900"/>
+</p>
+---
+
 # Tech Stack
 
 ## Backend
