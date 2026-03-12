@@ -89,6 +89,19 @@ export async function publishMatchNarration(
     const context = contextBuilder.build(match, publicEvent);
     const narration = await narrator.generateNarration(context).catch(() => null);
     const message = narration?.message?.trim() || buildFallbackMessage(context);
+    const source = narration?.message?.trim() ? "provider" : "fallback";
+
+    if (source === "fallback") {
+      console.warn("[ai] using fallback narration", {
+        matchId: match.id,
+        eventKind: context.event.kind,
+      });
+    } else {
+      console.info("[ai] using provider narration", {
+        matchId: match.id,
+        eventKind: context.event.kind,
+      });
+    }
 
     publisher.gameMasterMessage(match.id, buildPayload(context, message));
   }

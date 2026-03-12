@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { FailoverAiNarrator } from "../../../infrastructure/ai/FailoverAiNarrator";
+import {
+  FailoverAiNarrator,
+  NamedAiNarrator,
+} from "../../../infrastructure/ai/FailoverAiNarrator";
 import {
   AiNarrator,
   NarrationContext,
@@ -44,6 +47,13 @@ function createNarrator(
   };
 }
 
+function createNamedNarrator(provider: string, narrator: AiNarrator): NamedAiNarrator {
+  return {
+    provider,
+    narrator,
+  };
+}
+
 describe("FailoverAiNarrator", () => {
   it("returns the first successful narration result", async () => {
     const primary = createNarrator(async () => null);
@@ -52,7 +62,10 @@ describe("FailoverAiNarrator", () => {
       message: "The Oracle opens the night with a whisper.",
     }));
 
-    const narrator = new FailoverAiNarrator([primary, fallback]);
+    const narrator = new FailoverAiNarrator([
+      createNamedNarrator("primary", primary),
+      createNamedNarrator("fallback", fallback),
+    ]);
 
     await expect(narrator.generateNarration(createContext())).resolves.toEqual({
       kind: "start",
@@ -71,7 +84,10 @@ describe("FailoverAiNarrator", () => {
       message: "The storyteller wakes through the second lantern.",
     }));
 
-    const narrator = new FailoverAiNarrator([primary, fallback]);
+    const narrator = new FailoverAiNarrator([
+      createNamedNarrator("primary", primary),
+      createNamedNarrator("fallback", fallback),
+    ]);
 
     await expect(narrator.generateNarration(createContext())).resolves.toEqual({
       kind: "start",
@@ -83,7 +99,10 @@ describe("FailoverAiNarrator", () => {
     const primary = createNarrator(async () => null);
     const fallback = createNarrator(async () => null);
 
-    const narrator = new FailoverAiNarrator([primary, fallback]);
+    const narrator = new FailoverAiNarrator([
+      createNamedNarrator("primary", primary),
+      createNamedNarrator("fallback", fallback),
+    ]);
 
     await expect(narrator.generateNarration(createContext())).resolves.toBeNull();
   });

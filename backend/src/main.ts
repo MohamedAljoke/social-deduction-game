@@ -1,3 +1,4 @@
+import "dotenv/config";
 import path from "path";
 import { createApp } from "./app";
 
@@ -11,6 +12,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 3000;
   const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
+
   server.listen(port, host);
 }
 

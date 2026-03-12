@@ -61,6 +61,13 @@ export class OpenRouterAiNarrator implements AiNarrator {
       });
 
       if (!response.ok) {
+        const bodyPreview = await response.text().catch(() => "");
+        console.warn("[ai][openrouter] request failed", {
+          status: response.status,
+          statusText: response.statusText,
+          model: this.config.model,
+          bodyPreview: bodyPreview.slice(0, 500),
+        });
         return null;
       }
 
@@ -68,6 +75,9 @@ export class OpenRouterAiNarrator implements AiNarrator {
       const message = payload.choices?.[0]?.message?.content?.trim();
 
       if (!message) {
+        console.warn("[ai][openrouter] response did not include a message", {
+          model: this.config.model,
+        });
         return null;
       }
 
@@ -77,9 +87,18 @@ export class OpenRouterAiNarrator implements AiNarrator {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
+        console.warn("[ai][openrouter] request timed out", {
+          model: this.config.model,
+          timeoutMs: this.config.timeoutMs,
+        });
         return null;
       }
 
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[ai][openrouter] request threw", {
+        model: this.config.model,
+        message,
+      });
       return null;
     } finally {
       clearTimeout(timeout);
