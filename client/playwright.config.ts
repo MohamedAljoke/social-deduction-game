@@ -29,7 +29,7 @@ export default defineConfig({
     },
     {
       command:
-        "VITE_API_URL=http://127.0.0.1:3000 VITE_WS_URL=ws://127.0.0.1:3000/ws npm run dev",
+        "VITE_API_URL=http://127.0.0.1:3000 VITE_WS_URL=ws://127.0.0.1:3000/ws VITE_LANGUAGE=en npm run dev",
       url: "http://127.0.0.1:5173",
       reuseExistingServer: true,
       timeout: 15_000,

@@ -1,7 +1,12 @@
-// Language configuration - change CURRENT_LANGUAGE to switch between 'en' and 'pt-br'
-const CURRENT_LANGUAGE = 'pt-br';
+// Language can be overridden by Vite env for tests or deployment.
+const DEFAULT_LANGUAGE = "pt-br";
+const configuredLanguage = import.meta.env.VITE_LANGUAGE;
+const CURRENT_LANGUAGE =
+  configuredLanguage === "en" || configuredLanguage === "pt-br"
+    ? configuredLanguage
+    : DEFAULT_LANGUAGE;
 
-type Language = 'en' | 'pt-br';
+type Language = "en" | "pt-br";
 
 interface Translations {
   home: {
