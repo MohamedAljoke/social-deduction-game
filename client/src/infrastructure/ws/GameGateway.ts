@@ -6,7 +6,9 @@ import type {
   PlayerAssignment,
 } from "../../types/match";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://127.0.0.1:3000/ws";
+const WS_URL =
+  import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
 
 export class GameGateway {
   private ws: WebSocketClient;
@@ -23,10 +25,7 @@ export class GameGateway {
     this.ws.disconnect();
   }
 
-  joinMatch(
-    matchId: string,
-    playerId: string,
-  ): void {
+  joinMatch(matchId: string, playerId: string): void {
     this.ws.send("join_match", { matchId, playerId });
   }
 

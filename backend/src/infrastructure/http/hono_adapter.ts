@@ -15,6 +15,10 @@ import {
 type NodeServer = ReturnType<typeof serve>;
 
 export class HonoServer implements HttpServer {
+  serveStatic(_: string): void {
+    throw new Error("Method not implemented.");
+  }
+
   private app = new Hono();
   private server?: NodeServer;
 

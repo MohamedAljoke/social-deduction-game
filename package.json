@@ -6,8 +6,13 @@
     "doc": "docs"
   },
   "scripts": {
-    "install:client": "npm run install --prefix ./client",
-    "install:server": "npm run install --prefix ./backend",
+    "install:all": "npm install --prefix ./client && npm install --prefix ./backend",
+    "install:client": "npm install --prefix ./client",
+    "install:server": "npm install --prefix ./backend",
+    "build:client": "npm run build --prefix ./client",
+    "build:server": "npm run build --prefix ./backend",
+    "build": "npm run build:server && npm run build:client",
+    "start": "NODE_ENV=production node ./backend/dist/backend/src/main.js",
     "test:client": "npm run test --prefix ./client",
     "test:server": "npm run test --prefix ./backend",
     "dev:client": "npm run dev --prefix ./client",

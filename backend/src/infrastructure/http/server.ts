@@ -21,6 +21,7 @@ export type HttpHandler = (
 
 export interface HttpServer {
   register(method: HttpMethod, path: string, ...handlers: HttpHandler[]): void;
+  serveStatic(distPath: string): void;
   close(): Promise<void>;
   listen(port: number, host?: string): void;
 }

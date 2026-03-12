@@ -27,6 +27,13 @@ export class ExpressServer implements HttpServer {
     this.wsManager = wsManager;
   }
 
+  serveStatic(distPath: string) {
+    this.app.use(express.static(distPath));
+    this.app.get("/{*path}", (_, res) => {
+      res.sendFile("index.html", { root: distPath });
+    });
+  }
+
   register(method: HttpMethod, path: string, ...handlers: HttpHandler[]) {
     this.app[method](path, async (req: Request, res: Response) => {
       try {
