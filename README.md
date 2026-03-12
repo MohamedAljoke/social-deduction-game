@@ -32,13 +32,15 @@ social-deduction-game/
 
 **Backend**
 
-| File                                              | Purpose                                                       |
-| ------------------------------------------------- | ------------------------------------------------------------- |
-| `backend/src/domain/entity/match.ts`              | Core Match aggregate                                          |
-| `backend/src/application/`                        | Use cases (StartMatch, UseAbility, AdvancePhase, LeaveMatch…) |
-| `backend/src/infrastructure/websocket/mod.ts`     | WebSocket server & room management                            |
-| `backend/src/infrastructure/http/routes/match.ts` | REST routes                                                   |
-| `backend/src/container.ts`                        | Dependency injection wiring                                   |
+| File                                                       | Purpose                                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `backend/src/domain/entity/match.ts`                       | Core Match aggregate (start, rematch, advancePhase, resolveActions…)    |
+| `backend/src/application/`                                 | Use cases: CreateMatch, JoinMatch, StartMatch, UseAbility, SubmitVote, AdvancePhase, LeaveMatch, RematchMatch |
+| `backend/src/application/ai/`                              | AI narrator pipeline (context builder, narration publisher, port)        |
+| `backend/src/infrastructure/ai/`                           | AI narrator adapters: Gemini, OpenRouter, Failover, Noop                 |
+| `backend/src/infrastructure/websocket/mod.ts`              | WebSocket server & room management                                       |
+| `backend/src/infrastructure/http/routes/match.ts`          | REST routes                                                              |
+| `backend/src/container.ts`                                 | Dependency injection wiring                                              |
 
 **Frontend**
 
@@ -84,15 +86,20 @@ Frontend                          Backend
 ────────────────────────────────────────────────────
 features/ (UI)                    infrastructure/http  (REST)
   └── hooks → GameSessionService ──→ application/ (use cases)
-                 ↕                       └── domain/ (Match, Player…)
+                 ↕                       ├── domain/ (Match, Player…)
             GameGateway ←──────────── infrastructure/websocket
             (WS events)               (broadcasts domain events)
+                                         └── application/ai/
+                                             (AI narrator pipeline)
+                                             └── infrastructure/ai/
+                                                 (Gemini / OpenRouter / Failover)
 ```
 
-- REST for match creation and commands (start, ability, phase)
+- REST for match creation and commands (start, ability, phase, rematch)
 - WebSocket for real-time domain events pushed to all room members
 - Backend is authoritative — frontend renders state received from server
 - Finished matches can be reset into the same lobby code for another round, preserving players and template setup
+- Optional AI narrator (`aiGameMasterEnabled`) generates Portuguese game-master messages for key events (match start, phase changes, eliminations, match end) with automatic provider failover
 
 ---
 
