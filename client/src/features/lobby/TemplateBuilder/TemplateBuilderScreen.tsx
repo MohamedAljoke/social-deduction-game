@@ -6,7 +6,20 @@ import { Logo } from "../../../shared/ui/Logo";
 import { useGame } from "../../../context/GameContext";
 import { GAME_ACTIONS } from "../../../types/gameActions";
 import { t } from "@/infrastructure/i18n/translations";
-import type { Template } from "@/types/match";
+import type {
+  Alignment,
+  Template,
+  WinCondition,
+  WinConditionConfig,
+} from "@/types/match";
+
+interface BuilderTemplate {
+  name: string;
+  alignment: Alignment;
+  abilities: string[];
+  winCondition: WinCondition;
+  winConditionConfig?: WinConditionConfig;
+}
 
 const ABILITY_IDS = [
   { id: "kill", icon: "🗡️" },
@@ -63,7 +76,7 @@ export function TemplateBuilderScreen() {
   const { state, dispatch, service } = useGame();
   const [loading, setLoading] = useState(false);
 
-  const DEFAULT_TEMPLATES = [
+  const DEFAULT_TEMPLATES: BuilderTemplate[] = [
     {
       name: "Killer",
       alignment: "villain" as const,
@@ -81,7 +94,7 @@ export function TemplateBuilderScreen() {
   const playerCount = state.match?.players.length ?? 2;
   const maxTemplates = Math.max(2, playerCount);
 
-  const templates =
+  const templates: BuilderTemplate[] =
     state.configuredTemplates.length > 0
       ? state.configuredTemplates
       : state.match && state.match.templates.length > 0
@@ -249,7 +262,8 @@ export function TemplateBuilderScreen() {
                     }}
                     value={template.winCondition}
                     onChange={(e) => {
-                      const nextWinCondition = e.target.value;
+                      const nextWinCondition =
+                        e.target.value as BuilderTemplate["winCondition"];
                       const updated = templates.map((currentTemplate, i) =>
                         i === index
                           ? {
@@ -268,8 +282,8 @@ export function TemplateBuilderScreen() {
                         type: GAME_ACTIONS.SET_TEMPLATES,
                         payload: updated,
                       });
-                    }}
-                  >
+                      }}
+                    >
                     {WIN_CONDITION_IDS.map((condition) => (
                       <option key={condition.id} value={condition.id}>
                         {getWinConditionName(condition.id)}
@@ -290,7 +304,7 @@ export function TemplateBuilderScreen() {
                       value={template.winConditionConfig?.targetAlignment ?? "villain"}
                       onChange={(e) =>
                         updateTemplate(index, "winConditionConfig", {
-                          targetAlignment: e.target.value,
+                          targetAlignment: e.target.value as Alignment,
                         })
                       }
                     >
@@ -362,7 +376,7 @@ export function TemplateBuilderScreen() {
   );
 }
 
-function mapMatchTemplateToBuilderTemplate(template: Template) {
+function mapMatchTemplateToBuilderTemplate(template: Template): BuilderTemplate {
   return {
     name: template.name,
     alignment: template.alignment,

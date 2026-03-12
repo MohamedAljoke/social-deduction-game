@@ -2,6 +2,7 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
 import { GameScreen } from "@/features/game/GameScreen";
+import { t } from "@/infrastructure/i18n/translations";
 import type { Match } from "@/types/match";
 
 vi.mock("@/context/GameContext", () => ({
@@ -72,7 +73,10 @@ describe("GameScreen", () => {
     });
 
     mockUseGameLog.mockReturnValue({ actions: [] });
-    mockUseAvailableAbilities.mockReturnValue({ availableAbilities: [] });
+    mockUseAvailableAbilities.mockReturnValue({
+      availableAbilities: [],
+      canUseAnyAbility: false,
+    });
   });
 
   it("disables vote actions and shows loading text while a cast vote request is pending", () => {
@@ -94,9 +98,11 @@ describe("GameScreen", () => {
     renderWithProviders(<GameScreen />);
 
     expect(
-      screen.getByRole("button", { name: "Casting Vote..." }),
+      screen.getByRole("button", { name: t("game.castingVote") }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Skip Vote" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: t("game.skipVote") }),
+    ).toBeDisabled();
   });
 
   it("disables vote actions and shows loading text while a skip vote request is pending", () => {
@@ -117,9 +123,11 @@ describe("GameScreen", () => {
 
     renderWithProviders(<GameScreen />);
 
-    expect(screen.getByRole("button", { name: "Cast Vote" })).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "Skipping Vote..." }),
+      screen.getByRole("button", { name: t("game.castVote") }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: t("game.skippingVote") }),
     ).toBeDisabled();
   });
 
@@ -141,8 +149,12 @@ describe("GameScreen", () => {
 
     renderWithProviders(<GameScreen />);
 
-    expect(screen.getByRole("button", { name: "Cast Vote" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Skip Vote" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: t("game.castVote") }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: t("game.skipVote") }),
+    ).toBeEnabled();
   });
 
   it("disables next phase and shows loading text while phase advance is pending", () => {
@@ -163,6 +175,8 @@ describe("GameScreen", () => {
 
     renderWithProviders(<GameScreen />);
 
-    expect(screen.getByRole("button", { name: "Advancing..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: t("game.advancing") }),
+    ).toBeDisabled();
   });
 });

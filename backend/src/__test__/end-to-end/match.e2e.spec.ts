@@ -423,15 +423,14 @@ describe("Match E2E", () => {
           id: started.players[0].id,
           name: started.players[0].name,
           status: "alive",
-          templateId: undefined,
         }),
         expect.objectContaining({
           id: started.players[1].id,
           name: started.players[1].name,
           status: "alive",
-          templateId: undefined,
         }),
       ]);
+      expect(rematched.players.every((player) => player.templateId === undefined)).toBe(true);
       expect(rematched.templates).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
