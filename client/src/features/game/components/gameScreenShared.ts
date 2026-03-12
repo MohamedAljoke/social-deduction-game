@@ -18,6 +18,13 @@ export interface GameLogEntry {
   verb: string;
 }
 
+export interface GameMasterFeedEntry {
+  messageId: string;
+  kind: "start" | "phase" | "resolution" | "elimination" | "end";
+  message: string;
+  createdAt: string;
+}
+
 export function getInvestigateBannerData(
   match: Match | null,
   investigateResult: { targetId: string; alignment: string } | null,

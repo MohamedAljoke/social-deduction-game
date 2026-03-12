@@ -5,6 +5,7 @@ import type {
   Player,
   PlayerAssignment,
 } from "../../types/match";
+import type { GameMasterMessage } from "../../types/events";
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ||
@@ -110,6 +111,25 @@ export class GameGateway {
     return this.ws.on<{ matchId: string; winner: MatchWinner }>(
       "match_ended",
       (msg) => handler(msg.matchId, msg.winner),
+    );
+  }
+
+  onGameMasterMessage(
+    handler: (matchId: string, message: GameMasterMessage) => void,
+  ): () => void {
+    return this.ws.on<{
+      matchId: string;
+      messageId: string;
+      kind: GameMasterMessage["kind"];
+      message: string;
+      createdAt: string;
+    }>("game_master_message", (msg) =>
+      handler(msg.matchId, {
+        messageId: msg.messageId,
+        kind: msg.kind,
+        message: msg.message,
+        createdAt: msg.createdAt,
+      }),
     );
   }
 

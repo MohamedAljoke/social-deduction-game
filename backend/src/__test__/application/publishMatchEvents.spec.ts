@@ -17,6 +17,7 @@ function createPublisher(): RealtimePublisher {
     matchEnded: vi.fn(),
     voteSubmitted: vi.fn(),
     effectResolved: vi.fn(),
+    gameMasterMessage: vi.fn(),
   };
 }
 
@@ -31,7 +32,7 @@ function createMatchResponse(): MatchResponse {
     actions: [],
     templates: [],
     votes: [],
-    config: { showVotingTransparency: true },
+    config: { showVotingTransparency: true, aiGameMasterEnabled: false },
     winner: { kind: "alignment", alignment: Alignment.Hero },
     winnerAlignment: Alignment.Hero,
     endedAt: new Date("2026-03-10T12:05:00.000Z"),

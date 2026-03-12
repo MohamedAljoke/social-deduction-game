@@ -48,4 +48,25 @@ describe("WebSocketPublisher", () => {
       alignment: Alignment.Villain,
     });
   });
+
+  it("broadcasts game master messages to the match room", () => {
+    const broadcaster = createBroadcaster();
+    const publisher = new WebSocketPublisher(broadcaster);
+
+    publisher.gameMasterMessage("match-1", {
+      messageId: "message-1",
+      kind: "phase",
+      message: "The game master stirs as voting descends.",
+      createdAt: "2026-03-12T04:00:00.000Z",
+    });
+
+    expect(broadcaster.broadcastToMatch).toHaveBeenCalledWith("match-1", {
+      type: "game_master_message",
+      matchId: "match-1",
+      messageId: "message-1",
+      kind: "phase",
+      message: "The game master stirs as voting descends.",
+      createdAt: "2026-03-12T04:00:00.000Z",
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import {
   RealtimePublisher,
+  GameMasterMessagePayload,
   MatchStartedPayload,
 } from "../../domain/ports/RealtimePublisher";
 import { MatchResponse, MatchWinner } from "../../domain/entity/match";
@@ -113,5 +114,16 @@ export class WebSocketPublisher implements RealtimePublisher {
       }
       // kill_blocked, protect, roleblock: no notification needed beyond match_updated
     }
+  }
+
+  gameMasterMessage(
+    matchId: string,
+    payload: GameMasterMessagePayload,
+  ): void {
+    this.broadcaster.broadcastToMatch(matchId, {
+      type: "game_master_message",
+      matchId,
+      ...payload,
+    });
   }
 }

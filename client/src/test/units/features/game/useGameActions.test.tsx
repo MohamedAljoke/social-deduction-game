@@ -24,7 +24,7 @@ function createMatch(
     templates: [],
     actions: [],
     votes: [],
-    config: { showVotingTransparency: true },
+    config: { showVotingTransparency: true, aiGameMasterEnabled: false },
     players: playerOverrides ?? [
       { id: "player-1", name: "Alice", status: "alive" },
       { id: "player-2", name: "Bob", status: "alive" },

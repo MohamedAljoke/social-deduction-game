@@ -13,6 +13,7 @@ export function useHomeScreen() {
   const [playerName, setPlayerName] = useState("");
   const [matchCode, setMatchCode] = useState("");
   const [openVoting, setOpenVoting] = useState(true);
+  const [aiGameMasterEnabled, setAiGameMasterEnabled] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +37,7 @@ export function useHomeScreen() {
         if (mode === "create") {
           await service.createMatch(playerName.trim(), {
             showVotingTransparency: openVoting,
+            aiGameMasterEnabled,
           });
         } else {
           await service.joinMatch(matchCode.trim(), playerName.trim());
@@ -51,7 +53,15 @@ export function useHomeScreen() {
         setLoading(false);
       }
     },
-    [mode, playerName, matchCode, openVoting, service, navigate],
+    [
+      mode,
+      playerName,
+      matchCode,
+      openVoting,
+      aiGameMasterEnabled,
+      service,
+      navigate,
+    ],
   );
 
   return {
@@ -59,11 +69,13 @@ export function useHomeScreen() {
     playerName,
     matchCode,
     openVoting,
+    aiGameMasterEnabled,
     loading,
     error,
     setPlayerName,
     setMatchCode,
     setOpenVoting,
+    setAiGameMasterEnabled,
     toggleMode,
     submit,
   };

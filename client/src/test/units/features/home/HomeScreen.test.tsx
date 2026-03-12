@@ -4,6 +4,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { HomeScreen } from "@/features/home/HomeScreen";
+import { t } from "@/infrastructure/i18n/translations";
 
 const mockCreateMatch = vi.fn();
 const mockJoinMatch = vi.fn();
@@ -27,9 +28,9 @@ describe("HomeScreen integration", () => {
   it("renders create mode by default", () => {
     renderWithProviders(<HomeScreen />);
 
-    expect(screen.getByText("Create New Game")).toBeInTheDocument();
+    expect(screen.getByText(t("home.createGameBtn"))).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /create game/i }),
+      screen.getByRole("button", { name: t("home.createBtn") }),
     ).toBeInTheDocument();
   });
 
@@ -37,10 +38,10 @@ describe("HomeScreen integration", () => {
     renderWithProviders(<HomeScreen />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: /join existing game/i }),
+      screen.getByRole("button", { name: t("home.joinGameTitle") }),
     );
 
-    expect(screen.getByText(/enter game details/i)).toBeInTheDocument();
+    expect(screen.getByText(t("home.enterGameDetails"))).toBeInTheDocument();
   });
 
   it("creates a match and navigates to lobby", async () => {
@@ -48,15 +49,33 @@ describe("HomeScreen integration", () => {
 
     renderWithProviders(<HomeScreen />);
 
-    await userEvent.type(screen.getByLabelText(/your name/i), "Mohamed");
+    await userEvent.type(screen.getByLabelText(t("home.yourName")), "Mohamed");
 
-    await userEvent.click(screen.getByRole("button", { name: /create game/i }));
+    await userEvent.click(screen.getByRole("button", { name: t("home.createBtn") }));
 
     await waitFor(() => {
       expect(mockCreateMatch).toHaveBeenCalledWith("Mohamed", {
         showVotingTransparency: true,
+        aiGameMasterEnabled: false,
       });
       expect(mockNavigate).toHaveBeenCalledWith("/lobby");
+    });
+  });
+
+  it("creates a match with AI enabled when toggled on", async () => {
+    mockCreateMatch.mockResolvedValue(undefined);
+
+    renderWithProviders(<HomeScreen />);
+
+    await userEvent.type(screen.getByLabelText(t("home.yourName")), "Mohamed");
+    await userEvent.click(screen.getByLabelText(t("home.aiGameMaster")));
+    await userEvent.click(screen.getByRole("button", { name: t("home.createBtn") }));
+
+    await waitFor(() => {
+      expect(mockCreateMatch).toHaveBeenCalledWith("Mohamed", {
+        showVotingTransparency: true,
+        aiGameMasterEnabled: true,
+      });
     });
   });
 
@@ -65,12 +84,12 @@ describe("HomeScreen integration", () => {
 
     renderWithProviders(<HomeScreen />);
 
-    await userEvent.type(screen.getByLabelText(/your name/i), "Mohamed");
+    await userEvent.type(screen.getByLabelText(t("home.yourName")), "Mohamed");
 
-    await userEvent.click(screen.getByRole("button", { name: /create game/i }));
+    await userEvent.click(screen.getByRole("button", { name: t("home.createBtn") }));
 
     await waitFor(() => {
-      expect(screen.getByText(/failed to create game/i)).toBeInTheDocument();
+      expect(screen.getByText(t("errors.failedCreateGame"))).toBeInTheDocument();
     });
   });
 
@@ -81,15 +100,15 @@ describe("HomeScreen integration", () => {
 
     await userEvent.click(
       screen.getByRole("button", {
-        name: /join existing game/i,
+        name: t("home.joinGameTitle"),
       }),
     );
 
-    await userEvent.type(screen.getByLabelText(/your name/i), "Mohamed");
+    await userEvent.type(screen.getByLabelText(t("home.yourName")), "Mohamed");
 
-    await userEvent.type(screen.getByLabelText(/match id/i), "ABC123");
+    await userEvent.type(screen.getByLabelText(t("home.matchId")), "ABC123");
 
-    await userEvent.click(screen.getByRole("button", { name: /join game/i }));
+    await userEvent.click(screen.getByRole("button", { name: t("home.joinBtn") }));
 
     await waitFor(() => {
       expect(mockJoinMatch).toHaveBeenCalledWith("ABC123", "Mohamed");

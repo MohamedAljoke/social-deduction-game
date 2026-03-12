@@ -3,6 +3,7 @@ import { t } from "@/infrastructure/i18n/translations";
 import { AbilitySelector } from "./components/AbilitySelector";
 import {
   ActionConfirmation,
+  GameMasterPanel,
   GameLogPanel,
   VoteStatusPanel,
   VotingControls,
@@ -55,6 +56,9 @@ export function GameScreen() {
   const isVotingPhase = match?.phase === "voting";
   const isActionPhase = match?.phase === "action";
   const investigateResult = getInvestigateBannerData(match, state.investigateResult);
+  const shouldShowGameMaster =
+    (match?.config?.aiGameMasterEnabled ?? false) ||
+    state.gameMasterMessages.length > 0;
 
   const handleLeave = () => {
     if (confirm(t('game.confirmLeave'))) {
@@ -133,6 +137,16 @@ export function GameScreen() {
           onConfirm={handleConfirm}
           onSkipVote={handleSkipVote}
         />
+      )}
+
+      {shouldShowGameMaster && (
+        <div className="mb-5">
+          <GameMasterPanel
+            messages={state.gameMasterMessages}
+            title={t('game.gameMaster')}
+            emptyMessage={t('game.gameMasterWaiting')}
+          />
+        </div>
       )}
 
       <GameLogPanel actions={actions} />

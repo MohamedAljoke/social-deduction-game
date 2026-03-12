@@ -5,6 +5,13 @@ import type {
   PlayerAssignment,
 } from "./match";
 
+export interface GameMasterMessage {
+  messageId: string;
+  kind: "start" | "phase" | "resolution" | "elimination" | "end";
+  message: string;
+  createdAt: string;
+}
+
 export type ClientEvent =
   | { type: "join_match"; matchId: string; playerId: string }
   | { type: "leave_match"; matchId: string; playerId: string }
@@ -49,6 +56,14 @@ export type ServerEvent =
   | { type: "match_updated"; matchId: string; state: Match }
   | { type: "player_killed"; matchId: string; playerId: string }
   | { type: "match_ended"; matchId: string; winner: MatchWinner }
+  | {
+      type: "game_master_message";
+      matchId: string;
+      messageId: string;
+      kind: GameMasterMessage["kind"];
+      message: string;
+      createdAt: string;
+    }
   | {
       type: "investigate_result";
       matchId: string;

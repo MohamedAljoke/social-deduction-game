@@ -69,7 +69,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "non-existent");
       expect(result.current.availableAbilities).toEqual([]);
@@ -87,7 +87,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-1");
 
@@ -110,7 +110,7 @@ describe("useAvailableAbilities", () => {
           { id: "action-1", actorId: "player-1", targetIds: ["player-2"], effectType: "kill" },
         ],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-1");
 
@@ -138,7 +138,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-dead");
 
@@ -159,7 +159,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-1");
 
@@ -181,7 +181,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-1");
 
@@ -202,7 +202,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-1");
 
@@ -232,7 +232,7 @@ describe("useAvailableAbilities", () => {
         templates: [templateWithAllAbilities, templateWithKillOnly],
         actions: [],
         createdAt: "2026-01-01",
-        config: { showVotingTransparency: true },
+        config: { showVotingTransparency: true, aiGameMasterEnabled: false },
       };
       const { result } = setupHook(match, "player-limited");
 

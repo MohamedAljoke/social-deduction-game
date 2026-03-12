@@ -53,6 +53,7 @@ export type MatchWinner =
 
 export interface MatchConfig {
   showVotingTransparency: boolean;
+  aiGameMasterEnabled: boolean;
 }
 
 interface MatchProps {
@@ -115,7 +116,10 @@ export class Match {
     this.actions = props.actions ?? [];
     this.templates = props.templates ?? [];
     this.voting = new MatchVoting(props.votes);
-    this.config = props.config ?? { showVotingTransparency: true };
+    this.config = {
+      showVotingTransparency: props.config?.showVotingTransparency ?? true,
+      aiGameMasterEnabled: props.config?.aiGameMasterEnabled ?? false,
+    };
     this.winner = props.winner ?? null;
     this.winnerAlignment = props.winnerAlignment ?? null;
     this.endedAt = props.endedAt ?? null;
@@ -130,6 +134,7 @@ export class Match {
       createdAt: new Date(),
       config: {
         showVotingTransparency: config?.showVotingTransparency ?? true,
+        aiGameMasterEnabled: config?.aiGameMasterEnabled ?? false,
       },
     });
   }

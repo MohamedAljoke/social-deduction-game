@@ -53,6 +53,20 @@ describe("Match E2E", () => {
       expect(response.status).toBe(201);
       expect(body.name).toBe("my_match");
     });
+
+    it("should persist AI game master config when provided", async () => {
+      const { body, response } = await createMatchHelper("ai_match", {
+        showVotingTransparency: false,
+        aiGameMasterEnabled: true,
+      });
+
+      expect(response.status).toBe(201);
+      expect(body.config).toEqual({
+        showVotingTransparency: false,
+        aiGameMasterEnabled: true,
+      });
+    });
+
     it("should reject invalid body type", async () => {
       const response = await fetch(`http://localhost:${port}/match`, {
         method: "POST",
@@ -1229,14 +1243,21 @@ describe("Match E2E", () => {
   });
 });
 
-async function createMatchHelper(name?: string): Promise<{
+async function createMatchHelper(
+  name?: string,
+  config?: {
+    showVotingTransparency?: boolean;
+    aiGameMasterEnabled?: boolean;
+  },
+): Promise<{
   body: MatchResponse;
   response: Response;
 }> {
   const response = await fetch(`http://localhost:${port}/match`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: name ? JSON.stringify({ name }) : undefined,
+    body:
+      name || config ? JSON.stringify({ name, config }) : undefined,
   });
 
   const body = (await response.json()) as MatchResponse;

@@ -5,6 +5,7 @@ export interface CreateMatchInput {
   name?: string;
   config?: {
     showVotingTransparency?: boolean;
+    aiGameMasterEnabled?: boolean;
   };
 }
 

@@ -40,15 +40,27 @@ The first provider should be `OpenRouter`, because it offers a free starting pat
 
 But the implementation must not be tied to `OpenRouter`.
 
+Because this project should stay usable on a free tier, the AI feature must degrade gracefully when credits run out, the provider times out, or the API key is missing.
+
 The required decision is:
 
 - `OpenRouter` is the initial provider in v1
 - provider/model selection must sit behind a small backend interface
 - switching later to `OpenAI`, `Anthropic`, or a local model must not require changes to match logic
+- if the provider is unavailable, the match still runs and the game master falls back to a small hardcoded line such as "the game master is sleeping"
 
 ## V1 Goal
 
 V1 should ship a public narrator that turns public match events into short story-like commentary.
+
+The narration should feel like a storyteller, not a log line.
+
+That means:
+
+- prefer short dramatic flavor over flat status text
+- use the custom template names created for the match when they are available in the safe payload
+- avoid boring lines like "phase changed" or "you died"
+- keep messages short enough to fit naturally into the live match UI
 
 Good narration triggers:
 
@@ -124,7 +136,8 @@ Do not send raw `ActionsResolved` effect data directly to the model. Some effect
    - safe template names
 6. Call the configured AI provider through the narrator interface.
 7. Publish the returned narration as a new realtime event.
-8. If AI fails or times out, log it and continue gameplay normally.
+8. If AI fails, times out, or the free tier is exhausted, publish a hardcoded fallback line instead of surfacing an error to players.
+9. Continue gameplay normally no matter what the AI provider does.
 
 ### Suggested contracts
 
@@ -158,12 +171,18 @@ Keep the provider-specific concerns in infrastructure only:
 - model id
 - request/response mapping
 - timeout and retry policy
+- free-tier failure handling
 
 Suggested environment config for v1:
 
 - `OPENROUTER_API_KEY`
 - `OPENROUTER_MODEL`
 - optional request timeout config
+
+Important:
+
+- the API key must come from env and be added later in deployment/local setup
+- do not block the feature behind a missing key; if AI is enabled and the provider is unavailable, use fallback narration
 
 ## Safety Rules
 
@@ -178,6 +197,13 @@ Never include:
 - private ability targets
 
 AI output is presentation only. It must never mutate match state or decide outcomes.
+
+Hardcoded narrator guidance should explicitly tell the model to:
+
+- sound like a game master telling a live story
+- use player names and template names when available in the safe payload
+- avoid blunt mechanical summaries
+- stay within one or two short sentences
 
 ## Client Direction
 

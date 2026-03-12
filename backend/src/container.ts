@@ -1,4 +1,5 @@
 import { CreateMatchUseCase } from "./application/CreateMatch";
+import { AiNarrator } from "./application/ai/AiNarrator";
 import { ListMatchesUseCase } from "./application/ListMatchs";
 import { JoinMatchUseCase } from "./application/JoinMatch";
 import { LeaveMatchUseCase } from "./application/LeaveMatch";
@@ -15,6 +16,7 @@ import {
   MatchBroadcaster,
   WebSocketPublisher,
 } from "./infrastructure/websocket/WebSocketPublisher";
+import { createAiNarratorFromEnv } from "./infrastructure/ai/createAiNarratorFromEnv";
 import { ActionResolver, ActionResolverFactory } from "./domain/services/resolution";
 
 // Branded token type used for type-safe dependency resolution.
@@ -27,6 +29,7 @@ export type Token<T> = string & { __type?: T };
 export const TOKENS = {
   MatchRepository: "MatchRepository" as Token<MatchRepository>,
   RealtimePublisher: "RealtimePublisher" as Token<RealtimePublisher>,
+  AiNarrator: "AiNarrator" as Token<AiNarrator>,
   CreateMatchUseCase: "CreateMatchUseCase" as Token<CreateMatchUseCase>,
   ListMatchesUseCase: "ListMatchesUseCase" as Token<ListMatchesUseCase>,
   JoinMatchUseCase: "JoinMatchUseCase" as Token<JoinMatchUseCase>,
@@ -91,6 +94,10 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
     { singleton: true },
   );
 
+  container.register(TOKENS.AiNarrator, () => createAiNarratorFromEnv(), {
+    singleton: true,
+  });
+
   container.register(
     TOKENS.CreateMatchUseCase,
     (c) => new CreateMatchUseCase(c.resolve(TOKENS.MatchRepository)),
@@ -116,6 +123,7 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
       new StartMatchUseCase(
         c.resolve(TOKENS.MatchRepository),
         c.resolve(TOKENS.RealtimePublisher),
+        c.resolve(TOKENS.AiNarrator),
       ),
   );
 
@@ -131,6 +139,7 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
         c.resolve(TOKENS.MatchRepository),
         c.resolve(TOKENS.RealtimePublisher),
         c.resolve(TOKENS.ActionResolver),
+        c.resolve(TOKENS.AiNarrator),
       ),
   );
 
