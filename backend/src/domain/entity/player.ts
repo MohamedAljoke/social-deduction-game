@@ -4,6 +4,8 @@ export enum PlayerStatus {
   ELIMINATED = "eliminated",
 }
 
+export type MatchPlayerStatus = "vote_shielded";
+
 export type PlayerResponse = ReturnType<Player["toJSON"]>;
 
 export class Player {

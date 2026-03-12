@@ -1,3 +1,7 @@
+import type { EffectResultType, Modifier } from "../../../../../shared/src/resolution-types";
+
+export type { EffectResultType, Modifier };
+
 export type StateChange =
   | {
       type: "pending_death";
@@ -11,24 +15,24 @@ export type StateChange =
     };
 
 export interface EffectResult {
-  type: string;
+  type: EffectResultType;
   actorId: string;
   targetIds: string[];
   data?: Record<string, unknown>;
 }
 
 export class ResolutionContext {
-  private modifiers = new Map<string, Set<string>>();
+  private modifiers = new Map<string, Set<Modifier>>();
   private stateChanges: StateChange[] = [];
   private results: EffectResult[] = [];
 
-  public addModifier(playerId: string, mod: string): void {
-    const mods = this.modifiers.get(playerId) ?? new Set<string>();
+  public addModifier(playerId: string, mod: Modifier): void {
+    const mods = this.modifiers.get(playerId) ?? new Set<Modifier>();
     mods.add(mod);
     this.modifiers.set(playerId, mods);
   }
 
-  public hasModifier(playerId: string, mod: string): boolean {
+  public hasModifier(playerId: string, mod: Modifier): boolean {
     return this.modifiers.get(playerId)?.has(mod) ?? false;
   }
 

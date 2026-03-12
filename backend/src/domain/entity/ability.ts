@@ -5,6 +5,7 @@ import {
   TargetNotAlive,
 } from "../errors";
 import { Player } from "./player";
+import { ABILITY_DEFINITIONS } from "../../../../shared/src/ability-definitions";
 
 export enum EffectType {
   Kill = "kill",
@@ -14,13 +15,9 @@ export enum EffectType {
   VoteShield = "vote_shield",
 }
 
-export const DEFAULT_PRIORITY: Record<EffectType, number> = {
-  [EffectType.Roleblock]: 3,
-  [EffectType.Protect]: 2,
-  [EffectType.VoteShield]: 2,
-  [EffectType.Investigate]: 1,
-  [EffectType.Kill]: 0,
-};
+export const DEFAULT_PRIORITY: Record<EffectType, number> = Object.fromEntries(
+  Object.entries(ABILITY_DEFINITIONS).map(([id, def]) => [id, def.priority]),
+) as Record<EffectType, number>;
 
 export class Ability {
   constructor(

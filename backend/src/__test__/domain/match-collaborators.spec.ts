@@ -470,7 +470,7 @@ describe("Match aggregate regression", () => {
       data: { alignment: Alignment.Villain },
     };
     const resolver = {
-      resolve: vi.fn().mockReturnValue({ effects: [resolutionEffect] }),
+      resolve: vi.fn().mockReturnValue({ effects: [resolutionEffect], playerStatuses: new Map() }),
     } as unknown as ActionResolver;
 
     match.resolveActions(resolver);

@@ -3,10 +3,11 @@ import { Player } from "../../entity/player";
 import { Template } from "../../entity/template";
 import { EffectHandler } from "./EffectHandler";
 import { EffectResult, ResolutionContext } from "./ResolutionContext";
+import type { MatchPlayerStatus } from "../../entity/player";
 
 export interface ResolutionResult {
   effects: EffectResult[];
-  voteShieldedPlayerIds: string[];
+  playerStatuses: Map<string, Set<MatchPlayerStatus>>;
 }
 
 export class ActionResolver {
@@ -53,7 +54,7 @@ export class ActionResolver {
       }
     }
 
-    const voteShieldedPlayerIds = new Set<string>();
+    const playerStatuses = new Map<string, Set<MatchPlayerStatus>>();
 
     for (const change of ctx.getStateChanges()) {
       if (change.type === "pending_death") {
@@ -62,13 +63,16 @@ export class ActionResolver {
       }
 
       if (change.type === "vote_shield") {
-        voteShieldedPlayerIds.add(change.targetId);
+        const set =
+          playerStatuses.get(change.targetId) ?? new Set<MatchPlayerStatus>();
+        set.add("vote_shielded");
+        playerStatuses.set(change.targetId, set);
       }
     }
 
     return {
       effects: ctx.getResults(),
-      voteShieldedPlayerIds: [...voteShieldedPlayerIds],
+      playerStatuses,
     };
   }
 

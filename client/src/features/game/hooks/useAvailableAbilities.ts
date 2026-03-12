@@ -1,52 +1,7 @@
 import { useMemo } from "react";
 import { useGame } from "../../../context/GameContext";
 import type { Ability } from "../../../types/match";
-
-interface AbilityMetadata {
-  id: string;
-  canUseWhenDead: boolean;
-  targetCount: number;
-  canTargetSelf: boolean;
-  requiresAliveTarget: boolean;
-}
-
-const ABILITY_METADATA: Record<string, AbilityMetadata> = {
-  kill: {
-    id: "kill",
-    canUseWhenDead: false,
-    targetCount: 1,
-    canTargetSelf: false,
-    requiresAliveTarget: true,
-  },
-  protect: {
-    id: "protect",
-    canUseWhenDead: false,
-    targetCount: 1,
-    canTargetSelf: true,
-    requiresAliveTarget: true,
-  },
-  vote_shield: {
-    id: "vote_shield",
-    canUseWhenDead: false,
-    targetCount: 1,
-    canTargetSelf: true,
-    requiresAliveTarget: true,
-  },
-  roleblock: {
-    id: "roleblock",
-    canUseWhenDead: false,
-    targetCount: 1,
-    canTargetSelf: false,
-    requiresAliveTarget: true,
-  },
-  investigate: {
-    id: "investigate",
-    canUseWhenDead: false,
-    targetCount: 1,
-    canTargetSelf: false,
-    requiresAliveTarget: true,
-  },
-};
+import { ABILITY_DEFINITIONS, type EffectTypeId } from "@shared/ability-definitions";
 
 export interface AvailableAbility extends Ability {
   isAvailable: boolean;
@@ -76,7 +31,7 @@ export function useAvailableAbilities() {
     const isAlive = currentPlayer.status === "alive";
 
     return currentTemplate.abilities.map((ability) => {
-      const metadata = ABILITY_METADATA[ability.id];
+      const metadata = ABILITY_DEFINITIONS[ability.id as EffectTypeId];
       
       if (!metadata) {
         return {

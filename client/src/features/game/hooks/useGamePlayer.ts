@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useGame } from "../../../context/GameContext";
 import type { GameLogEntry } from "../components/gameScreenShared";
+import { ABILITY_DEFINITIONS, type EffectTypeId } from "@shared/ability-definitions";
 
 export const PHASE_CONFIG: Record<
   string,
@@ -16,11 +17,11 @@ export const PHASE_CONFIG: Record<
 };
 
 export const ABILITY_LABELS: Record<string, string> = {
-  kill: "🗡️ Kill",
-  protect: "🛡️ Protect",
-  vote_shield: "🛡️ Vote Shield",
-  roleblock: "🚫 Roleblock",
-  investigate: "🔍 Investigate",
+  kill: `🗡️ ${ABILITY_DEFINITIONS.kill.label}`,
+  protect: `🛡️ ${ABILITY_DEFINITIONS.protect.label}`,
+  vote_shield: `🛡️ ${ABILITY_DEFINITIONS.vote_shield.label}`,
+  roleblock: `🚫 ${ABILITY_DEFINITIONS.roleblock.label}`,
+  investigate: `🔍 ${ABILITY_DEFINITIONS.investigate.label}`,
 };
 
 export const PLAYER_COLORS = [
@@ -82,18 +83,14 @@ export function useGameLog() {
       .filter(Boolean);
     const effectType = action.effectType ?? action.EffectType;
 
-    const verb: Record<string, string> = {
-      kill: "killed",
-      protect: "protected",
-      vote_shield: "shielded from voting",
-      roleblock: "roleblocked",
-      investigate: "investigated",
-    };
+    const verbStr = effectType
+      ? (ABILITY_DEFINITIONS[effectType as EffectTypeId]?.verb ?? effectType)
+      : "acted on";
 
     return {
       actorName: actor?.name || "Unknown",
       targetNames: targets.map((t) => t?.name).join(", "),
-      verb: (effectType && verb[effectType]) || effectType || "acted on",
+      verb: verbStr,
     };
   };
 

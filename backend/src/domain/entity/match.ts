@@ -1,4 +1,4 @@
-import { Player } from "./player";
+import { Player, type MatchPlayerStatus } from "./player";
 import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Alignment, Template } from "./template";
@@ -65,7 +65,7 @@ interface MatchProps {
   winner?: MatchWinner | null;
   winnerAlignment?: Alignment | null;
   endedAt?: Date | null;
-  voteShieldedPlayerIds?: string[];
+  playerStatuses?: Map<string, Set<MatchPlayerStatus>>;
 }
 
 export class Match {
@@ -88,7 +88,7 @@ export class Match {
   private winner: MatchWinner | null;
   private winnerAlignment: Alignment | null;
   private endedAt: Date | null;
-  private voteShieldedPlayerIds: Set<string>;
+  private playerStatuses: Map<string, Set<MatchPlayerStatus>>;
   private _domainEvents: MatchDomainEvent[] = [];
 
   public pullEvents(): MatchDomainEvent[] {
@@ -115,7 +115,7 @@ export class Match {
     this.winner = props.winner ?? null;
     this.winnerAlignment = props.winnerAlignment ?? null;
     this.endedAt = props.endedAt ?? null;
-    this.voteShieldedPlayerIds = new Set(props.voteShieldedPlayerIds ?? []);
+    this.playerStatuses = props.playerStatuses ?? new Map();
   }
 
   static create(name: string, config?: Partial<MatchConfig>): Match {
@@ -207,8 +207,10 @@ export class Match {
     if (isVotingPhase) {
       const result = this.voting.resolveRound();
       if (result.eliminatedPlayerId) {
-        if (this.voteShieldedPlayerIds.has(result.eliminatedPlayerId)) {
-          this.voteShieldedPlayerIds.delete(result.eliminatedPlayerId);
+        const statuses = this.playerStatuses.get(result.eliminatedPlayerId);
+        if (statuses?.has("vote_shielded")) {
+          statuses.delete("vote_shielded");
+          if (statuses.size === 0) this.playerStatuses.delete(result.eliminatedPlayerId);
         } else {
           const player = this.players.find(
             (candidate) => candidate.id === result.eliminatedPlayerId,
@@ -241,8 +243,12 @@ export class Match {
 
     const result = resolver.resolve(this.actions, this.players, this.templates);
     this.actions = [];
-    for (const playerId of result.voteShieldedPlayerIds ?? []) {
-      this.voteShieldedPlayerIds.add(playerId);
+    for (const [playerId, statuses] of result.playerStatuses) {
+      const existing = this.playerStatuses.get(playerId) ?? new Set<MatchPlayerStatus>();
+      for (const status of statuses) {
+        existing.add(status);
+      }
+      this.playerStatuses.set(playerId, existing);
     }
     this.finishIfWinnerExists();
     this.emit({ type: "ActionsResolved", matchId: this.id, effects: result.effects });
