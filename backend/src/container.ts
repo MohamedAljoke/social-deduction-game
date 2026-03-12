@@ -16,7 +16,7 @@ import {
   MatchBroadcaster,
   WebSocketPublisher,
 } from "./infrastructure/websocket/WebSocketPublisher";
-import { NoopAiNarrator } from "./infrastructure/ai/NoopAiNarrator";
+import { createAiNarratorFromEnv } from "./infrastructure/ai/createAiNarratorFromEnv";
 import { ActionResolver, ActionResolverFactory } from "./domain/services/resolution";
 
 // Branded token type used for type-safe dependency resolution.
@@ -94,7 +94,7 @@ export function buildContainer(matchBroadcaster: MatchBroadcaster) {
     { singleton: true },
   );
 
-  container.register(TOKENS.AiNarrator, () => new NoopAiNarrator(), {
+  container.register(TOKENS.AiNarrator, () => createAiNarratorFromEnv(), {
     singleton: true,
   });
 
