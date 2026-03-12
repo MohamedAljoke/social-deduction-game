@@ -6,9 +6,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "install:all": "npm install --prefix ./client && npm install --prefix ./backend",
-    "install:client": "npm install --prefix ./client",
-    "install:server": "npm install --prefix ./backend",
+    "install:all": "npm install --include=dev --prefix ./client && npm install --include=dev --prefix ./backend",
+    "install:client": "npm install --include=dev --prefix ./client",
+    "install:server": "npm install --include=dev --prefix ./backend",
     "build:client": "npm run build --prefix ./client",
     "build:server": "npm run build --prefix ./backend",
     "build": "npm run build:server && npm run build:client",

@@ -1,5 +1,5 @@
 import { AiNarrator } from "../../application/ai/AiNarrator";
-import { FailoverAiNarrator } from "./FailoverAiNarrator";
+import { FailoverAiNarrator, NamedAiNarrator } from "./FailoverAiNarrator";
 import { GeminiAiNarrator } from "./GeminiAiNarrator";
 import { NoopAiNarrator } from "./NoopAiNarrator";
 import { OpenRouterAiNarrator } from "./OpenRouterAiNarrator";
@@ -22,33 +22,41 @@ export function createAiNarratorFromEnv(
   const provider = env.AI_PROVIDER?.trim().toLowerCase() ?? "noop";
   const configuredNarrators = getConfiguredNarrators(env, fetchImpl);
 
+  console.info("[ai] creating narrator from env", {
+    preferredProvider: provider || "auto",
+    configuredProviders: configuredNarrators.map((entry) => entry.provider),
+  });
+
   if (provider === "noop") {
+    console.warn("[ai] AI_PROVIDER=noop, using NoopAiNarrator");
     return new NoopAiNarrator();
   }
 
   const orderedNarrators = orderNarrators(configuredNarrators, provider);
 
   if (orderedNarrators.length === 0) {
+    console.warn("[ai] no AI providers configured, using NoopAiNarrator");
     return new NoopAiNarrator();
   }
 
   if (orderedNarrators.length === 1) {
+    console.info("[ai] using single narration provider", {
+      provider: orderedNarrators[0].provider,
+    });
     return orderedNarrators[0].narrator;
   }
 
-  return new FailoverAiNarrator(orderedNarrators.map((entry) => entry.narrator));
-}
-
-interface NamedNarrator {
-  provider: "openrouter" | "gemini";
-  narrator: AiNarrator;
+  console.info("[ai] using failover narration providers", {
+    providers: orderedNarrators.map((entry) => entry.provider),
+  });
+  return new FailoverAiNarrator(orderedNarrators);
 }
 
 function getConfiguredNarrators(
   env: NodeJS.ProcessEnv,
   fetchImpl: typeof fetch,
-): NamedNarrator[] {
-  const narrators: NamedNarrator[] = [];
+): NamedAiNarrator[] {
+  const narrators: NamedAiNarrator[] = [];
 
   const openRouterApiKey = env.OPENROUTER_API_KEY?.trim();
   const openRouterModel = env.OPENROUTER_MODEL?.trim();
@@ -96,9 +104,9 @@ function getConfiguredNarrators(
 }
 
 function orderNarrators(
-  narrators: NamedNarrator[],
+  narrators: NamedAiNarrator[],
   preferredProvider: string,
-): NamedNarrator[] {
+): NamedAiNarrator[] {
   if (preferredProvider === "auto" || preferredProvider === "") {
     return narrators;
   }

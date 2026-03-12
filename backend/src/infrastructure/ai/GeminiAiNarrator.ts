@@ -66,6 +66,13 @@ export class GeminiAiNarrator implements AiNarrator {
       });
 
       if (!response.ok) {
+        const bodyPreview = await response.text().catch(() => "");
+        console.warn("[ai][gemini] request failed", {
+          status: response.status,
+          statusText: response.statusText,
+          model: this.config.model,
+          bodyPreview: bodyPreview.slice(0, 500),
+        });
         return null;
       }
 
@@ -77,6 +84,9 @@ export class GeminiAiNarrator implements AiNarrator {
         .trim();
 
       if (!message) {
+        console.warn("[ai][gemini] response did not include a message", {
+          model: this.config.model,
+        });
         return null;
       }
 
@@ -86,9 +96,18 @@ export class GeminiAiNarrator implements AiNarrator {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
+        console.warn("[ai][gemini] request timed out", {
+          model: this.config.model,
+          timeoutMs: this.config.timeoutMs,
+        });
         return null;
       }
 
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[ai][gemini] request threw", {
+        model: this.config.model,
+        message,
+      });
       return null;
     } finally {
       clearTimeout(timeout);
