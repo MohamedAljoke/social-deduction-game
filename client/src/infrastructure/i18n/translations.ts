@@ -245,8 +245,8 @@ const translations: Record<Language, Translations> = {
       noAbilities: '(No abilities available)',
       youLabel: ' (You)',
       voteCount: {
-        singular: ' vote',
-        plural: ' votes',
+        singular: 'vote',
+        plural: 'votes',
       },
       phases: {
         discussion: {
@@ -385,8 +385,8 @@ const translations: Record<Language, Translations> = {
       noAbilities: '(Nenhuma habilidade disponível)',
       youLabel: ' (Você)',
       voteCount: {
-        singular: ' voto',
-        plural: ' votos',
+        singular: 'voto',
+        plural: 'votos',
       },
       phases: {
         discussion: {

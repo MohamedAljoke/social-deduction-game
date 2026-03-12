@@ -48,6 +48,16 @@ async function voteForTarget(page: Page, targetName: string): Promise<void> {
   await page.getByRole("button", { name: /cast vote/i }).click();
 }
 
+function getPlayerCard(page: Page, playerName: string) {
+  return page.getByTestId(
+    `player-card-${playerName.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
+  );
+}
+
+function getVoteBadge(page: Page, playerName: string) {
+  return getPlayerCard(page, playerName).getByTestId("vote-count-badge");
+}
+
 test.describe("Game screen", () => {
   test("all players see the game screen with phase banner after game starts", async ({
     createPlayers,
@@ -155,8 +165,12 @@ test.describe("Voting", () => {
     await guestPage.getByRole("button", { name: /cast vote/i }).click();
 
     // Vote count badge should appear on Alice's card on both pages
-    await expect(guestPage.getByText(/1 vote/i)).toBeVisible({ timeout: 5000 });
-    await expect(hostPage.getByText(/1 vote/i)).toBeVisible({ timeout: 5000 });
+    await expect(getVoteBadge(guestPage, "Alice")).toHaveText(/1 vote/i, {
+      timeout: 5000,
+    });
+    await expect(getVoteBadge(hostPage, "Alice")).toHaveText(/1 vote/i, {
+      timeout: 5000,
+    });
   });
 
   test("advancing phase from voting eliminates the most-voted player", async ({
@@ -327,10 +341,10 @@ test.describe("Voting — edge cases", () => {
 
     await guestPage.getByRole("button", { name: /skip vote/i }).click();
 
-    await expect(guestPage.getByText(/\d+ votes?/i)).toHaveCount(0, {
+    await expect(guestPage.getByTestId("vote-count-badge")).toHaveCount(0, {
       timeout: 5000,
     });
-    await expect(hostPage.getByText(/\d+ votes?/i)).toHaveCount(0, {
+    await expect(hostPage.getByTestId("vote-count-badge")).toHaveCount(0, {
       timeout: 5000,
     });
   });
@@ -471,7 +485,7 @@ test.describe("Voting — edge cases", () => {
 
     // Bob initially votes for one target
     await voteForTarget(guest1Page, initialTarget);
-    await expect(guest1Page.getByText(/1 vote/i)).toBeVisible({
+    await expect(getVoteBadge(guest1Page, initialTarget)).toHaveText(/1 vote/i, {
       timeout: 5000,
     });
 
@@ -479,11 +493,15 @@ test.describe("Voting — edge cases", () => {
     await voteForTarget(guest1Page, eliminationTarget);
 
     // Only one player should have Bob's vote
-    await expect(guest1Page.getByText(/1 vote/i)).toBeVisible({
+    await expect(getVoteBadge(guest1Page, eliminationTarget)).toHaveText(
+      /1 vote/i,
+      {
+        timeout: 5000,
+      },
+    );
+    await expect(getVoteBadge(guest1Page, initialTarget)).toHaveCount(0);
+    await expect(guest1Page.getByTestId("vote-count-badge")).toHaveCount(1, {
       timeout: 5000,
-    });
-    await expect(guest1Page.getByText(/1 vote/i)).toHaveCount(1, {
-      timeout: 3000,
     });
 
     // Add a second vote to guarantee elimination without ending the game
@@ -522,22 +540,22 @@ test.describe("Voting — edge cases", () => {
 
     await guest1Page.getByText("Alice").first().click();
     await guest1Page.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guest1Page.getByText(/1 vote/i)).toBeVisible({
+    await expect(getVoteBadge(guest1Page, "Alice")).toHaveText(/1 vote/i, {
       timeout: 5000,
     });
 
     await guest2Page.getByText("Alice").first().click();
     await guest2Page.getByRole("button", { name: /cast vote/i }).click();
-    await expect(guest2Page.getByText(/2 votes/i)).toBeVisible({
+    await expect(getVoteBadge(guest2Page, "Alice")).toHaveText(/2 votes/i, {
       timeout: 5000,
     });
 
     // Verify from the host's perspective too
-    await expect(hostPage.getByText(/2 votes/i)).toBeVisible({
+    await expect(getVoteBadge(hostPage, "Alice")).toHaveText(/2 votes/i, {
       timeout: 5000,
     });
     // Only Alice's card has a vote badge — Bob and Charlie have none
-    await expect(hostPage.getByText(/\d+ votes?/i)).toHaveCount(1, {
+    await expect(hostPage.getByTestId("vote-count-badge")).toHaveCount(1, {
       timeout: 3000,
     });
   });
