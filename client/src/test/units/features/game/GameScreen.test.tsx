@@ -60,6 +60,7 @@ describe("GameScreen", () => {
       state: {
         matchId: "match-1",
         investigateResult: null,
+        gameMasterMessages: [],
       },
     } as never);
 
@@ -178,5 +179,60 @@ describe("GameScreen", () => {
     expect(
       screen.getByRole("button", { name: t("game.advancing") }),
     ).toBeDisabled();
+  });
+
+  it("renders game master narration when AI narration is enabled", () => {
+    mockUseGame.mockReturnValue({
+      service: { leave: vi.fn() },
+      state: {
+        matchId: "match-1",
+        investigateResult: null,
+        gameMasterMessages: [
+          {
+            messageId: "msg-1",
+            kind: "phase",
+            message: "The Oracle steps forward as the village enters voting.",
+            createdAt: "2026-01-01T00:01:00.000Z",
+          },
+        ],
+      },
+    } as never);
+
+    mockUseGamePlayer.mockReturnValue({
+      match: {
+        ...match,
+        config: { showVotingTransparency: true, aiGameMasterEnabled: true },
+      },
+      playerId: "player-1",
+      currentPlayer: match.players[0],
+      currentTemplate: null,
+      phaseConfig: { title: "Voting", description: "Vote to eliminate a player" },
+      isHost: true,
+    });
+
+    mockUseGameActions.mockReturnValue({
+      selectedAbility: null,
+      selectedTarget: null,
+      selectedVote: null,
+      isVoteSubmitting: false,
+      pendingVoteAction: null,
+      isAdvancingPhase: false,
+      handleAbilityClick: vi.fn(),
+      handleTargetClick: vi.fn(),
+      handleConfirm: vi.fn(),
+      handleSkipVote: vi.fn(),
+      handleAdvancePhase: vi.fn(),
+      handleCancelAbility: vi.fn(),
+    });
+
+    renderWithProviders(<GameScreen />);
+
+    expect(screen.getByTestId("game-master-panel")).toBeInTheDocument();
+    expect(screen.getByText(t("game.gameMaster"))).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The Oracle steps forward as the village enters voting.",
+      ),
+    ).toBeInTheDocument();
   });
 });

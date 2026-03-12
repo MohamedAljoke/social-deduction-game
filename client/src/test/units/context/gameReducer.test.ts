@@ -22,6 +22,7 @@ const baseState: GameState = {
   playerName: "Alice",
   isHost: true,
   match: { ...baseMatch, players: [{ id: "player-1", name: "Alice", status: "alive" }] },
+  gameMasterMessages: [],
   selectedAbility: null,
   selectedTarget: null,
   selectedVote: null,
@@ -144,5 +145,51 @@ describe("gameReducer — UPDATE_MATCH", () => {
         winConditionConfig: undefined,
       },
     ]);
+  });
+});
+
+describe("gameReducer — ADD_GAME_MASTER_MESSAGE", () => {
+  it("appends a new narration entry", () => {
+    const next = gameReducer(baseState, {
+      type: GAME_ACTIONS.ADD_GAME_MASTER_MESSAGE,
+      payload: {
+        messageId: "msg-1",
+        kind: "phase",
+        message: "The lanterns dim as voting begins.",
+        createdAt: "2026-01-01T00:01:00.000Z",
+      },
+    });
+
+    expect(next.gameMasterMessages).toHaveLength(1);
+    expect(next.gameMasterMessages[0].message).toBe(
+      "The lanterns dim as voting begins.",
+    );
+  });
+
+  it("deduplicates by message id", () => {
+    const first = gameReducer(baseState, {
+      type: GAME_ACTIONS.ADD_GAME_MASTER_MESSAGE,
+      payload: {
+        messageId: "msg-1",
+        kind: "phase",
+        message: "The lanterns dim as voting begins.",
+        createdAt: "2026-01-01T00:01:00.000Z",
+      },
+    });
+
+    const second = gameReducer(first, {
+      type: GAME_ACTIONS.ADD_GAME_MASTER_MESSAGE,
+      payload: {
+        messageId: "msg-1",
+        kind: "phase",
+        message: "Duplicate line",
+        createdAt: "2026-01-01T00:01:01.000Z",
+      },
+    });
+
+    expect(second.gameMasterMessages).toHaveLength(1);
+    expect(second.gameMasterMessages[0].message).toBe(
+      "The lanterns dim as voting begins.",
+    );
   });
 });

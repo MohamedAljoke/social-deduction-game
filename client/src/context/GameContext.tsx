@@ -19,6 +19,7 @@ import type {
   WinCondition,
   WinConditionConfig,
 } from "../types/match";
+import type { GameMasterMessage } from "../types/events";
 
 interface TemplateConfig {
   name: string;
@@ -39,6 +40,7 @@ export interface GameState {
   playerName: string | null;
   isHost: boolean;
   match: Match | null;
+  gameMasterMessages: GameMasterMessage[];
   selectedAbility: string | null;
   selectedTarget: string | null;
   selectedVote: string | null;
@@ -72,6 +74,10 @@ export type GameAction =
   | { type: typeof GAME_ACTIONS.REMOVE_TEMPLATE; payload: number }
   | { type: typeof GAME_ACTIONS.ADD_PLAYER; payload: Player }
   | { type: typeof GAME_ACTIONS.REMOVE_PLAYER; payload: string }
+  | {
+      type: typeof GAME_ACTIONS.ADD_GAME_MASTER_MESSAGE;
+      payload: GameMasterMessage;
+    }
   | { type: typeof GAME_ACTIONS.SET_INVESTIGATE_RESULT; payload: InvestigateResult | null }
   | { type: typeof GAME_ACTIONS.RESET };
 
@@ -81,6 +87,7 @@ const initialState: GameState = {
   playerName: null,
   isHost: false,
   match: null,
+  gameMasterMessages: [],
   selectedAbility: null,
   selectedTarget: null,
   selectedVote: null,
@@ -117,11 +124,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         playerName: action.payload.playerName,
         isHost: action.payload.isHost,
         match: action.payload.match,
+        gameMasterMessages: [],
       };
     case GAME_ACTIONS.UPDATE_MATCH:
       return {
         ...state,
         match: action.payload,
+        gameMasterMessages:
+          action.payload.status === "lobby" ? [] : state.gameMasterMessages,
         configuredTemplates:
           action.payload.status === "lobby" && action.payload.templates.length > 0
             ? action.payload.templates.map(mapTemplateToConfig)
@@ -180,6 +190,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case GAME_ACTIONS.REMOVE_PLAYER:
       if (!state.match) return state;
       return { ...state, match: { ...state.match, players: state.match.players.filter(p => p.id !== action.payload) } };
+    case GAME_ACTIONS.ADD_GAME_MASTER_MESSAGE:
+      if (
+        state.gameMasterMessages.some(
+          (entry) => entry.messageId === action.payload.messageId,
+        )
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        gameMasterMessages: [...state.gameMasterMessages, action.payload],
+      };
     case GAME_ACTIONS.SET_INVESTIGATE_RESULT:
       return { ...state, investigateResult: action.payload };
     case GAME_ACTIONS.RESET:

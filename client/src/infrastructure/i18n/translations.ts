@@ -92,6 +92,8 @@ interface Translations {
     castingVote: string;
     skipVote: string;
     skippingVote: string;
+    gameMaster: string;
+    gameMasterWaiting: string;
     gameLog: string;
     gameStartedWaiting: string;
     yourRole: string;
@@ -236,6 +238,8 @@ const translations: Record<Language, Translations> = {
       castingVote: 'Casting Vote...',
       skipVote: 'Skip Vote',
       skippingVote: 'Skipping Vote...',
+      gameMaster: 'Game Master',
+      gameMasterWaiting: 'The game master is quiet for now.',
       gameLog: 'Game Log',
       gameStartedWaiting: 'Game started. Waiting for actions...',
       yourRole: 'Your Role',
@@ -378,6 +382,8 @@ const translations: Record<Language, Translations> = {
       castingVote: 'Votando...',
       skipVote: 'Pular Votação',
       skippingVote: 'Pulando Votação...',
+      gameMaster: 'Mestre do Jogo',
+      gameMasterWaiting: 'O mestre do jogo está em silêncio por enquanto.',
       gameLog: 'Registro do Jogo',
       gameStartedWaiting: 'Jogo iniciado. Aguardando ações...',
       yourRole: 'Seu Papel',

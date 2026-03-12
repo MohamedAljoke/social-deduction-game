@@ -65,6 +65,13 @@ export class GameSessionService {
       this.gateway.onMatchEnded((matchId) => {
         void this.fetchMatch(matchId);
       }),
+      this.gateway.onGameMasterMessage((incomingMatchId, message) => {
+        if (incomingMatchId !== this.currentMatchId) return;
+        this.dispatch({
+          type: GAME_ACTIONS.ADD_GAME_MASTER_MESSAGE,
+          payload: message,
+        });
+      }),
       this.gateway.onInvestigateResult((actorId, targetId, alignment) => {
         if (actorId !== this.currentPlayerId) return;
         this.dispatch({

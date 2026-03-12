@@ -1,6 +1,7 @@
 import type { Match, Player } from "../../../types/match";
 import { t } from "@/infrastructure/i18n/translations";
 import {
+  type GameMasterFeedEntry,
   type GameLogEntry,
   MUTED_TEXT,
   PANEL_STYLE,
@@ -173,6 +174,49 @@ export function GameLogPanel({ actions }: { actions: GameLogEntry[] }) {
             <span style={{ color: "#4ade80", fontWeight: 600 }}>
               {action.targetNames}
             </span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+export function GameMasterPanel({
+  messages,
+  emptyMessage,
+  title,
+}: {
+  messages: GameMasterFeedEntry[];
+  emptyMessage: string;
+  title: string;
+}) {
+  return (
+    <div
+      data-testid="game-master-panel"
+      className="rounded-2xl p-4 max-h-[220px] overflow-y-auto"
+      style={PANEL_STYLE}
+    >
+      <div
+        className="text-xs font-semibold uppercase tracking-wider mb-3"
+        style={{ color: "#6b6b80" }}
+      >
+        {title}
+      </div>
+      {messages.length === 0 ? (
+        <div
+          className="text-sm py-1.5"
+          style={{ color: MUTED_TEXT, borderBottom: "1px solid #2a2a4a" }}
+        >
+          {emptyMessage}
+        </div>
+      ) : (
+        messages.map((entry) => (
+          <div
+            key={entry.messageId}
+            className="text-sm py-2"
+            style={{ color: "#f1e6c8", borderBottom: "1px solid #2a2a4a" }}
+          >
+            {entry.message}
           </div>
         ))
       )}
