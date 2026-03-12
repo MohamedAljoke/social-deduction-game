@@ -7,7 +7,7 @@
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/main.ts",
-    "start:e2e": "npm run build && node dist/main.js",
+    "start:e2e": "npm run build && NODE_PATH=./node_modules node ../dist/server/backend/src/main.js",
     "test": "vitest",
     "demo": "tsx demo.ts",
     "coverage": "vitest run --coverage"
