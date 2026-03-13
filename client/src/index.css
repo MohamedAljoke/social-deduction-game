@@ -1,42 +1,156 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS — change here, cascades everywhere
+   ═══════════════════════════════════════════════════ */
 @theme {
-  --color-bg-primary: #0f0f1a;
-  --color-bg-secondary: #1a1a2e;
-  --color-bg-card: #16213e;
-  --color-bg-card-hover: #1f2b4d;
-  --color-accent-primary: #e94560;
-  --color-accent-secondary: #ff6b6b;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a0a0b8;
-  --color-text-muted: #6b6b80;
-  --color-border: #2a2a4a;
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
+  /* Surfaces */
+  --color-surface-base:   #08081a;   /* page background           */
+  --color-surface-raised: #100e24;   /* panels, inputs            */
+  --color-surface-card:   #18163a;   /* card surface              */
+  --color-surface-hover:  #211e4a;   /* card hover                */
+
+  /* Brand (violet / secret society) */
+  --color-brand:          #8b5cf6;   /* primary violet            */
+  --color-brand-dim:      #a78bfa;   /* lighter violet            */
+  --color-brand-deep:     #7c3aed;   /* deeper violet             */
+
+  /* Status */
+  --color-success:        #10b981;   /* emerald                   */
+  --color-danger:         #dc2626;   /* red                       */
+  --color-warning:        #f59e0b;   /* amber                     */
+
+  /* Text */
+  --color-ink:            #f1f0ff;   /* primary text              */
+  --color-ink-secondary:  #94a3b8;   /* secondary text            */
+  --color-ink-muted:      #64748b;   /* muted text                */
+
+  /* Borders */
+  --color-rim:            #2d2b52;   /* default border            */
+
+  /* Special */
+  --color-gm-text:        #f1e6c8;   /* warm parchment for GM narrative text */
+
+  /* Player variety colors (gradient start stops) */
+  --color-player-0:       #667eea;
+  --color-player-1:       #f093fb;
+  --color-player-2:       #4facfe;
+  --color-player-3:       #43e97b;
+  --color-player-4:       #fa709a;
+
+  /* Typography */
   --font-family-outfit: "Outfit", sans-serif;
 }
 
+/* ═══════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════ */
 body {
   font-family: "Outfit", sans-serif;
-  background-color: #0f0f1a;
-  color: #ffffff;
+  background-color: var(--color-surface-base);
+  color: var(--color-ink);
   min-height: 100vh;
   overflow-x: hidden;
   display: flex;
   justify-content: center;
 }
 
+/* ═══════════════════════════════════════════════════
+   GRADIENT UTILITIES
+   (Only gradients live here — all other colors use
+    Tailwind classes generated from @theme above)
+   ═══════════════════════════════════════════════════ */
+
+.bg-gradient-brand {
+  background: linear-gradient(135deg, var(--color-brand-deep), var(--color-brand));
+}
+.bg-gradient-hero {
+  background: linear-gradient(135deg, var(--color-success), #059669);
+}
+.bg-gradient-villain {
+  background: linear-gradient(135deg, var(--color-danger), #b91c1c);
+}
+.bg-gradient-neutral {
+  background: linear-gradient(135deg, var(--color-warning), #d97706);
+}
+.bg-gradient-unknown {
+  background: linear-gradient(135deg, #4b5563, #374151);
+}
+
+/* Avatar gradients — index maps to avatar-gradient-N */
+.avatar-gradient-0 { background: linear-gradient(135deg, var(--color-brand-deep), var(--color-brand-dim)); }
+.avatar-gradient-1 { background: linear-gradient(135deg, #6d28d9, var(--color-brand)); }
+.avatar-gradient-2 { background: linear-gradient(135deg, #4c1d95, var(--color-brand-deep)); }
+.avatar-gradient-3 { background: linear-gradient(135deg, #5b21b6, var(--color-brand-dim)); }
+.avatar-gradient-4 { background: linear-gradient(135deg, #3730a3, var(--color-brand)); }
+
+/* ═══════════════════════════════════════════════════
+   SHADOW UTILITIES
+   ═══════════════════════════════════════════════════ */
+.shadow-brand-glow {
+  box-shadow: 0 20px 60px rgba(139, 92, 246, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════ */
+
+/* Fade in */
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
-
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Slide up (entrance) */
+.slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.40s; }
+
+/* Button shimmer */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Selected-card glow pulse */
+.glow-pulse {
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+  50%       { box-shadow: 0 0 30px rgba(139, 92, 246, 0.7); }
 }

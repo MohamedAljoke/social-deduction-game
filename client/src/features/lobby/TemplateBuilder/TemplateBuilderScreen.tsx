@@ -71,24 +71,18 @@ const getRoleName = (alignment: string): string => {
   return mapping[alignment] || alignment;
 };
 
+// Shared classes for native inputs/selects in the builder
+const NATIVE_INPUT_CLASSES =
+  "flex-1 py-3 px-4 rounded-lg text-sm font-inherit focus:outline-none bg-surface-raised border-2 border-rim text-ink focus:border-brand";
+
 export function TemplateBuilderScreen() {
   const navigate = useNavigate();
   const { state, dispatch, service } = useGame();
   const [loading, setLoading] = useState(false);
 
   const DEFAULT_TEMPLATES: BuilderTemplate[] = [
-    {
-      name: "Killer",
-      alignment: "villain" as const,
-      abilities: ["kill"],
-      winCondition: "team_parity" as const,
-    },
-    {
-      name: "Detective",
-      alignment: "hero" as const,
-      abilities: ["investigate"],
-      winCondition: "team_parity" as const,
-    },
+    { name: "Killer",    alignment: "villain", abilities: ["kill"],        winCondition: "team_parity" },
+    { name: "Detective", alignment: "hero",    abilities: ["investigate"], winCondition: "team_parity" },
   ];
 
   const playerCount = state.match?.players.length ?? 2;
@@ -99,20 +93,15 @@ export function TemplateBuilderScreen() {
       ? state.configuredTemplates
       : state.match && state.match.templates.length > 0
         ? state.match.templates.map(mapMatchTemplateToBuilderTemplate)
-      : DEFAULT_TEMPLATES;
+        : DEFAULT_TEMPLATES;
 
   const updateTemplate = (
     index: number,
     field: string,
-    value:
-      | string
-      | string[]
-      | {
-          targetAlignment?: string;
-        },
+    value: string | string[] | { targetAlignment?: string },
   ) => {
-    const updated = templates.map((t, i) =>
-      i === index ? { ...t, [field]: value } : t,
+    const updated = templates.map((tmpl, i) =>
+      i === index ? { ...tmpl, [field]: value } : tmpl,
     );
     dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: updated });
   };
@@ -130,16 +119,16 @@ export function TemplateBuilderScreen() {
     dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: templates });
     setLoading(true);
     try {
-      const apiTemplates = templates.map((t) => ({
-        name: t.name.trim() || undefined,
-        alignment: t.alignment,
-        abilities: t.abilities.map((id) => ({ id })),
-        winCondition: t.winCondition,
-        winConditionConfig: t.winConditionConfig,
+      const apiTemplates = templates.map((tmpl) => ({
+        name: tmpl.name.trim() || undefined,
+        alignment: tmpl.alignment,
+        abilities: tmpl.abilities.map((id) => ({ id })),
+        winCondition: tmpl.winCondition,
+        winConditionConfig: tmpl.winConditionConfig,
       }));
       await service.startMatch(state.matchId, apiTemplates);
       navigate("/game");
-    } catch (err) {
+    } catch {
       alert(t('templateBuilder.errorStarting'));
     } finally {
       setLoading(false);
@@ -168,18 +157,12 @@ export function TemplateBuilderScreen() {
 
   return (
     <ScreenContainer>
-      <div className="fade-in">
-        <Logo
-          title={t('templateBuilder.title')}
-          subtitle={t('templateBuilder.subtitle')}
-        />
+      <div className="fade-in w-full">
+        <Logo title={t('templateBuilder.title')} subtitle={t('templateBuilder.subtitle')} />
 
         <Card>
-          <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
-            <span
-              className="w-1 h-5 rounded-sm"
-              style={{ backgroundColor: "#e94560" }}
-            ></span>
+          <div className="text-lg font-semibold mb-6 flex items-center gap-2.5 text-ink">
+            <span className="w-1 h-5 rounded-sm bg-brand" />
             {t('templateBuilder.playerTemplates')}
           </div>
 
@@ -188,82 +171,56 @@ export function TemplateBuilderScreen() {
               <div
                 key={index}
                 data-testid="template-card"
-                className="rounded-2xl p-5 mb-4"
-                style={{
-                  backgroundColor: "#1a1a2e",
-                  border: "2px solid #2a2a4a",
-                }}
+                className="rounded-2xl p-5 mb-4 bg-surface-raised border-2 border-rim"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: "#a0a0b8" }}
-                  >
+                  <span className="text-sm font-semibold text-ink-secondary">
                     {t('templateBuilder.templateLabel')} {index + 1}
                   </span>
                   {templates.length > 2 && (
                     <button
-                      className="text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                      style={{
-                        color: "#e94560",
-                        background: "transparent",
-                        border: "none",
-                      }}
+                      className="text-xs font-semibold uppercase tracking-wider cursor-pointer bg-transparent border-none text-danger"
                       onClick={() => handleRemoveTemplate(index)}
                     >
                       {t('templateBuilder.remove')}
                     </button>
                   )}
                 </div>
+
+                {/* Template name */}
                 <div className="flex gap-3 mb-3">
                   <input
                     type="text"
-                    className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit focus:outline-none"
-                    style={{
-                      backgroundColor: "#1a1a2e",
-                      border: "2px solid #2a2a4a",
-                      color: "#ffffff",
-                    }}
+                    className={NATIVE_INPUT_CLASSES}
                     placeholder={t('templateBuilder.templateNamePlaceholder')}
                     value={template.name}
-                    onChange={(e) =>
-                      updateTemplate(index, "name", e.target.value)
-                    }
+                    onChange={(e) => updateTemplate(index, "name", e.target.value)}
                     maxLength={20}
                   />
                 </div>
+
+                {/* Alignment select */}
                 <div className="flex gap-3 mb-3">
                   <select
                     data-testid="template-alignment-select"
-                    className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
-                    style={{
-                      backgroundColor: "#1a1a2e",
-                      border: "2px solid #2a2a4a",
-                      color: "#ffffff",
-                    }}
+                    className={`${NATIVE_INPUT_CLASSES} cursor-pointer`}
                     value={template.alignment}
-                    onChange={(e) =>
-                      updateTemplate(index, "alignment", e.target.value)
-                    }
+                    onChange={(e) => updateTemplate(index, "alignment", e.target.value)}
                   >
                     <option value="hero">{getRoleName('hero')}</option>
                     <option value="villain">{getRoleName('villain')}</option>
                     <option value="neutral">{getRoleName('neutral')}</option>
                   </select>
                 </div>
+
+                {/* Win condition select */}
                 <div className="flex gap-3 mb-3">
                   <select
                     data-testid="template-win-condition-select"
-                    className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
-                    style={{
-                      backgroundColor: "#1a1a2e",
-                      border: "2px solid #2a2a4a",
-                      color: "#ffffff",
-                    }}
+                    className={`${NATIVE_INPUT_CLASSES} cursor-pointer`}
                     value={template.winCondition}
                     onChange={(e) => {
-                      const nextWinCondition =
-                        e.target.value as BuilderTemplate["winCondition"];
+                      const nextWinCondition = e.target.value as BuilderTemplate["winCondition"];
                       const updated = templates.map((currentTemplate, i) =>
                         i === index
                           ? {
@@ -271,19 +228,14 @@ export function TemplateBuilderScreen() {
                               winCondition: nextWinCondition,
                               winConditionConfig:
                                 nextWinCondition === "eliminate_alignment"
-                                  ? currentTemplate.winConditionConfig ?? {
-                                      targetAlignment: "villain",
-                                    }
+                                  ? currentTemplate.winConditionConfig ?? { targetAlignment: "villain" }
                                   : undefined,
                             }
                           : currentTemplate,
                       );
-                      dispatch({
-                        type: GAME_ACTIONS.SET_TEMPLATES,
-                        payload: updated,
-                      });
-                      }}
-                    >
+                      dispatch({ type: GAME_ACTIONS.SET_TEMPLATES, payload: updated });
+                    }}
+                  >
                     {WIN_CONDITION_IDS.map((condition) => (
                       <option key={condition.id} value={condition.id}>
                         {getWinConditionName(condition.id)}
@@ -291,16 +243,13 @@ export function TemplateBuilderScreen() {
                     ))}
                   </select>
                 </div>
+
+                {/* Target alignment select (conditional) */}
                 {template.winCondition === "eliminate_alignment" && (
                   <div className="flex gap-3 mb-3">
                     <select
                       data-testid="template-target-alignment-select"
-                      className="flex-1 py-3 px-4 rounded-lg text-sm font-inherit cursor-pointer focus:outline-none"
-                      style={{
-                        backgroundColor: "#1a1a2e",
-                        border: "2px solid #2a2a4a",
-                        color: "#ffffff",
-                      }}
+                      className={`${NATIVE_INPUT_CLASSES} cursor-pointer`}
                       value={template.winConditionConfig?.targetAlignment ?? "villain"}
                       onChange={(e) =>
                         updateTemplate(index, "winConditionConfig", {
@@ -314,36 +263,32 @@ export function TemplateBuilderScreen() {
                     </select>
                   </div>
                 )}
+
+                {/* Ability chips */}
                 <div className="flex flex-wrap gap-2">
-                  {ABILITY_IDS.map((ability) => (
-                    <div
-                      key={ability.id}
-                      data-testid="ability-chip"
-                      aria-pressed={template.abilities.includes(ability.id)}
-                      className={`inline-flex items-center gap-1.5 py-2 px-3.5 rounded-full text-[13px] cursor-pointer transition-all duration-200 ${
-                        template.abilities.includes(ability.id)
-                          ? ""
-                          : "hover:border-[#e94560]"
-                      }`}
-                      style={{
-                        backgroundColor: template.abilities.includes(ability.id)
-                          ? "#e94560"
-                          : "#16213e",
-                        border: "2px solid",
-                        borderColor: template.abilities.includes(ability.id)
-                          ? "#e94560"
-                          : "#2a2a4a",
-                        color: "#ffffff",
-                      }}
-                      onClick={() => toggleAbility(index, ability.id)}
-                    >
-                      <span className="text-sm">{ability.icon}</span>
-                      {getAbilityName(ability.id)}
-                    </div>
-                  ))}
+                  {ABILITY_IDS.map((ability) => {
+                    const isActive = template.abilities.includes(ability.id);
+                    return (
+                      <div
+                        key={ability.id}
+                        data-testid="ability-chip"
+                        aria-pressed={isActive}
+                        className={`inline-flex items-center gap-1.5 py-2 px-3.5 rounded-full text-[13px] cursor-pointer transition-all duration-200 border-2 text-ink
+                          ${isActive
+                            ? "bg-brand border-brand"
+                            : "bg-surface-card border-rim hover:border-brand"
+                          }`}
+                        onClick={() => toggleAbility(index, ability.id)}
+                      >
+                        <span className="text-sm">{ability.icon}</span>
+                        {getAbilityName(ability.id)}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
+
             <Button
               variant="secondary"
               onClick={handleAddTemplate}
@@ -353,17 +298,13 @@ export function TemplateBuilderScreen() {
                 ? `${t('templateBuilder.maxTemplatesReached')} (${maxTemplates})`
                 : t('templateBuilder.addTemplate')}
             </Button>
-            <div className="text-xs mt-2" style={{ color: "#6b6b80" }}>
+            <div className="text-xs mt-2 text-ink-muted">
               {t('templateBuilder.templatesCount')}: {templates.length}/{maxTemplates}
             </div>
           </div>
 
           <div className="flex gap-3 mt-5">
-            <Button
-              variant="secondary"
-              onClick={() => navigate("/lobby")}
-              className="flex-1"
-            >
+            <Button variant="secondary" onClick={() => navigate("/lobby")} className="flex-1">
               {t('templateBuilder.backBtn')}
             </Button>
             <Button onClick={handleSave} loading={loading} className="flex-1">

@@ -13,24 +13,19 @@ export function Button({
   className = "",
   ...props
 }: ButtonProps) {
-  const baseStyles =
+  const base =
     "w-full py-5 px-8 rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none";
 
-  const variantStyles =
-    variant === "primary"
-      ? "text-white hover:-translate-y-0.5"
-      : "text-white border-2 hover:border-[#e94560]";
+  const variants = {
+    primary:
+      "text-ink hover:-translate-y-0.5 shimmer bg-gradient-brand",
+    secondary:
+      "text-ink border-2 border-rim bg-surface-raised hover:border-brand",
+  };
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles} ${loading ? "pointer-events-none" : ""} ${className}`}
-      style={{
-        background:
-          variant === "primary"
-            ? "linear-gradient(135deg, #e94560, #ff6b6b)"
-            : "#1a1a2e",
-        borderColor: variant === "secondary" ? "#2a2a4a" : "transparent",
-      }}
+      className={`${base} ${variants[variant]} ${loading ? "pointer-events-none" : ""} ${className}`}
       disabled={disabled || loading}
       {...props}
     >

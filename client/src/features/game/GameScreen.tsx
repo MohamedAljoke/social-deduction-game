@@ -16,7 +16,7 @@ import {
   RoleCard,
 } from "./components/GameHeaderSections";
 import { PlayerGrid } from "./components/PlayerGrid";
-import { getInvestigateBannerData, MUTED_TEXT } from "./components/gameScreenShared";
+import { getInvestigateBannerData } from "./components/gameScreenShared";
 import {
   useGameActions,
   useGameLog,
@@ -71,14 +71,10 @@ export function GameScreen() {
   }
 
   return (
-    <div
-      className="min-w-[400px] mx-auto px-5 py-5"
-      style={{ backgroundColor: "#0f0f1a", minHeight: "100vh" }}
-    >
+    <div className="min-w-[400px] mx-auto px-5 py-5 bg-surface-base min-h-screen">
       <div className="flex justify-between items-center mb-5">
         <button
-          className="bg-transparent border-none cursor-pointer text-sm flex items-center gap-1.5"
-          style={{ color: MUTED_TEXT }}
+          className="bg-transparent border-none cursor-pointer text-sm flex items-center gap-1.5 text-ink-secondary"
           onClick={handleLeave}
         >
           {t('game.leaveGame')}

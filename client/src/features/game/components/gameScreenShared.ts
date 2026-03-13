@@ -1,11 +1,19 @@
 import type { Match } from "../../../types/match";
 
+/**
+ * Inline style for panel containers.
+ * References CSS vars from index.css @theme so color changes cascade.
+ */
 export const PANEL_STYLE = {
-  backgroundColor: "#16213e",
-  border: "2px solid #2a2a4a",
+  backgroundColor: "var(--color-surface-card)",
+  border: "2px solid var(--color-rim)",
 } as const;
 
-export const MUTED_TEXT = "#a0a0b8";
+/**
+ * CSS color string for secondary/muted text used in inline styles.
+ * Where possible prefer the Tailwind class `text-ink-secondary` instead.
+ */
+export const MUTED_TEXT = "var(--color-ink-secondary)";
 
 export interface InvestigateBannerData {
   alignment: string;
@@ -39,8 +47,22 @@ export function getInvestigateBannerData(
   };
 }
 
+/**
+ * Returns a Tailwind text-color class for an alignment value.
+ * Use as: <span className={getAlignmentClass(alignment)}>
+ */
+export function getAlignmentClass(alignment: string): string {
+  if (alignment === "hero") return "text-success";
+  if (alignment === "villain") return "text-danger";
+  return "text-warning";
+}
+
+/**
+ * Returns a CSS var color string for use in inline style props.
+ * Prefer getAlignmentClass() + className where possible.
+ */
 export function getAlignmentColor(alignment: string): string {
-  if (alignment === "hero") return "#4ade80";
-  if (alignment === "villain") return "#e94560";
-  return "#fbbf24";
+  if (alignment === "hero") return "var(--color-success)";
+  if (alignment === "villain") return "var(--color-danger)";
+  return "var(--color-warning)";
 }

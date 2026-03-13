@@ -27,18 +27,14 @@ export function HomeScreen() {
 
   return (
     <ScreenContainer>
-      <div className="fade-in">
-        <Logo
-          title={t('home.title')}
-          subtitle={t('home.subtitle')}
-        />
+      <div className="fade-in w-full">
+        <Logo title={t('home.title')} subtitle={t('home.subtitle')} />
 
         <Card>
           <form onSubmit={submit}>
-            <div className="text-lg font-semibold mb-6 flex items-center gap-2.5">
+            <div className="text-lg font-semibold mb-6 flex items-center gap-2.5 text-ink">
               <span
-                className="w-1 h-5 rounded-sm"
-                style={!isCreate ? { backgroundColor: "#e94560" } : undefined}
+                className={`w-1 h-5 rounded-sm ${!isCreate ? "bg-brand" : ""}`}
               />
               {isCreate ? t('home.createGameBtn') : t('home.enterGameDetails')}
             </div>
@@ -67,21 +63,13 @@ export function HomeScreen() {
 
             {isCreate && (
               <>
-                <div
-                  className="mb-4 p-4 rounded-xl flex items-center justify-between"
-                  style={{
-                    backgroundColor: "#1a1a2e",
-                    border: "2px solid #2a2a4a",
-                  }}
-                >
+                {/* Toggle option: Open Voting */}
+                <div className="mb-4 p-4 rounded-xl flex items-center justify-between bg-surface-raised border-2 border-rim">
                   <div>
-                    <div
-                      className="text-xs uppercase tracking-wider"
-                      style={{ color: "#a0a0b8" }}
-                    >
+                    <div className="text-xs uppercase tracking-wider text-ink-secondary">
                       {t('home.openVoting')}
                     </div>
-                    <div className="text-sm" style={{ color: "#6b6b80" }}>
+                    <div className="text-sm text-ink-muted">
                       {t('home.openVotingDesc')}
                     </div>
                   </div>
@@ -91,25 +79,17 @@ export function HomeScreen() {
                     checked={openVoting}
                     onChange={(e) => setOpenVoting(e.target.checked)}
                     aria-label={t('home.openVoting')}
-                    className="w-5 h-5 cursor-pointer accent-[#e94560]"
+                    className="w-5 h-5 cursor-pointer accent-brand"
                   />
                 </div>
 
-                <div
-                  className="mb-5 p-4 rounded-xl flex items-center justify-between"
-                  style={{
-                    backgroundColor: "#1a1a2e",
-                    border: "2px solid #2a2a4a",
-                  }}
-                >
+                {/* Toggle option: AI Game Master */}
+                <div className="mb-5 p-4 rounded-xl flex items-center justify-between bg-surface-raised border-2 border-rim">
                   <div>
-                    <div
-                      className="text-xs uppercase tracking-wider"
-                      style={{ color: "#a0a0b8" }}
-                    >
+                    <div className="text-xs uppercase tracking-wider text-ink-secondary">
                       {t('home.aiGameMaster')}
                     </div>
-                    <div className="text-sm" style={{ color: "#6b6b80" }}>
+                    <div className="text-sm text-ink-muted">
                       {t('home.aiGameMasterDesc')}
                     </div>
                   </div>
@@ -119,7 +99,7 @@ export function HomeScreen() {
                     checked={aiGameMasterEnabled}
                     onChange={(e) => setAiGameMasterEnabled(e.target.checked)}
                     aria-label={t('home.aiGameMaster')}
-                    className="w-5 h-5 cursor-pointer accent-[#e94560]"
+                    className="w-5 h-5 cursor-pointer accent-brand"
                   />
                 </div>
               </>

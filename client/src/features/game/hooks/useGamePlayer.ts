@@ -25,12 +25,13 @@ export const ABILITY_LABELS: Record<string, string> = {
   investigate: `🔍 ${ABILITY_DEFINITIONS.investigate.label}`,
 };
 
+// CSS var references — actual values live in index.css @theme
 export const PLAYER_COLORS = [
-  "#667eea",
-  "#f093fb",
-  "#4facfe",
-  "#43e97b",
-  "#fa709a",
+  "var(--color-player-0)",
+  "var(--color-player-1)",
+  "var(--color-player-2)",
+  "var(--color-player-3)",
+  "var(--color-player-4)",
 ];
 
 export function useGamePlayer() {
