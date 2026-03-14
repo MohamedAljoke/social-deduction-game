@@ -4,10 +4,6 @@ import { PlayerResponse } from "../entity/player";
 import { MatchPlayerAssignment } from "../events/match-events";
 import { EffectResult } from "../services/resolution";
 
-export interface MatchStartedPayload {
-  playerAssignments: MatchPlayerAssignment[];
-}
-
 export interface GameMasterMessagePayload {
   messageId: string;
   kind: "start" | "phase" | "resolution" | "elimination" | "end";
@@ -15,24 +11,17 @@ export interface GameMasterMessagePayload {
   createdAt: string;
 }
 
+export type RealtimeEvent =
+  | { type: "PlayerJoined"; matchId: string; player: PlayerResponse }
+  | { type: "PlayerLeft"; matchId: string; playerId: string }
+  | { type: "MatchStarted"; matchId: string; playerAssignments: MatchPlayerAssignment[] }
+  | { type: "VoteSubmitted"; matchId: string; voterId: string; targetId: string | null }
+  | { type: "PhaseChanged"; matchId: string; phase: PhaseType }
+  | { type: "EffectResolved"; matchId: string; effect: EffectResult }
+  | { type: "MatchEnded"; matchId: string; winner: MatchWinner }
+  | { type: "MatchSnapshotUpdated"; matchId: string; match: MatchResponse }
+  | { type: "GameMasterMessage"; matchId: string; payload: GameMasterMessagePayload };
+
 export interface RealtimePublisher {
-  matchStarted(matchId: string, payload: MatchStartedPayload): void;
-  matchUpdated(matchId: string, match: MatchResponse): void;
-  phaseChanged(matchId: string, phase: PhaseType): void;
-  playerJoined(matchId: string, player: PlayerResponse): void;
-  playerLeft(matchId: string, playerId: string): void;
-  actionSubmitted(
-    matchId: string,
-    actorId: string,
-    EffectType: string,
-    targetIds: string[],
-  ): void;
-  matchEnded(matchId: string, winner: MatchWinner): void;
-  voteSubmitted(
-    matchId: string,
-    voterId: string,
-    targetId: string | null,
-  ): void;
-  effectResolved(matchId: string, effect: EffectResult): void;
-  gameMasterMessage(matchId: string, payload: GameMasterMessagePayload): void;
+  publish(event: RealtimeEvent): void;
 }

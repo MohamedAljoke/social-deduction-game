@@ -12,18 +12,7 @@ import { Alignment, WinCondition } from "../../../domain/entity/template";
 import { RealtimePublisher } from "../../../domain/ports/RealtimePublisher";
 
 function createPublisher(): RealtimePublisher {
-  return {
-    matchStarted: vi.fn(),
-    matchUpdated: vi.fn(),
-    phaseChanged: vi.fn(),
-    playerJoined: vi.fn(),
-    playerLeft: vi.fn(),
-    actionSubmitted: vi.fn(),
-    matchEnded: vi.fn(),
-    voteSubmitted: vi.fn(),
-    effectResolved: vi.fn(),
-    gameMasterMessage: vi.fn(),
-  };
+  return { publish: vi.fn() };
 }
 
 function createNarrator(
@@ -117,7 +106,7 @@ describe("publishMatchNarration", () => {
     );
 
     expect(narrator.generateNarration).not.toHaveBeenCalled();
-    expect(publisher.gameMasterMessage).not.toHaveBeenCalled();
+    expect(publisher.publish).not.toHaveBeenCalled();
   });
 
   it("publishes narrator output for eligible public events", async () => {
@@ -147,12 +136,15 @@ describe("publishMatchNarration", () => {
     );
 
     expect(narrator.generateNarration).toHaveBeenCalledTimes(2);
-    expect(publisher.gameMasterMessage).toHaveBeenNthCalledWith(
+    expect(publisher.publish).toHaveBeenNthCalledWith(
       2,
-      "match-1",
       expect.objectContaining({
-        kind: "elimination",
-        message: "Nightblade Bob falls and the room holds its breath.",
+        type: "GameMasterMessage",
+        matchId: "match-1",
+        payload: expect.objectContaining({
+          kind: "elimination",
+          message: "Nightblade Bob falls and the room holds its breath.",
+        }),
       }),
     );
   });
@@ -182,13 +174,16 @@ describe("publishMatchNarration", () => {
       publisher,
     );
 
-    expect(publisher.gameMasterMessage).toHaveBeenNthCalledWith(
+    expect(publisher.publish).toHaveBeenNthCalledWith(
       2,
-      "match-1",
       expect.objectContaining({
-        kind: "elimination",
-        message:
-          "O mestre do jogo esta dormindo, mas um jogador caiu durante a resolucao.",
+        type: "GameMasterMessage",
+        matchId: "match-1",
+        payload: expect.objectContaining({
+          kind: "elimination",
+          message:
+            "O mestre do jogo esta dormindo, mas um jogador caiu durante a resolucao.",
+        }),
       }),
     );
   });

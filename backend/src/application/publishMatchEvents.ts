@@ -1,42 +1,39 @@
 import { MatchDomainEvent } from "../domain/events/match-events";
-import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
+import { RealtimeEvent, RealtimePublisher } from "../domain/ports/RealtimePublisher";
 import { MatchResponse } from "../domain/entity/match";
-
-type MatchEndedEvent = Extract<MatchDomainEvent, { type: "MatchEnded" }>;
 
 export function publishMatchEvents(
   events: MatchDomainEvent[],
   result: MatchResponse,
   publisher: RealtimePublisher,
 ): void {
-  const deferredEvents: MatchEndedEvent[] = [];
+  const realtimeEvents: RealtimeEvent[] = [];
+  const deferredEvents: Array<Extract<RealtimeEvent, { type: "MatchEnded" }>> = [];
 
   for (const event of events) {
     switch (event.type) {
       case "PlayerJoined":
-        publisher.playerJoined(event.matchId, event.player);
+        realtimeEvents.push({ type: "PlayerJoined", matchId: event.matchId, player: event.player });
         break;
       case "PlayerLeft":
-        publisher.playerLeft(event.matchId, event.playerId);
+        realtimeEvents.push({ type: "PlayerLeft", matchId: event.matchId, playerId: event.playerId });
         break;
       case "MatchStarted":
-        publisher.matchStarted(event.matchId, {
-          playerAssignments: event.playerAssignments,
-        });
+        realtimeEvents.push({ type: "MatchStarted", matchId: event.matchId, playerAssignments: event.playerAssignments });
         break;
       case "VoteSubmitted":
-        publisher.voteSubmitted(event.matchId, event.voterId, event.targetId);
+        realtimeEvents.push({ type: "VoteSubmitted", matchId: event.matchId, voterId: event.voterId, targetId: event.targetId });
         break;
       case "PhaseAdvanced":
-        publisher.phaseChanged(event.matchId, event.phase);
+        realtimeEvents.push({ type: "PhaseChanged", matchId: event.matchId, phase: event.phase });
         break;
       case "ActionsResolved":
         for (const effect of event.effects) {
-          publisher.effectResolved(event.matchId, effect);
+          realtimeEvents.push({ type: "EffectResolved", matchId: event.matchId, effect });
         }
         break;
       case "MatchEnded":
-        deferredEvents.push(event);
+        deferredEvents.push({ type: "MatchEnded", matchId: event.matchId, winner: event.winner });
         break;
       case "MatchRematched":
         break;
@@ -44,10 +41,14 @@ export function publishMatchEvents(
   }
 
   if (events.length > 0) {
-    publisher.matchUpdated(result.id, result);
+    realtimeEvents.push({ type: "MatchSnapshotUpdated", matchId: result.id, match: result });
   }
 
-  for (const event of deferredEvents) {
-    publisher.matchEnded(event.matchId, event.winner);
+  for (const re of realtimeEvents) {
+    publisher.publish(re);
+  }
+
+  for (const re of deferredEvents) {
+    publisher.publish(re);
   }
 }

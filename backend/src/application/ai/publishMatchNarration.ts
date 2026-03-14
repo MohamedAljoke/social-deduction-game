@@ -121,6 +121,6 @@ export async function publishMatchNarration(
       });
     }
 
-    publisher.gameMasterMessage(match.id, buildPayload(context, message));
+    publisher.publish({ type: "GameMasterMessage", matchId: match.id, payload: buildPayload(context, message) });
   }
 }

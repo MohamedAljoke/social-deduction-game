@@ -16,18 +16,21 @@ describe("WebSocketPublisher", () => {
     const broadcaster = createBroadcaster();
     const publisher = new WebSocketPublisher(broadcaster);
 
-    publisher.playerJoined("match-1", {
-      id: "player-1",
-      name: "Alice",
-      status: PlayerStatus.ALIVE,
-      templateId: "template-1",
+    publisher.publish({
+      type: "PlayerJoined",
+      matchId: "match-1",
+      player: { id: "player-1", name: "Alice", status: PlayerStatus.ALIVE, templateId: "template-1" },
     });
 
-    publisher.effectResolved("match-1", {
-      type: "investigate",
-      actorId: "player-1",
-      targetIds: ["player-2"],
-      data: { alignment: Alignment.Villain },
+    publisher.publish({
+      type: "EffectResolved",
+      matchId: "match-1",
+      effect: {
+        type: "investigate",
+        actorId: "player-1",
+        targetIds: ["player-2"],
+        data: { alignment: Alignment.Villain },
+      },
     });
 
     expect(broadcaster.broadcastToMatch).toHaveBeenCalledWith("match-1", {
@@ -53,11 +56,15 @@ describe("WebSocketPublisher", () => {
     const broadcaster = createBroadcaster();
     const publisher = new WebSocketPublisher(broadcaster);
 
-    publisher.gameMasterMessage("match-1", {
-      messageId: "message-1",
-      kind: "phase",
-      message: "The game master stirs as voting descends.",
-      createdAt: "2026-03-12T04:00:00.000Z",
+    publisher.publish({
+      type: "GameMasterMessage",
+      matchId: "match-1",
+      payload: {
+        messageId: "message-1",
+        kind: "phase",
+        message: "The game master stirs as voting descends.",
+        createdAt: "2026-03-12T04:00:00.000Z",
+      },
     });
 
     expect(broadcaster.broadcastToMatch).toHaveBeenCalledWith("match-1", {

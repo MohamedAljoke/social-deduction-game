@@ -7,18 +7,7 @@ import { EffectResult } from "../../domain/services/resolution";
 import { RealtimePublisher } from "../../domain/ports/RealtimePublisher";
 
 function createPublisher(): RealtimePublisher {
-  return {
-    matchStarted: vi.fn(),
-    matchUpdated: vi.fn(),
-    phaseChanged: vi.fn(),
-    playerJoined: vi.fn(),
-    playerLeft: vi.fn(),
-    actionSubmitted: vi.fn(),
-    matchEnded: vi.fn(),
-    voteSubmitted: vi.fn(),
-    effectResolved: vi.fn(),
-    gameMasterMessage: vi.fn(),
-  };
+  return { publish: vi.fn() };
 }
 
 function createMatchResponse(): MatchResponse {
@@ -81,36 +70,27 @@ describe("publishMatchEvents", () => {
       publisher,
     );
 
-    expect(publisher.playerJoined).toHaveBeenCalledWith("match-1", player);
-    expect(publisher.matchStarted).toHaveBeenCalledWith("match-1", {
-      playerAssignments: [
-        {
-          playerId: "player-1",
-          templateId: "template-1",
-          alignment: Alignment.Hero,
-        },
-      ],
+    const publishMock = vi.mocked(publisher.publish);
+
+    expect(publishMock).toHaveBeenCalledWith({ type: "PlayerJoined", matchId: "match-1", player });
+    expect(publishMock).toHaveBeenCalledWith({
+      type: "MatchStarted",
+      matchId: "match-1",
+      playerAssignments: [{ playerId: "player-1", templateId: "template-1", alignment: Alignment.Hero }],
     });
-    expect(publisher.phaseChanged).toHaveBeenCalledWith(
-      "match-1",
-      "resolution",
-    );
-    expect(publisher.effectResolved).toHaveBeenCalledWith("match-1", effect);
+    expect(publishMock).toHaveBeenCalledWith({ type: "PhaseChanged", matchId: "match-1", phase: "resolution" });
+    expect(publishMock).toHaveBeenCalledWith({ type: "EffectResolved", matchId: "match-1", effect });
 
-    const matchUpdatedOrder = vi.mocked(publisher.matchUpdated).mock
-      .invocationCallOrder[0];
-    const matchEndedOrder = vi.mocked(publisher.matchEnded).mock
-      .invocationCallOrder[0];
+    const calls = publishMock.mock.calls;
+    const snapshotIndex = calls.findIndex((c) => c[0].type === "MatchSnapshotUpdated");
+    const endedIndex = calls.findIndex((c) => c[0].type === "MatchEnded");
 
-    expect(matchUpdatedOrder).toBeLessThan(matchEndedOrder);
-    expect(publisher.matchUpdated).toHaveBeenCalledWith(
-      "match-1",
-      createMatchResponse(),
-    );
-    expect(publisher.matchEnded).toHaveBeenCalledWith(
-      "match-1",
-      { kind: "alignment", alignment: Alignment.Hero },
-    );
+    expect(snapshotIndex).toBeGreaterThanOrEqual(0);
+    expect(endedIndex).toBeGreaterThanOrEqual(0);
+    expect(snapshotIndex).toBeLessThan(endedIndex);
+
+    expect(publishMock).toHaveBeenCalledWith({ type: "MatchSnapshotUpdated", matchId: "match-1", match: createMatchResponse() });
+    expect(publishMock).toHaveBeenCalledWith({ type: "MatchEnded", matchId: "match-1", winner: { kind: "alignment", alignment: Alignment.Hero } });
   });
 
   it("does not publish matchUpdated when no domain events were emitted", () => {
@@ -118,7 +98,6 @@ describe("publishMatchEvents", () => {
 
     publishMatchEvents([], createMatchResponse(), publisher);
 
-    expect(publisher.matchUpdated).not.toHaveBeenCalled();
-    expect(publisher.matchEnded).not.toHaveBeenCalled();
+    expect(publisher.publish).not.toHaveBeenCalled();
   });
 });
