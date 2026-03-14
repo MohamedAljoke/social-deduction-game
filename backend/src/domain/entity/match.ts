@@ -16,7 +16,10 @@ import {
   WinConditionEvaluator,
 } from "../services/match";
 import { ActionResolver, ResolutionResult } from "../services/resolution";
-import { MatchDomainEvent, MatchPlayerAssignment } from "../events/match-events";
+import {
+  MatchDomainEvent,
+  MatchPlayerAssignment,
+} from "../events/match-events";
 
 function generateShortCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -56,6 +59,13 @@ export interface MatchConfig {
   aiGameMasterEnabled: boolean;
 }
 
+interface MatchServices {
+  templateAssignment?: TemplateAssignmentService;
+  abilityActionFactory?: AbilityActionFactory;
+  winConditionEvaluator?: WinConditionEvaluator;
+  snapshotMapper?: MatchSnapshotMapper;
+}
+
 interface MatchProps {
   id: string;
   name: string;
@@ -71,13 +81,14 @@ interface MatchProps {
   winnerAlignment?: Alignment | null;
   endedAt?: Date | null;
   playerStatuses?: Map<string, Set<MatchPlayerStatus>>;
+  services?: MatchServices;
 }
 
 export class Match {
-  private readonly templateAssignment = new TemplateAssignmentService();
-  private readonly abilityActionFactory = new AbilityActionFactory();
-  private readonly winConditionEvaluator = new WinConditionEvaluator();
-  private readonly snapshotMapper = new MatchSnapshotMapper();
+  private readonly templateAssignment: TemplateAssignmentService;
+  private readonly abilityActionFactory: AbilityActionFactory;
+  private readonly winConditionEvaluator: WinConditionEvaluator;
+  private readonly snapshotMapper: MatchSnapshotMapper;
 
   public readonly id: string;
   public readonly name: string;
@@ -124,6 +135,10 @@ export class Match {
     this.winnerAlignment = props.winnerAlignment ?? null;
     this.endedAt = props.endedAt ?? null;
     this.playerStatuses = props.playerStatuses ?? new Map();
+    this.templateAssignment = props.services?.templateAssignment ?? new TemplateAssignmentService();
+    this.abilityActionFactory = props.services?.abilityActionFactory ?? new AbilityActionFactory();
+    this.winConditionEvaluator = props.services?.winConditionEvaluator ?? new WinConditionEvaluator();
+    this.snapshotMapper = props.services?.snapshotMapper ?? new MatchSnapshotMapper();
   }
 
   static create(name: string, config?: Partial<MatchConfig>): Match {
@@ -240,7 +255,8 @@ export class Match {
         const statuses = this.playerStatuses.get(result.eliminatedPlayerId);
         if (statuses?.has("vote_shielded")) {
           statuses.delete("vote_shielded");
-          if (statuses.size === 0) this.playerStatuses.delete(result.eliminatedPlayerId);
+          if (statuses.size === 0)
+            this.playerStatuses.delete(result.eliminatedPlayerId);
         } else {
           const player = this.players.find(
             (candidate) => candidate.id === result.eliminatedPlayerId,
@@ -274,23 +290,24 @@ export class Match {
     const result = resolver.resolve(this.actions, this.players, this.templates);
     this.actions = [];
     for (const [playerId, statuses] of result.playerStatuses) {
-      const existing = this.playerStatuses.get(playerId) ?? new Set<MatchPlayerStatus>();
+      const existing =
+        this.playerStatuses.get(playerId) ?? new Set<MatchPlayerStatus>();
       for (const status of statuses) {
         existing.add(status);
       }
       this.playerStatuses.set(playerId, existing);
     }
     this.finishIfWinnerExists();
-    this.emit({ type: "ActionsResolved", matchId: this.id, effects: result.effects });
+    this.emit({
+      type: "ActionsResolved",
+      matchId: this.id,
+      effects: result.effects,
+    });
     return result;
   }
 
   public getActions(): Action[] {
     return this.actions;
-  }
-
-  public addAction(action: Action): void {
-    this.actions.push(action);
   }
 
   public useAbility(
@@ -345,7 +362,9 @@ export class Match {
         );
       }
 
-      const template = this.templates.find((candidate) => candidate.id === templateId);
+      const template = this.templates.find(
+        (candidate) => candidate.id === templateId,
+      );
       if (!template) {
         throw new Error(
           `Template ${templateId} assigned to player ${player.id} was not found`,

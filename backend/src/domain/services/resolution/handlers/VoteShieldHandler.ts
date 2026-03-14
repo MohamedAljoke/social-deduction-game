@@ -1,5 +1,5 @@
 import { EffectType } from "../../../entity/ability";
-import { Action, ResolutionStage } from "../../../entity/action";
+import { Action } from "../../../entity/action";
 import { Player } from "../../../entity/player";
 import { Template } from "../../../entity/template";
 import { EffectHandler } from "../EffectHandler";
@@ -7,7 +7,6 @@ import { ResolutionContext } from "../ResolutionContext";
 
 export class VoteShieldHandler implements EffectHandler {
   public readonly effectType = EffectType.VoteShield;
-  public readonly stage = ResolutionStage.DEFENSIVE;
 
   public resolve(
     action: Action,

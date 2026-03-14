@@ -81,26 +81,16 @@ This inconsistency means you cannot substitute `WinConditionEvaluator` or `Abili
 
 **Severity**: High - violates DIP and makes isolated testing harder.
 
-#### Issue 3: `Match.addAction()` bypasses all validation
-
-```ts
-// match.ts:181-183
-public addAction(action: Action): void {
-  this.actions.push(action);
-}
-```
-
-This method is public and accepts any `Action` without checking phase, player existence, ability ownership, or target validity. `useAbility()` does the validation, but `addAction()` is an unguarded backdoor. Any external caller (or future developer) can inject a fabricated action that skips all business rules.
-
-**Severity**: High - breaks aggregate invariant protection.
-
 #### Issue 4: Domain imports shared via fragile relative paths
 
 ```ts
 // ability.ts:8
 import { ABILITY_DEFINITIONS } from "../../../../shared/src/ability-definitions";
 // ResolutionContext.ts:1
-import type { EffectResultType, Modifier } from "../../../../../shared/src/resolution-types";
+import type {
+  EffectResultType,
+  Modifier,
+} from "../../../../../shared/src/resolution-types";
 ```
 
 The domain layer reaches 4-5 directories up to a `shared/` folder. This couples the domain to a monorepo file layout, and means the `shared` package is the actual owner of core domain concepts (`EffectResultType`, `Modifier`, `AbilityDefinition`). If `shared/` moves or gets published as a package, all these break.
@@ -159,6 +149,7 @@ export interface RealtimePublisher {
 ```
 
 10 methods. Every new event type requires changes in 3 places:
+
 1. Add the domain event to `MatchDomainEvent`
 2. Add a method to `RealtimePublisher`
 3. Add the case to `publishMatchEvents`
@@ -221,8 +212,8 @@ When a player disconnects, `handleDisconnect` removes them from the room immedia
 In `AdvancePhase.ts`:
 
 ```ts
-const result = match.toJSON();       // line 37
-const events = match.pullEvents();   // line 38
+const result = match.toJSON(); // line 37
+const events = match.pullEvents(); // line 38
 publishMatchEvents(events, result, this.publisher);
 ```
 
@@ -236,7 +227,7 @@ publishMatchEvents(match.pullEvents(), result, this.publisher);
 And in `UseAbility.ts`:
 
 ```ts
-return match.toJSON();  // no events published at all!
+return match.toJSON(); // no events published at all!
 ```
 
 `UseAbilityUseCase` never publishes events. If `useAbility()` emitted domain events in the future, they'd be silently lost. Inconsistent patterns across use cases.
@@ -258,16 +249,16 @@ return match.toJSON();  // no events published at all!
 
 `Match` currently orchestrates:
 
-| Responsibility | Methods |
-|---|---|
-| Player lifecycle | `addPlayer`, `removePlayer` |
-| Game lifecycle | `startWithTemplates`, `rematch`, `finishIfWinnerExists` |
-| Phase management | `advancePhase`, `getPhase` |
-| Voting | `submitVote` (delegates to MatchVoting) |
-| Ability usage | `useAbility`, `addAction`, `getActions` |
-| Action resolution | `resolveActions` |
-| Serialization | `toJSON` |
-| Event collection | `emit`, `pullEvents` |
+| Responsibility    | Methods                                                 |
+| ----------------- | ------------------------------------------------------- |
+| Player lifecycle  | `addPlayer`, `removePlayer`                             |
+| Game lifecycle    | `startWithTemplates`, `rematch`, `finishIfWinnerExists` |
+| Phase management  | `advancePhase`, `getPhase`                              |
+| Voting            | `submitVote` (delegates to MatchVoting)                 |
+| Ability usage     | `useAbility`, `addAction`, `getActions`                 |
+| Action resolution | `resolveActions`                                        |
+| Serialization     | `toJSON`                                                |
+| Event collection  | `emit`, `pullEvents`                                    |
 
 That's 8 distinct responsibilities in ~250 lines. While it's not unmanageable now, each new feature (chat, timers, spectators, round tracking) will grow this class further.
 
@@ -292,13 +283,13 @@ This should accept `MatchStatus` enum, not a raw string. Currently it works beca
 
 ## 4. SOLID Compliance
 
-| Principle | Grade | Analysis |
-|---|---|---|
-| **S** - Single Responsibility | C | `Match` does too much. `WebSocketPublisher.effectResolved` makes domain decisions. `publishMatchNarration` handles both AI orchestration and fallback message generation. |
-| **O** - Open/Closed | A- | `EffectHandler` pattern is excellent. New abilities need one new handler + one registration line. Loses points because `RealtimePublisher` and `publishMatchEvents` must change for every new event. |
-| **L** - Liskov Substitution | A | All `EffectHandler` implementations are properly substitutable. `AiNarrator` implementations (Gemini, OpenRouter, Noop, Failover) work through the same interface. |
-| **I** - Interface Segregation | C | `RealtimePublisher` has 10 methods. `MatchBroadcaster` has 3 methods of differing granularity. |
-| **D** - Dependency Inversion | B | Ports exist for repositories and publishers. But `Match` instantiates concrete domain services internally. Container wiring is clean at the application level. |
+| Principle                     | Grade | Analysis                                                                                                                                                                                             |
+| ----------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S** - Single Responsibility | C     | `Match` does too much. `WebSocketPublisher.effectResolved` makes domain decisions. `publishMatchNarration` handles both AI orchestration and fallback message generation.                            |
+| **O** - Open/Closed           | A-    | `EffectHandler` pattern is excellent. New abilities need one new handler + one registration line. Loses points because `RealtimePublisher` and `publishMatchEvents` must change for every new event. |
+| **L** - Liskov Substitution   | A     | All `EffectHandler` implementations are properly substitutable. `AiNarrator` implementations (Gemini, OpenRouter, Noop, Failover) work through the same interface.                                   |
+| **I** - Interface Segregation | C     | `RealtimePublisher` has 10 methods. `MatchBroadcaster` has 3 methods of differing granularity.                                                                                                       |
+| **D** - Dependency Inversion  | B     | Ports exist for repositories and publishers. But `Match` instantiates concrete domain services internally. Container wiring is clean at the application level.                                       |
 
 ---
 
@@ -306,13 +297,13 @@ This should accept `MatchStatus` enum, not a raw string. Currently it works beca
 
 ### Current state: Single-process, in-memory
 
-| Concern | Current | Production-ready? |
-|---|---|---|
-| Persistence | `InMemoryMatchRepository` (Map) | No - server restart = data loss |
-| WS state | `WebSocketManager` rooms in memory | No - can't scale past 1 node |
-| Concurrency | None. No locking/versioning on Match | No - race conditions possible |
+| Concern          | Current                                | Production-ready?                          |
+| ---------------- | -------------------------------------- | ------------------------------------------ |
+| Persistence      | `InMemoryMatchRepository` (Map)        | No - server restart = data loss            |
+| WS state         | `WebSocketManager` rooms in memory     | No - can't scale past 1 node               |
+| Concurrency      | None. No locking/versioning on Match   | No - race conditions possible              |
 | Event processing | Synchronous pull + dispatch in request | No - blocks response on all event handlers |
-| AI narration | Fire-and-forget (`void ... .catch()`) | Acceptable - graceful degradation |
+| AI narration     | Fire-and-forget (`void ... .catch()`)  | Acceptable - graceful degradation          |
 
 ### What you need for horizontal scaling
 
@@ -335,29 +326,29 @@ This should accept `MatchStatus` enum, not a raw string. Currently it works beca
 
 ### Priority 1 (Design Defects)
 
-| # | Issue | Fix |
-|---|---|---|
-| 1 | `Match` instantiates domain services internally | Inject them via constructor (add to `MatchProps` or create a `MatchServices` bag) |
-| 2 | `addAction()` is an unguarded public method | Make it private or remove it. All action creation should go through `useAbility()` |
-| 3 | `RealtimePublisher` has 10 methods (ISP) | Collapse to `publish(matchId, event: MatchDomainEvent)`. Let the adapter decide transport mapping |
-| 4 | Domain logic in `WebSocketPublisher.effectResolved()` | Move visibility rules (who sees what effect) into the domain or application layer |
+| #   | Issue                                                 | Fix                                                                                               |
+| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 1   | `Match` instantiates domain services internally       | Inject them via constructor (add to `MatchProps` or create a `MatchServices` bag)                 |
+| 2   | `addAction()` is an unguarded public method           | Make it private or remove it. All action creation should go through `useAbility()`                |
+| 3   | `RealtimePublisher` has 10 methods (ISP)              | Collapse to `publish(matchId, event: MatchDomainEvent)`. Let the adapter decide transport mapping |
+| 4   | Domain logic in `WebSocketPublisher.effectResolved()` | Move visibility rules (who sees what effect) into the domain or application layer                 |
 
 ### Priority 2 (Consistency)
 
-| # | Issue | Fix |
-|---|---|---|
-| 5 | `UseAbilityUseCase` never publishes domain events | Add `publishMatchEvents()` call for consistency with other use cases |
-| 6 | `EffectHandler.stage` field is unused | Remove it from the interface, or use it as source of truth in `ActionResolver` instead of `Action.stage` |
-| 7 | `TemplateAssignmentService.assign()` takes `string` for status | Change parameter to `MatchStatus` |
-| 8 | `ClientEvent` declares `use_ability` and `submit_vote` but server never handles them | Remove from the union or implement WS handlers |
+| #   | Issue                                                                                | Fix                                                                                                      |
+| --- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| 5   | `UseAbilityUseCase` never publishes domain events                                    | Add `publishMatchEvents()` call for consistency with other use cases                                     |
+| 6   | `EffectHandler.stage` field is unused                                                | Remove it from the interface, or use it as source of truth in `ActionResolver` instead of `Action.stage` |
+| 7   | `TemplateAssignmentService.assign()` takes `string` for status                       | Change parameter to `MatchStatus`                                                                        |
+| 8   | `ClientEvent` declares `use_ability` and `submit_vote` but server never handles them | Remove from the union or implement WS handlers                                                           |
 
 ### Priority 3 (Scalability Prep)
 
-| # | Issue | Fix |
-|---|---|---|
-| 9 | No concurrency control on Match aggregate | Add a `version` field, implement optimistic locking in repository |
-| 10 | In-memory WS rooms | Extract room state behind an interface for future Redis/pub-sub swap |
-| 11 | `shared/` imported via relative paths | Set up as a proper workspace package (`@game/shared`) |
+| #   | Issue                                     | Fix                                                                  |
+| --- | ----------------------------------------- | -------------------------------------------------------------------- |
+| 9   | No concurrency control on Match aggregate | Add a `version` field, implement optimistic locking in repository    |
+| 10  | In-memory WS rooms                        | Extract room state behind an interface for future Redis/pub-sub swap |
+| 11  | `shared/` imported via relative paths     | Set up as a proper workspace package (`@game/shared`)                |
 
 ---
 
@@ -432,6 +423,7 @@ This should accept `MatchStatus` enum, not a raw string. Currently it works beca
 The codebase demonstrates **genuine DDD understanding** - domain events, aggregate root, ports & adapters, domain services, ubiquitous language. The resolution engine is particularly well-designed with its Strategy/Factory/Blackboard pattern.
 
 The main architectural risks are:
+
 - **Match is accumulating too many responsibilities** and will become a maintenance bottleneck
 - **RealtimePublisher's method-per-event design** will create shotgun surgery as events multiply
 - **Domain logic in infrastructure** (`WebSocketPublisher.effectResolved`) will cause bugs when new effects are added and someone forgets to update the adapter
