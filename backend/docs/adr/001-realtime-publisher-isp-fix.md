@@ -17,6 +17,104 @@ This violated the Interface Segregation Principle in two ways:
 
 ---
 
+## The Problem
+
+`RealtimePublisher` was a domain port with **10 methods** — one per event type:
+
+```ts
+// src/domain/ports/RealtimePublisher.ts (before)
+export interface RealtimePublisher {
+  matchStarted(matchId: string, payload: MatchStartedPayload): void;
+  matchUpdated(matchId: string, match: MatchResponse): void;
+  phaseChanged(matchId: string, phase: PhaseType): void;
+  playerJoined(matchId: string, player: PlayerResponse): void;
+  playerLeft(matchId: string, playerId: string): void;
+  actionSubmitted(matchId: string, actorId: string, EffectType: string, targetIds: string[]): void;
+  matchEnded(matchId: string, winner: MatchWinner): void;
+  voteSubmitted(matchId: string, voterId: string, targetId: string | null): void;
+  effectResolved(matchId: string, effect: EffectResult): void;
+  gameMasterMessage(matchId: string, payload: GameMasterMessagePayload): void;
+}
+```
+
+### Why this is an ISP violation
+
+ISP states: *"No client should be forced to depend on methods it does not use."*
+
+- `publishMatchNarration()` received the full `RealtimePublisher` but **only called `gameMasterMessage()`** — forced to depend on 9 methods it never used.
+- Every test mock had to stub all 10 methods even when testing a single event path.
+- The interface coupled the *what* (event semantics) to the *how* (one method per event). Adding a new event required changing the interface itself.
+
+### The shotgun surgery cost
+
+Adding one new event type required **coordinated changes in 4 files**:
+
+```
+1. MatchDomainEvent union        → src/domain/events/match-events.ts
+2. RealtimePublisher interface   → src/domain/ports/RealtimePublisher.ts    ← unnecessary
+3. publishMatchEvents() switch   → src/application/publishMatchEvents.ts
+4. WebSocketPublisher impl       → src/infrastructure/websocket/WebSocketPublisher.ts
+```
+
+File #2 was the unnecessary one. A port interface shouldn't change when the set of events grows.
+
+### Event flow (before)
+
+```
+Match aggregate
+  │ emit(MatchDomainEvent)
+  │ pullEvents()
+  ▼
+Use Case (e.g., AdvancePhaseUseCase)
+  │ calls publishMatchEvents(events, snapshot, publisher)
+  │ calls publishMatchNarration(events, snapshot, narrator, publisher)
+  ▼
+publishMatchEvents()                    publishMatchNarration()
+  │ switch on event.type                  │ maps domain events → narration
+  │ calls publisher.playerJoined()        │ calls AI narrator
+  │ calls publisher.phaseChanged()        │ calls publisher.gameMasterMessage()
+  │ calls publisher.effectResolved()      │
+  │ appends publisher.matchUpdated()      │
+  │ defers publisher.matchEnded()         │
+  ▼                                       ▼
+RealtimePublisher (port)
+  ▼
+WebSocketPublisher (adapter)
+  │ constructs ServerEvent per method
+  │ effectResolved() has routing logic:
+  │   kill → broadcastToMatch
+  │   investigate → sendToPlayer (actor only)
+  ▼
+MatchBroadcaster → WebSocketManager → MatchRoom → WebSocket clients
+```
+
+### Key ordering guarantee
+
+`publishMatchEvents()` enforced: **snapshot (`matchUpdated`) is always sent BEFORE `matchEnded`**. This ensures clients receive the final game state before the end notification. This invariant had to be preserved by the fix.
+
+### The `effectResolved` routing concern
+
+`WebSocketPublisher.effectResolved()` made a visibility decision:
+
+```ts
+effectResolved(matchId: string, effect: EffectResult): void {
+  switch (effect.type) {
+    case "kill":
+      this.broadcaster.broadcastToMatch(matchId, { type: "player_killed", ... });
+      break;
+    case "investigate":
+      // private — sent only to the actor
+      this.broadcaster.sendToPlayer(matchId, effect.actorId, { type: "investigate_result", ... });
+      break;
+    // kill_blocked, protect, roleblock: silently dropped
+  }
+}
+```
+
+This is a transport routing concern (who sees what) that belongs in the infrastructure adapter. It was preserved as-is in the new `publish()` switch.
+
+---
+
 ## Decision
 
 Replace the 10-method interface with a **single `publish(event: RealtimeEvent): void` method** backed by a `RealtimeEvent` discriminated union:

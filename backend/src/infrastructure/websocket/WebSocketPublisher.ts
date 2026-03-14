@@ -51,29 +51,21 @@ export class WebSocketPublisher implements RealtimePublisher {
           phase: event.phase,
         });
         break;
-      case "EffectResolved":
-        switch (event.effect.type) {
-          case "kill":
-            this.broadcaster.broadcastToMatch(event.matchId, {
-              type: "player_killed",
-              matchId: event.matchId,
-              playerId: event.effect.targetIds[0],
-            });
-            break;
-          case "investigate": {
-            const alignment = event.effect.data?.["alignment"] as string | undefined;
-            if (alignment) {
-              this.broadcaster.sendToPlayer(event.matchId, event.effect.actorId, {
-                type: "investigate_result",
-                matchId: event.matchId,
-                actorId: event.effect.actorId,
-                targetId: event.effect.targetIds[0],
-                alignment,
-              });
-            }
-            break;
-          }
-        }
+      case "PlayerKilled":
+        this.broadcaster.broadcastToMatch(event.matchId, {
+          type: "player_killed",
+          matchId: event.matchId,
+          playerId: event.playerId,
+        });
+        break;
+      case "InvestigateResult":
+        this.broadcaster.sendToPlayer(event.matchId, event.actorId, {
+          type: "investigate_result",
+          matchId: event.matchId,
+          actorId: event.actorId,
+          targetId: event.targetId,
+          alignment: event.alignment,
+        });
         break;
       case "MatchEnded":
         this.broadcaster.broadcastToMatch(event.matchId, {

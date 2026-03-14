@@ -1,6 +1,7 @@
+import { MatchResponse } from "../domain/entity/match";
+import { Alignment } from "../domain/entity/template";
 import { MatchDomainEvent } from "../domain/events/match-events";
 import { RealtimeEvent, RealtimePublisher } from "../domain/ports/RealtimePublisher";
-import { MatchResponse } from "../domain/entity/match";
 
 export function publishMatchEvents(
   events: MatchDomainEvent[],
@@ -29,7 +30,29 @@ export function publishMatchEvents(
         break;
       case "ActionsResolved":
         for (const effect of event.effects) {
-          realtimeEvents.push({ type: "EffectResolved", matchId: event.matchId, effect });
+          switch (effect.type) {
+            case "kill":
+              realtimeEvents.push({
+                type: "PlayerKilled",
+                matchId: event.matchId,
+                playerId: effect.targetIds[0],
+              });
+              break;
+            case "investigate": {
+              const alignment = effect.data?.["alignment"] as Alignment | undefined;
+              if (alignment) {
+                realtimeEvents.push({
+                  type: "InvestigateResult",
+                  matchId: event.matchId,
+                  actorId: effect.actorId,
+                  targetId: effect.targetIds[0],
+                  alignment,
+                });
+              }
+              break;
+            }
+            // kill_blocked, protect, roleblock, vote_shield: intentionally not published to clients
+          }
         }
         break;
       case "MatchEnded":

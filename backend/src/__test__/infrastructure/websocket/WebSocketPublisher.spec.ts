@@ -22,17 +22,6 @@ describe("WebSocketPublisher", () => {
       player: { id: "player-1", name: "Alice", status: PlayerStatus.ALIVE, templateId: "template-1" },
     });
 
-    publisher.publish({
-      type: "EffectResolved",
-      matchId: "match-1",
-      effect: {
-        type: "investigate",
-        actorId: "player-1",
-        targetIds: ["player-2"],
-        data: { alignment: Alignment.Villain },
-      },
-    });
-
     expect(broadcaster.broadcastToMatch).toHaveBeenCalledWith("match-1", {
       type: "player_joined",
       matchId: "match-1",
@@ -43,6 +32,37 @@ describe("WebSocketPublisher", () => {
         templateId: "template-1",
       },
     });
+  });
+
+  it("broadcasts PlayerKilled to the match room", () => {
+    const broadcaster = createBroadcaster();
+    const publisher = new WebSocketPublisher(broadcaster);
+
+    publisher.publish({
+      type: "PlayerKilled",
+      matchId: "match-1",
+      playerId: "player-2",
+    });
+
+    expect(broadcaster.broadcastToMatch).toHaveBeenCalledWith("match-1", {
+      type: "player_killed",
+      matchId: "match-1",
+      playerId: "player-2",
+    });
+  });
+
+  it("sends InvestigateResult only to the actor", () => {
+    const broadcaster = createBroadcaster();
+    const publisher = new WebSocketPublisher(broadcaster);
+
+    publisher.publish({
+      type: "InvestigateResult",
+      matchId: "match-1",
+      actorId: "player-1",
+      targetId: "player-2",
+      alignment: Alignment.Villain,
+    });
+
     expect(broadcaster.sendToPlayer).toHaveBeenCalledWith("match-1", "player-1", {
       type: "investigate_result",
       matchId: "match-1",
@@ -50,6 +70,7 @@ describe("WebSocketPublisher", () => {
       targetId: "player-2",
       alignment: Alignment.Villain,
     });
+    expect(broadcaster.broadcastToMatch).not.toHaveBeenCalled();
   });
 
   it("broadcasts game master messages to the match room", () => {

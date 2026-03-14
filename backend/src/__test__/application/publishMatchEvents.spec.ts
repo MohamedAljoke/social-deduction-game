@@ -3,8 +3,8 @@ import { publishMatchEvents } from "../../application/publishMatchEvents";
 import { MatchResponse, MatchStatus } from "../../domain/entity/match";
 import { PlayerResponse, PlayerStatus } from "../../domain/entity/player";
 import { Alignment } from "../../domain/entity/template";
-import { EffectResult } from "../../domain/services/resolution";
 import { RealtimePublisher } from "../../domain/ports/RealtimePublisher";
+import { EffectResult } from "../../domain/services/resolution";
 
 function createPublisher(): RealtimePublisher {
   return { publish: vi.fn() };
@@ -79,7 +79,13 @@ describe("publishMatchEvents", () => {
       playerAssignments: [{ playerId: "player-1", templateId: "template-1", alignment: Alignment.Hero }],
     });
     expect(publishMock).toHaveBeenCalledWith({ type: "PhaseChanged", matchId: "match-1", phase: "resolution" });
-    expect(publishMock).toHaveBeenCalledWith({ type: "EffectResolved", matchId: "match-1", effect });
+    expect(publishMock).toHaveBeenCalledWith({
+      type: "InvestigateResult",
+      matchId: "match-1",
+      actorId: "player-1",
+      targetId: "player-2",
+      alignment: Alignment.Villain,
+    });
 
     const calls = publishMock.mock.calls;
     const snapshotIndex = calls.findIndex((c) => c[0].type === "MatchSnapshotUpdated");
@@ -91,6 +97,49 @@ describe("publishMatchEvents", () => {
 
     expect(publishMock).toHaveBeenCalledWith({ type: "MatchSnapshotUpdated", matchId: "match-1", match: createMatchResponse() });
     expect(publishMock).toHaveBeenCalledWith({ type: "MatchEnded", matchId: "match-1", winner: { kind: "alignment", alignment: Alignment.Hero } });
+  });
+
+  it("maps kill effect to PlayerKilled event", () => {
+    const publisher = createPublisher();
+    const killEffect: EffectResult = {
+      type: "kill",
+      actorId: "player-1",
+      targetIds: ["player-2"],
+    };
+
+    publishMatchEvents(
+      [{ type: "ActionsResolved", matchId: "match-1", effects: [killEffect] }],
+      createMatchResponse(),
+      publisher,
+    );
+
+    const publishMock = vi.mocked(publisher.publish);
+    expect(publishMock).toHaveBeenCalledWith({
+      type: "PlayerKilled",
+      matchId: "match-1",
+      playerId: "player-2",
+    });
+  });
+
+  it("does not publish events for non-visible effects like protect and roleblock", () => {
+    const publisher = createPublisher();
+    const effects: EffectResult[] = [
+      { type: "protect", actorId: "player-1", targetIds: ["player-2"] },
+      { type: "roleblock", actorId: "player-3", targetIds: ["player-4"] },
+    ];
+
+    publishMatchEvents(
+      [{ type: "ActionsResolved", matchId: "match-1", effects }],
+      createMatchResponse(),
+      publisher,
+    );
+
+    const publishMock = vi.mocked(publisher.publish);
+    const calls = publishMock.mock.calls.map((c) => c[0].type);
+    expect(calls).not.toContain("PlayerKilled");
+    expect(calls).not.toContain("InvestigateResult");
+    // Only MatchSnapshotUpdated should be published
+    expect(calls).toEqual(["MatchSnapshotUpdated"]);
   });
 
   it("does not publish matchUpdated when no domain events were emitted", () => {
