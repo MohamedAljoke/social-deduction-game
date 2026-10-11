@@ -1,247 +1,72 @@
 # Social Deduction Game
 
-**Live Demo:**\
-https://social-deduction-game-tvek.onrender.com/
+A real-time multiplayer game (think *Mafia* / *Werewolf*), built as a study in **Domain-Driven Design and SOLID** in TypeScript.
 
-A **real-time multiplayer social deduction game** built to explore
-**clean architecture, real-time systems, and scalable backend design**
-using TypeScript.
+**[Play the live demo](https://social-deduction-game-tvek.onrender.com/)** · [Project board](https://github.com/users/MohamedAljoke/projects/2)
 
-Players join a lobby, receive secret roles, and attempt to uncover the
-impostors through discussion, abilities, and voting.
+Players join a lobby, receive secret roles, and cycle through **discussion → voting → action → resolution** until one side wins. Roles have abilities (kill, protect, roleblock, investigate, vote shield) that resolve by priority each round.
 
-This project focuses on **engineering architecture**, not just gameplay.
+The gameplay is the excuse. The point is the backend design.
 
----
+## What this project demonstrates
 
-# Preview
+**Rich domain model, not anemic data bags**
+- `Match` is the aggregate root. It owns players, phases, votes and actions, and every state change goes through its methods (`addPlayer`, `submitVote`, `useAbility`, `advancePhase`, `rematch`).
+- Invariants live in the domain: you can't join a started match, vote outside the voting phase, or use an ability while dead. Breaking a rule throws a typed domain error.
+- Small entities and value objects (`Player`, `Phase`, `Ability`, `Template`) guard their own state.
 
-Features a **live multiplayer session**, including:
+**Domain events**
+- The aggregate records events (`PlayerJoined`, `VoteSubmitted`, `ActionsResolved`, `MatchEnded`, ...). Use cases pull them after saving and publish them over WebSockets, so the domain never knows about transport.
 
-- Lobby creation and player join
-- Role assignment
-- Game phases (night/day)
-- Voting system
-- Player abilities
-- AI-generated game narration
-- Rematch system
+**SOLID where it pays off**
+- *Open/closed:* each ability is an `EffectHandler` registered in an `ActionResolver`. A new ability is a new class, not a new `if`.
+- *Single responsibility:* voting, win conditions, role assignment and snapshots are separate domain services the aggregate delegates to.
+- *Dependency inversion:* inner layers define ports (`MatchRepository`, `RealtimePublisher`, `AiNarrator`) and infrastructure implements them. Even the web framework is swappable: Express and Hono adapters implement the same `HttpServer` interface.
 
----
+**Architecture enforced by tests**
+- Fitness-function tests fail the build if `domain/` imports from `infrastructure/`.
+- Domain unit tests, WebSocket and HTTP end-to-end tests (Vitest), browser E2E tests (Playwright), all run in CI.
 
-## Project Management
+**Optional AI game master**
+- Narrates game events through Gemini or OpenRouter, with failover between providers and a no-op fallback, all behind the `AiNarrator` port. Toggled per match.
 
-This project is organized using a GitHub Project board to track development progress.
+## Architecture
 
-**Project Board**
+```
+backend/src/
+├── domain/           # entities, value objects, domain services, events, ports (no framework imports)
+│   ├── entity/       # Match (aggregate root), Player, Phase, Ability, Template
+│   ├── services/     # voting, win conditions, ability resolution (one handler per effect)
+│   ├── events/       # domain events raised by the aggregate
+│   └── ports/        # repository and publisher interfaces
+├── application/      # one use case per action: CreateMatch, JoinMatch, SubmitVote, UseAbility, ...
+└── infrastructure/   # Express/Hono HTTP, WebSocket publisher, in-memory repositories, AI providers
+client/               # React + Vite frontend, WebSocket gateway
+shared/               # ability definitions shared by backend and client
+```
 
-https://github.com/users/MohamedAljoke/projects/2
+A request flows one way: **HTTP route → use case → aggregate method → repository save → pull domain events → WebSocket publish**.
 
-The board is used to manage:
+## Tech stack
 
-- Feature development
-- Bug tracking
-- Architecture improvements
-- Future roadmap items
+**Backend:** TypeScript, Node.js, Express / Hono, WebSockets (`ws`), Zod, Vitest
+**Frontend:** React 19, Vite, Tailwind CSS, Playwright
+**AI:** Gemini, OpenRouter
 
-<p align="center">
-  <img src="docs/images/project-board.png" width="900"/>
-</p>
----
+## Run it locally
 
-# Tech Stack
+```sh
+npm run install:all
+npm run dev            # backend on :3000 (ws://localhost:3000/ws), client via Vite
+```
 
-## Backend
+```sh
+npm run test --prefix backend -- --run   # backend unit, e2e and architecture tests
+npm run test:e2e --prefix client         # browser E2E
+```
 
-- TypeScript
-- Node.js
-- WebSockets
-- Clean Architecture (DDD-inspired)
-- Vitest
+For the AI narrator, set `GEMINI_API_KEY` and/or `OPENROUTER_API_KEY` (optionally `AI_PROVIDER=gemini|openrouter` to pick the preferred one).
 
-## Frontend
+## Author
 
-- React
-- Vite
-- TypeScript
-- Playwright (E2E tests)
-
-## AI Integration
-
-Optional **AI Game Master** capable of narrating events using:
-
-- Gemini
-- OpenRouter
-- Failover provider strategy
-
----
-
-# Architecture Overview
-
-Frontend Backend ────────────────────────────────────────────────────
-React UI REST API features/ infrastructure/http ↓ ↓ GameSessionService →
-application use cases ↓ ↓ GameGateway (WebSocket) ← domain events ↓ ↓
-React state domain entities Match Player GamePhase
-
-### Key Principles
-
-- Backend authoritative state
-- Event-driven real-time updates
-- Separation between domain and infrastructure
-- Use-case oriented application layer
-
----
-
-# Monorepo Structure
-
-    social-deduction-game/
-    ├── backend/     # API + WebSocket server
-    ├── client/      # React frontend
-    ├── docs/        # Architecture notes
-    └── package.json
-
----
-
-# Key Source Files
-
-## Backend
-
-File Purpose
-
----
-
-backend/src/domain/entity/match.ts Core Match aggregate
-backend/src/application/ Game use cases
-backend/src/application/ai/ AI narrator pipeline
-backend/src/infrastructure/websocket/mod.ts WebSocket server
-backend/src/infrastructure/http/routes/match.ts REST endpoints
-backend/src/container.ts Dependency injection
-
----
-
-## Frontend
-
-File Purpose
-
----
-
-client/src/context/GameContext.tsx Game state management
-client/src/context/GameSessionService.ts Session orchestration
-client/src/infrastructure/ws/GameGateway.ts WebSocket gateway
-client/src/infrastructure/http/ApiClient.ts REST client
-client/src/types/events.ts Event contracts
-
----
-
-# Development
-
-Install dependencies:
-
-    npm install
-    npm run install:client
-    npm run install:server
-
-Run both servers:
-
-    npm run dev
-
-Backend:
-
-    http://localhost:3000
-    ws://localhost:3000/ws
-
----
-
-# Testing
-
-Backend tests:
-
-    npm run test --prefix backend -- --run
-
-Frontend E2E tests:
-
-    npm run test:e2e --prefix client
-
----
-
-# AI Game Master
-
-The game optionally supports an **AI narrator** that describes important
-events such as:
-
-- Game start
-- Phase transitions
-- Eliminations
-- Game results
-
-Providers supported:
-
-- Gemini
-- OpenRouter
-- Fallback / failover strategy
-
-Example configuration:
-
-    AI_GAME_MASTER_ENABLED=true
-    GEMINI_MODEL=
-    OPENROUTER_MODEL=
-
----
-
-# Engineering Focus
-
-This project was built to demonstrate:
-
-- Real-time multiplayer architecture
-- Domain-driven design patterns
-- WebSocket event modeling
-- Separation of domain / application / infrastructure layers
-- Testable backend architecture
-- Frontend real-time state orchestration
-
----
-
-# Future Improvements
-
-Possible improvements include:
-
-- PostgreSQL persistence
-- Match history
-- Spectator mode
-- Public matchmaking
-- Role customization
-- Player statistics
-
----
-
-# Contributing
-
-Before contributing please read:
-
-    CONTRIBUTING.md
-
-Pull requests use:
-
-    .github/PULL_REQUEST_TEMPLATE.md
-
-Issue templates:
-
-    .github/ISSUE_TEMPLATE/
-
----
-
-# Author
-
-**Mohamed Aljoke**
-
-Backend engineer focused on:
-
-- Node.js
-- TypeScript
-- Real-time systems
-- AWS architecture
-
-Blog:\
-https://devmohami.hashnode.dev/
-
-YouTube:\
-https://www.youtube.com/channel/UCkUgsd4IUob6IUVF1EP13eA
+**Mohamed Aljoke**, backend engineer · [Portfolio](https://mohamedaljoke.github.io/cv/) · [Blog](https://devmohami.hashnode.dev/)
