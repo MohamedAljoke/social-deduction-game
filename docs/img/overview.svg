@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 390" role="img" aria-label="Players call an HTTP route, which runs a use case on the Match aggregate; the aggregate records domain events that the use case pulls after saving and publishes to the players over WebSockets" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13">
+  <style>
+    .ink { fill: #1f2328; }
+    .quiet { fill: #59636e; font-size: 11.5px; }
+    .label { fill: #59636e; font-size: 11px; }
+    .edge { fill: none; stroke: #8c959f; stroke-width: 1.25; }
+    .head { fill: #8c959f; }
+    .node { fill: #0969da; fill-opacity: 0.12; stroke: #0969da; stroke-width: 2; }
+    .data { fill: #1a7f37; fill-opacity: 0.12; stroke: #1a7f37; stroke-width: 2; }
+    .queue { fill: #bf8700; fill-opacity: 0.12; stroke: #bf8700; stroke-width: 2; }
+    .b { font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #e6edf3; }
+      .quiet, .label { fill: #9198a1; }
+      .edge { stroke: #6e7681; }
+      .head { fill: #6e7681; }
+      .node { fill: #4493f8; stroke: #4493f8; }
+      .data { fill: #3fb950; stroke: #3fb950; }
+      .queue { fill: #d29922; stroke: #d29922; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="head" d="M0 0L10 5L0 10z"/>
+    </marker>
+  </defs>
+  <text class="ink b" x="24" y="34" font-size="15">One aggregate decides every rule; events carry the result to the players</text>
+
+  <rect class="edge" x="24" y="86" width="150" height="120" rx="8"/>
+  <text class="ink b" x="99" y="112" text-anchor="middle">Players</text>
+  <text class="quiet" x="99" y="134" text-anchor="middle">React + Vite</text>
+  <text class="quiet" x="99" y="152" text-anchor="middle">actions over HTTP,</text>
+  <text class="quiet" x="99" y="170" text-anchor="middle">updates over WebSocket</text>
+
+  <path class="edge" d="M174 122H226" marker-end="url(#arrow)"/>
+  <rect class="edge" x="228" y="96" width="150" height="52" rx="8"/>
+  <text class="ink b" x="303" y="118" text-anchor="middle">HTTP route</text>
+  <text class="quiet" x="303" y="136" text-anchor="middle">Express or Hono, Zod</text>
+
+  <path class="edge" d="M303 148V178" marker-end="url(#arrow)"/>
+  <rect class="edge" x="228" y="180" width="150" height="52" rx="8"/>
+  <text class="ink b" x="303" y="202" text-anchor="middle">Use case</text>
+  <text class="quiet" x="303" y="220" text-anchor="middle">SubmitVote, UseAbility…</text>
+
+  <rect class="edge" x="410" y="60" width="290" height="256" rx="8" stroke-dasharray="4 4"/>
+  <text class="quiet" x="424" y="78">domain/, no framework imports</text>
+
+  <path class="edge" d="M378 196H396V118H422" marker-end="url(#arrow)"/>
+  <rect class="node" x="424" y="90" width="262" height="56" rx="8"/>
+  <text class="ink b" x="555" y="112" text-anchor="middle">Match, the aggregate root</text>
+  <text class="quiet" x="555" y="130" text-anchor="middle">every rule, typed domain errors</text>
+
+  <path class="edge" d="M487 146V164" marker-end="url(#arrow)"/>
+  <path class="edge" d="M623 146V164" marker-end="url(#arrow)"/>
+  <rect class="node" x="424" y="166" width="126" height="56" rx="8"/>
+  <text class="ink b" x="487" y="188" text-anchor="middle">Voting, win rules</text>
+  <text class="quiet" x="487" y="206" text-anchor="middle">domain services</text>
+  <rect class="node" x="560" y="166" width="126" height="56" rx="8"/>
+  <text class="ink b" x="623" y="188" text-anchor="middle">ActionResolver</text>
+  <text class="quiet" x="623" y="206" text-anchor="middle">a handler per ability</text>
+
+  <rect class="queue" x="424" y="242" width="262" height="56" rx="8"/>
+  <text class="ink b" x="555" y="264" text-anchor="middle">Domain events</text>
+  <text class="quiet" x="555" y="282" text-anchor="middle">recorded, pulled after the save</text>
+
+  <path class="edge" d="M424 290H380" marker-end="url(#arrow)"/>
+  <rect class="edge" x="228" y="264" width="150" height="52" rx="8"/>
+  <text class="ink b" x="303" y="286" text-anchor="middle">RealtimePublisher</text>
+  <text class="quiet" x="303" y="304" text-anchor="middle">port, WebSocket adapter</text>
+
+  <path class="edge" d="M228 290H99V208" marker-end="url(#arrow)"/>
+  <text class="label" x="163" y="282" text-anchor="middle">match rooms</text>
+
+  <path class="edge" d="M686 118H720" marker-end="url(#arrow)"/>
+  <rect class="data" x="722" y="90" width="122" height="56" rx="8"/>
+  <text class="ink b" x="783" y="112" text-anchor="middle">Repository</text>
+  <text class="quiet" x="783" y="130" text-anchor="middle">port, in memory</text>
+
+  <path class="edge" d="M686 270H720" marker-end="url(#arrow)"/>
+  <rect class="edge" x="722" y="236" width="122" height="70" rx="8"/>
+  <text class="ink b" x="783" y="258" text-anchor="middle">AI narrator</text>
+  <text class="quiet" x="783" y="276" text-anchor="middle">Gemini, OpenRouter</text>
+  <text class="quiet" x="783" y="292" text-anchor="middle">public events only</text>
+
+  <text class="quiet" x="24" y="352">A request flows one way: route, use case, aggregate method, save, pull events, publish.</text>
+  <text class="quiet" x="24" y="372">Architecture tests fail the build if domain/ imports from infrastructure/.</text>
+</svg>

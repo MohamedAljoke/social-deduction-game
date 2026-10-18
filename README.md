@@ -1,71 +1,74 @@
 # Social Deduction Game
 
-A real-time multiplayer game (think *Mafia* / *Werewolf*), built as a study in **Domain-Driven Design and SOLID** in TypeScript.
+A real-time multiplayer game in the spirit of *Mafia* and *Werewolf*, built as a study in **Domain-Driven
+Design and SOLID** in TypeScript. Players join a lobby, receive secret roles and go round by round through
+**discussion → voting → action → resolution** until one side wins.
 
-**[Play the live demo](https://social-deduction-game-tvek.onrender.com/)** · [Project board](https://github.com/users/MohamedAljoke/projects/2)
+The gameplay is the excuse; the backend design is the point. Every rule lives in one aggregate, abilities
+resolve in a fixed order through one handler each, and tests fail the build if the layers start to leak.
 
-Players join a lobby, receive secret roles, and cycle through **discussion → voting → action → resolution** until one side wins. Roles have abilities (kill, protect, roleblock, investigate, vote shield) that resolve by priority each round.
+**[Play the live demo](https://social-deduction-game-tvek.onrender.com/)** ·
+[Project board](https://github.com/users/MohamedAljoke/projects/2)
 
-The gameplay is the excuse. The point is the backend design.
+![Players call an HTTP route, which runs a use case on the Match aggregate; the aggregate records domain events that the use case pulls after saving and publishes to the players over WebSockets](docs/img/overview.svg)
 
-## What this project demonstrates
+## Run it
 
-**Rich domain model, not anemic data bags**
-- `Match` is the aggregate root. It owns players, phases, votes and actions, and every state change goes through its methods (`addPlayer`, `submitVote`, `useAbility`, `advancePhase`, `rematch`).
-- Invariants live in the domain: you can't join a started match, vote outside the voting phase, or use an ability while dead. Breaking a rule throws a typed domain error.
-- Small entities and value objects (`Player`, `Phase`, `Ability`, `Template`) guard their own state.
-
-**Domain events**
-- The aggregate records events (`PlayerJoined`, `VoteSubmitted`, `ActionsResolved`, `MatchEnded`, ...). Use cases pull them after saving and publish them over WebSockets, so the domain never knows about transport.
-
-**SOLID where it pays off**
-- *Open/closed:* each ability is an `EffectHandler` registered in an `ActionResolver`. A new ability is a new class, not a new `if`.
-- *Single responsibility:* voting, win conditions, role assignment and snapshots are separate domain services the aggregate delegates to.
-- *Dependency inversion:* inner layers define ports (`MatchRepository`, `RealtimePublisher`, `AiNarrator`) and infrastructure implements them. Even the web framework is swappable: Express and Hono adapters implement the same `HttpServer` interface.
-
-**Architecture enforced by tests**
-- Fitness-function tests fail the build if `domain/` imports from `infrastructure/`.
-- Domain unit tests, WebSocket and HTTP end-to-end tests (Vitest), browser E2E tests (Playwright), all run in CI.
-
-**Optional AI game master**
-- Narrates game events through Gemini or OpenRouter, with failover between providers and a no-op fallback, all behind the `AiNarrator` port. Toggled per match.
-
-## Architecture
-
-```
-backend/src/
-├── domain/           # entities, value objects, domain services, events, ports (no framework imports)
-│   ├── entity/       # Match (aggregate root), Player, Phase, Ability, Template
-│   ├── services/     # voting, win conditions, ability resolution (one handler per effect)
-│   ├── events/       # domain events raised by the aggregate
-│   └── ports/        # repository and publisher interfaces
-├── application/      # one use case per action: CreateMatch, JoinMatch, SubmitVote, UseAbility, ...
-└── infrastructure/   # Express/Hono HTTP, WebSocket publisher, in-memory repositories, AI providers
-client/               # React + Vite frontend, WebSocket gateway
-shared/               # ability definitions shared by backend and client
-```
-
-A request flows one way: **HTTP route → use case → aggregate method → repository save → pull domain events → WebSocket publish**.
-
-## Tech stack
-
-**Backend:** TypeScript, Node.js, Express / Hono, WebSockets (`ws`), Zod, Vitest
-**Frontend:** React 19, Vite, Tailwind CSS, Playwright
-**AI:** Gemini, OpenRouter
-
-## Run it locally
+You need Node.js 20.
 
 ```sh
+git clone https://github.com/MohamedAljoke/social-deduction-game.git
+cd social-deduction-game
 npm run install:all
-npm run dev            # backend on :3000 (ws://localhost:3000/ws), client via Vite
+npm run dev            # the API on :3000 and the client on http://localhost:5173
 ```
+
+Create a match at http://localhost:5173, then join it as the other players from private windows or other
+browsers: each player's session is kept in the browser's storage, so two normal tabs would be the same
+player.
 
 ```sh
-npm run test --prefix backend -- --run   # backend unit, e2e and architecture tests
-npm run test:e2e --prefix client         # browser E2E
+npm run test --prefix backend -- --run   # domain, application, e2e and architecture tests
+npm run test:e2e --prefix client         # full games in Playwright
 ```
 
-For the AI narrator, set `GEMINI_API_KEY` and/or `OPENROUTER_API_KEY` (optionally `AI_PROVIDER=gemini|openrouter` to pick the preferred one).
+The AI game master is optional. To try it, put `AI_PROVIDER=auto` and `GEMINI_API_KEY` and/or
+`OPENROUTER_API_KEY` in `backend/.env`, then turn it on when creating a match.
+
+## What's inside
+
+- **A rich aggregate, not data bags.** `Match` owns players, phases, votes and actions, and every change
+  goes through a method such as `submitVote` or `useAbility` that checks its own rules and throws a typed
+  domain error when one is broken. → [docs/DOMAIN.md](docs/DOMAIN.md)
+- **Domain events, published after the save.** The aggregate records what happened; the use case saves,
+  then pulls the events and hands them to a `RealtimePublisher` port, so the domain never knows about
+  WebSockets. → [docs/DOMAIN.md](docs/DOMAIN.md)
+- **Abilities that resolve the same way every time.** Kill, protect, roleblock, investigate and vote
+  shield run in fixed stages and by priority. Each is one `EffectHandler` class, so a new ability is a new
+  class, not another `if`. → [docs/ABILITIES.md](docs/ABILITIES.md)
+- **One room per match over WebSockets.** Actions go over HTTP and updates come back to the match's room;
+  joins are authorized, investigation results go only to the investigator, and a refresh lands back in
+  the game. → [docs/REALTIME.md](docs/REALTIME.md)
+- **An optional AI game master that can't break the game.** It narrates from public events only, behind
+  an `AiNarrator` port, with failover between Gemini and OpenRouter and a plain fallback message.
+  → [docs/AI-NARRATOR.md](docs/AI-NARRATOR.md)
+- **Architecture enforced by tests.** Fitness tests fail the build if `domain/` imports from
+  `infrastructure/`. Unit and end-to-end tests in Vitest and multi-browser Playwright games run in CI.
+  → [docs/TESTING.md](docs/TESTING.md)
+
+## The code
+
+| Path | What it is |
+| --- | --- |
+| `backend/src/domain` | Entities, the `Match` aggregate, domain services, ability handlers, events, errors and ports; no framework imports |
+| `backend/src/application` | One use case per action: `CreateMatch`, `JoinMatch`, `SubmitVote`, `UseAbility`, `AdvancePhase`… |
+| `backend/src/infrastructure` | Express and Hono adapters behind one `HttpServer` interface, WebSockets, in-memory repositories, AI providers |
+| `client/` | React + Vite front end with a WebSocket gateway and English and Portuguese text |
+| `shared/` | Ability definitions used by both the backend and the client |
+| `docs/` | How it works; [docs/README.md](docs/README.md) also lists the design notes and ADRs |
+
+**Stack:** TypeScript, Node.js, Express / Hono, WebSockets (`ws`), Zod, Vitest, React 19, Vite, Tailwind
+CSS, Playwright, Gemini, OpenRouter.
 
 ## Author
 
