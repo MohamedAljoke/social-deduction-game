@@ -28,8 +28,8 @@ interface AiNarrator {
   then start the narration without awaiting it. A slow provider never holds up the game.
 - **It always says something.** When every provider fails, a plain fallback message built from the same
   events is posted instead.
-- **It only sees public events.** `NarrationContextBuilder` feeds the model what every player already
-  saw (the phase, eliminations, the round), never roles or private results, so the narration can't give a
-  role away.
+- **It never knows who holds which role.** `NarrationContextBuilder` feeds the model what every player
+  already saw: the phase, eliminations, the round and the roles in play. Which player holds which role
+  is left out until the match ends, so keeping a secret never depends on the prompt asking the model to.
 - **It's per match.** `aiGameMasterEnabled` is part of the match's config, and the use case skips
   narration when it's off.

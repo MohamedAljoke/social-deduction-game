@@ -3,6 +3,7 @@ import { Phase, PhaseType } from "./phase";
 import { Action } from "./action";
 import { Alignment, Template } from "./template";
 import {
+  InvalidPlayerToken,
   MatchAlreadyStarted,
   MatchNotFinished,
   MatchNotStarted,
@@ -233,6 +234,16 @@ export class Match {
     this.emit({ type: "PlayerLeft", matchId: this.id, playerId });
   }
 
+  public identify(token: string | undefined): Player {
+    const player = token
+      ? this.players.find((candidate) => candidate.hasToken(token))
+      : undefined;
+    if (!player) {
+      throw new InvalidPlayerToken();
+    }
+    return player;
+  }
+
   public getPhase(): PhaseType {
     return this.phase.getCurrentPhase();
   }
@@ -379,7 +390,7 @@ export class Match {
     });
   }
 
-  toJSON() {
+  toJSON(viewerId: string | null = null) {
     return this.snapshotMapper.map({
       id: this.id,
       name: this.name,
@@ -394,6 +405,6 @@ export class Match {
       winner: this.winner,
       winnerAlignment: this.winnerAlignment,
       endedAt: this.endedAt,
-    });
+    }, viewerId);
   }
 }

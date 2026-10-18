@@ -1,4 +1,4 @@
-import { DomainError, ValidationError } from "../../domain/errors";
+import { DomainError, InvalidPlayerToken, ValidationError } from "../../domain/errors";
 
 export type HttpMethod = "get" | "post" | "put" | "delete";
 
@@ -56,7 +56,7 @@ export function mapErrorToHttp(error: unknown) {
 
   if (error instanceof DomainError) {
     return {
-      status: 400,
+      status: error instanceof InvalidPlayerToken ? 401 : 400,
       body: {
         error: error.code,
         message: error.message,

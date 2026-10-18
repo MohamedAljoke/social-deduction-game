@@ -11,12 +11,14 @@ export type PlayerResponse = ReturnType<Player["toJSON"]>;
 export class Player {
   readonly id: string;
   readonly name: string;
+  private readonly token: string;
   private status: PlayerStatus;
   private templateId?: string;
 
-  constructor(props: { id: string; name: string }) {
+  constructor(props: { id: string; name: string; token?: string }) {
     this.id = props.id;
     this.name = props.name;
+    this.token = props.token ?? crypto.randomUUID();
     this.status = PlayerStatus.ALIVE;
   }
 
@@ -25,6 +27,14 @@ export class Player {
       id: crypto.randomUUID().toString(),
       name: name,
     });
+  }
+
+  public getToken(): string {
+    return this.token;
+  }
+
+  public hasToken(token: string): boolean {
+    return this.token === token;
   }
 
   public getStatus(): PlayerStatus {
@@ -61,7 +71,6 @@ export class Player {
       id: this.id,
       name: this.name,
       status: this.status,
-      templateId: this.templateId,
     };
   }
 }

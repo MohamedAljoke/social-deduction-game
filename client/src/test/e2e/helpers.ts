@@ -181,12 +181,54 @@ export async function getMatchSnapshot(
   page: Page,
   matchId: string,
 ): Promise<MatchSnapshot> {
-  const response = await page.request.get(`${API_BASE_URL}/match/${matchId}`);
-  if (!response.ok()) {
-    throw new Error(`Failed to fetch match ${matchId}`);
-  }
+  return fetchMatchWithAllRoles<MatchSnapshot>(page, matchId);
+}
 
-  return (await response.json()) as MatchSnapshot;
+/**
+ * Each player only sees their own role, so tests that need the whole table read the match
+ * once per open player page, with that page's stored token, and stitch the roles together.
+ */
+export async function fetchMatchWithAllRoles<
+  T extends { players: Array<{ id: string; templateId?: string }> },
+>(page: Page, matchId: string): Promise<T> {
+  const pages = page.context().browser()?.contexts().flatMap((context) => context.pages()) ?? [page];
+  const tokens = (
+    await Promise.all(
+      pages.map((candidate) =>
+        candidate
+          .evaluate(() => localStorage.getItem("game_session"))
+          .catch(() => null),
+      ),
+    )
+  )
+    .map((raw) => (raw ? (JSON.parse(raw) as { matchId?: string; playerToken?: string }) : null))
+    .filter((session) => session?.matchId === matchId && session.playerToken)
+    .map((session) => session!.playerToken!);
+
+  const views = await Promise.all(
+    [undefined, ...tokens].map(async (token) => {
+      const response = await page.request.get(`${API_BASE_URL}/match/${matchId}`, {
+        headers: token ? { "X-Player-Token": token } : {},
+      });
+      if (!response.ok()) {
+        throw new Error(`Failed to fetch match ${matchId}`);
+      }
+      return (await response.json()) as T;
+    }),
+  );
+
+  const [publicView, ...ownViews] = views;
+  return {
+    ...publicView,
+    players: publicView.players.map((player) => ({
+      ...player,
+      templateId:
+        player.templateId ??
+        ownViews
+          .flatMap((view) => view.players)
+          .find((candidate) => candidate.id === player.id && candidate.templateId)?.templateId,
+    })),
+  };
 }
 
 export function getPlayerByName(

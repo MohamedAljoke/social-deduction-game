@@ -1,4 +1,4 @@
-import { MatchNotFound, PlayerNotInMatch } from "../domain/errors";
+import { MatchNotFound } from "../domain/errors";
 import { MatchResponse } from "../domain/entity/match";
 import { MatchRepository } from "../domain/ports/persistance/MatchRepository";
 import { RealtimePublisher } from "../domain/ports/RealtimePublisher";
@@ -6,7 +6,7 @@ import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface LeaveMatchInput {
   matchId: string;
-  playerId: string;
+  playerToken?: string;
 }
 
 export class LeaveMatchUseCase {
@@ -22,18 +22,12 @@ export class LeaveMatchUseCase {
       throw new MatchNotFound();
     }
 
-    const playerExists = match.getPlayers().some((p) => p.id === input.playerId);
-
-    if (!playerExists) {
-      throw new PlayerNotInMatch();
-    }
-
-    match.removePlayer(input.playerId);
+    const player = match.identify(input.playerToken);
+    match.removePlayer(player.id);
     await this.repository.save(match);
 
-    const result = match.toJSON();
-    publishMatchEvents(match.pullEvents(), result, this.publisher);
+    publishMatchEvents(match.pullEvents(), match, this.publisher);
 
-    return result;
+    return match.toJSON();
   }
 }

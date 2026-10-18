@@ -121,3 +121,9 @@ export class TargetNotAlive extends DomainError {
     super("Target must be alive", "target_not_alive");
   }
 }
+
+export class InvalidPlayerToken extends DomainError {
+  constructor() {
+    super("Player token is missing or does not belong to this match", "invalid_player_token");
+  }
+}

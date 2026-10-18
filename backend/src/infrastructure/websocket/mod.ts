@@ -7,7 +7,7 @@ export type ClientEvent =
   | {
       type: "join_match";
       matchId: string;
-      playerId: string;
+      playerToken: string;
     }
   | { type: "leave_match"; matchId: string; playerId: string }
   | {
@@ -29,7 +29,7 @@ export type ServerEvent =
   | { type: "player_joined"; matchId: string; player: PlayerResponse }
   | { type: "player_left"; matchId: string; playerId: string }
   | { type: "players_synced"; matchId: string; players: PlayerResponse[] }
-  | { type: "match_started"; matchId: string; playerAssignments: Assignment[] }
+  | { type: "match_started"; matchId: string }
   | { type: "phase_changed"; matchId: string; phase: string }
   | {
       type: "action_submitted";
@@ -64,26 +64,21 @@ export type ServerEvent =
     }
   | { type: "error"; code: string; message: string };
 
-export interface Assignment {
-  playerId: string;
-  templateId: string;
-  alignment: string;
-}
-
 export interface Client {
   id: string;
   playerId?: string;
+  playerToken?: string;
   matchId?: string;
   socket: WebSocket;
 }
 
 export interface DisconnectHandler {
-  handle(input: { matchId: string; playerId: string }): Promise<void> | void;
+  handle(input: { matchId: string; playerToken: string }): Promise<void> | void;
 }
 
 export interface JoinAuthorizer {
   authorize(
-    input: { matchId: string; playerId: string },
+    input: { matchId: string; playerToken: string },
   ): Promise<PlayerResponse> | PlayerResponse;
 }
 
@@ -122,12 +117,18 @@ class MatchRoom {
     }
   }
 
-  broadcastMatchUpdate(state: unknown): void {
-    this.broadcast({
-      type: "match_updated",
-      matchId: this.matchId,
-      state,
-    });
+  broadcastMatchUpdate(stateFor: (playerId: string | undefined) => unknown): void {
+    for (const client of this.clients.values()) {
+      if (client.socket.readyState === WebSocket.OPEN) {
+        client.socket.send(
+          JSON.stringify({
+            type: "match_updated",
+            matchId: this.matchId,
+            state: stateFor(client.playerId),
+          }),
+        );
+      }
+    }
   }
 
   getClientCount(): number {
@@ -240,8 +241,10 @@ export class WebSocketManager {
 
       case "leave_match": {
         if (
-          (client.matchId && client.matchId !== event.matchId) ||
-          (client.playerId && client.playerId !== event.playerId)
+          !client.matchId ||
+          !client.playerId ||
+          client.matchId !== event.matchId ||
+          client.playerId !== event.playerId
         ) {
           this.sendErrorAndClose(
             client,
@@ -251,14 +254,14 @@ export class WebSocketManager {
           break;
         }
 
-        const matchId = client.matchId ?? event.matchId;
-        const playerId = client.playerId ?? event.playerId;
+        const matchId = client.matchId;
+        const playerId = client.playerId;
         const room = this.rooms.get(matchId);
-        if (room && this.disconnectHandler) {
+        if (room && this.disconnectHandler && client.playerToken) {
           Promise.resolve(
             this.disconnectHandler.handle({
               matchId,
-              playerId,
+              playerToken: client.playerToken,
             }),
           ).catch(console.error);
         }
@@ -306,7 +309,7 @@ export class WebSocketManager {
     try {
       const player = await this.joinAuthorizer.authorize({
         matchId: event.matchId,
-        playerId: event.playerId,
+        playerToken: event.playerToken,
       });
 
       let room = this.rooms.get(event.matchId);
@@ -314,12 +317,13 @@ export class WebSocketManager {
         room = new MatchRoom(event.matchId);
         this.rooms.set(event.matchId, room);
       }
-      room.join(event.playerId, client, player);
+      client.playerToken = event.playerToken;
+      room.join(player.id, client, player);
 
       const existingPlayers = room
         .getPlayers()
-        .filter((candidate) => candidate.id !== event.playerId);
-      room.sendToPlayer(event.playerId, {
+        .filter((candidate) => candidate.id !== player.id);
+      room.sendToPlayer(player.id, {
         type: "players_synced",
         matchId: event.matchId,
         players: existingPlayers,
@@ -331,7 +335,7 @@ export class WebSocketManager {
           matchId: event.matchId,
           player,
         },
-        event.playerId,
+        player.id,
       );
     } catch (error) {
       const wsError = this.mapJoinError(error);
@@ -390,10 +394,10 @@ export class WebSocketManager {
     }
   }
 
-  broadcastMatchUpdate(matchId: string, state: unknown): void {
+  broadcastMatchUpdate(matchId: string, stateFor: (playerId: string | undefined) => unknown): void {
     const room = this.rooms.get(matchId);
     if (room) {
-      room.broadcastMatchUpdate(state);
+      room.broadcastMatchUpdate(stateFor);
     }
   }
 

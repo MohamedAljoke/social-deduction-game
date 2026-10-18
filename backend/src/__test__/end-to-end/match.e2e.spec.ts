@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createApp } from "../../app";
 import { MatchResponse, MatchStatus } from "../../domain/entity/match";
+import { JoinMatchOutput } from "../../application/JoinMatch";
 import { Alignment } from "../../domain/entity/template";
 import { EffectType } from "../../domain/entity/ability";
 import {
@@ -14,20 +15,93 @@ import {
   CannotTargetSelf,
   PlayerIsDeadError,
   TargetNotAlive,
+  InvalidPlayerToken,
 } from "../../domain/errors";
 
 const port = 4001;
+const playerTokens = new Map<string, string>();
+const matchTokens = new Map<string, string>();
 
 describe("Match E2E", () => {
   let server: ReturnType<typeof createApp>;
 
   beforeEach(async () => {
+    playerTokens.clear();
+    matchTokens.clear();
     server = createApp();
     await server.listen(port);
   });
 
   afterEach(async () => {
     await server.close();
+  });
+
+  describe("Hidden roles", () => {
+    it("should show a player only their own role while the match runs", async () => {
+      const { body: match } = await createMatchHelper();
+      const { body: joined } = await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+      const alice = joined.players[0];
+
+      const aliceView = await getMatchAs(match.id, alice.id);
+      const publicView = await getMatchAs(match.id, undefined);
+
+      const visibleToAlice = aliceView.players.filter((player) => player.templateId);
+      expect(visibleToAlice.map((player) => player.id)).toEqual([alice.id]);
+      expect(publicView.players.every((player) => player.templateId === undefined)).toBe(true);
+    });
+
+    it("should hide other players' pending actions", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+      await advanceToActionPhase(match.id);
+      const roles = await getMatch(match.id);
+      const villain = findPlayerByAlignment(roles, Alignment.Villain)!;
+      const hero = findPlayerByAlignment(roles, Alignment.Hero)!;
+
+      await useAbilityHelper(match.id, villain.id, EffectType.Kill, [hero.id]);
+
+      expect((await getMatchAs(match.id, villain.id)).actions).toHaveLength(1);
+      expect((await getMatchAs(match.id, hero.id)).actions).toHaveLength(0);
+    });
+
+    it("should reveal every role once the match is finished", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+      const roles = await getMatch(match.id);
+      const villain = findPlayerByAlignment(roles, Alignment.Villain)!;
+      const hero = findPlayerByAlignment(roles, Alignment.Hero)!;
+
+      await advancePhaseHelper(match.id);
+      await submitVoteHelper(match.id, hero.id, villain.id);
+      await advancePhaseHelper(match.id);
+
+      const publicView = await getMatchAs(match.id, undefined);
+      expect(publicView.status).toBe(MatchStatus.FINISHED);
+      expect(publicView.players.every((player) => player.templateId)).toBe(true);
+    });
+
+    it("should refuse an action without a valid player token", async () => {
+      const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
+      await joinMatchHelper(match.id, "bob");
+      await startMatchHelper(match.id);
+      await advancePhaseHelper(match.id);
+
+      const response = await fetch(`http://localhost:${port}/match/${match.id}/vote`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-player-token": "not-a-token" },
+        body: JSON.stringify({ targetId: null }),
+      });
+
+      expect(response.status).toBe(401);
+      expect(await response.json()).toMatchObject({ error: new InvalidPlayerToken().code });
+    });
   });
 
   describe("CreateMatch UseCase", () => {
@@ -182,7 +256,7 @@ describe("Match E2E", () => {
   });
 
   describe("LeaveMatch UseCase", () => {
-    it("should reject missing playerId", async () => {
+    it("should reject a leave without a player token", async () => {
       const { body: match } = await createMatchHelper();
       await joinMatchHelper(match.id, "alice");
 
@@ -195,7 +269,8 @@ describe("Match E2E", () => {
         },
       );
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
+      expect(await response.json()).toMatchObject({ error: new InvalidPlayerToken().code });
     });
   });
 
@@ -215,24 +290,16 @@ describe("Match E2E", () => {
         phase: "discussion",
       });
 
-      expect(body.players).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            name: "alice",
-            status: "alive",
-            templateId: expect.any(String),
-          }),
-          expect.objectContaining({
-            name: "bob",
-            status: "alive",
-            templateId: expect.any(String),
-          }),
-        ]),
-      );
+      const alice = body.players.find((player) => player.name === "alice");
+      const bob = body.players.find((player) => player.name === "bob");
+      expect(alice).toMatchObject({ status: "alive", templateId: expect.any(String) });
+      expect(bob).toMatchObject({ status: "alive" });
+      expect(bob?.templateId).toBeUndefined();
     });
 
     it("should not start a match with less than 2 players", async () => {
       const { body: match } = await createMatchHelper();
+      await joinMatchHelper(match.id, "alice");
 
       const { response, body } = await startMatchHelper(match.id);
 
@@ -252,7 +319,7 @@ describe("Match E2E", () => {
         `http://localhost:${port}/match/${match.id}/start`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json" , ...asMatchMember(match.id) },
           body: JSON.stringify({}),
         },
       );
@@ -277,7 +344,7 @@ describe("Match E2E", () => {
         `http://localhost:${port}/match/${match.id}/start`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json" , ...asMatchMember(match.id) },
           body: JSON.stringify({ templates: [] }),
         },
       );
@@ -302,7 +369,7 @@ describe("Match E2E", () => {
         `http://localhost:${port}/match/${match.id}/start`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json" , ...asMatchMember(match.id) },
           body: JSON.stringify({
             templates: [
               { alignment: "invalid", abilities: [{ id: EffectType.Kill }] },
@@ -327,7 +394,7 @@ describe("Match E2E", () => {
         `http://localhost:${port}/match/${match.id}/start`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json" , ...asMatchMember(match.id) },
           body: JSON.stringify({
             templates: [
               {
@@ -355,7 +422,7 @@ describe("Match E2E", () => {
         `http://localhost:${port}/match/${match.id}/start`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json" , ...asMatchMember(match.id) },
           body: JSON.stringify({
             templates: [
               { alignment: Alignment.Villain, abilities: [] },
@@ -402,12 +469,9 @@ describe("Match E2E", () => {
         },
       ]);
 
-      const villain = started.players.find(
-        (player) => findTemplateAlignment(started, player.id) === Alignment.Villain,
-      );
-      const hero = started.players.find(
-        (player) => findTemplateAlignment(started, player.id) === Alignment.Hero,
-      );
+      const roles = await getMatch(started.id);
+      const villain = findPlayerByAlignment(roles, Alignment.Villain);
+      const hero = findPlayerByAlignment(roles, Alignment.Hero);
 
       expect(villain).toBeDefined();
       expect(hero).toBeDefined();
@@ -1295,9 +1359,17 @@ async function joinMatchHelper(
     },
   );
 
-  const body = (await response.json()) as MatchResponse;
+  if (!response.ok) {
+    return { body: (await response.json()) as MatchResponse, response };
+  }
 
-  return { body, response };
+  const json = (await response.json()) as JoinMatchOutput;
+
+  playerTokens.set(json.playerId, json.playerToken);
+  if (!matchTokens.has(matchId)) {
+    matchTokens.set(matchId, json.playerToken);
+  }
+  return { body: json.match as MatchResponse, response };
 }
 
 async function startMatchHelper(matchId: string): Promise<{
@@ -1333,6 +1405,7 @@ async function startMatchWithTemplatesHelper(
       method: "POST",
       headers: {
         "content-type": "application/json",
+        ...asMatchMember(matchId),
       },
       body: JSON.stringify({
         templates,
@@ -1355,6 +1428,7 @@ async function rematchMatchHelper(matchId: string): Promise<{
       method: "POST",
       headers: {
         "content-type": "application/json",
+        ...asMatchMember(matchId),
       },
     },
   );
@@ -1379,9 +1453,9 @@ async function useAbilityHelper(
       method: "POST",
       headers: {
         "content-type": "application/json",
+        ...asPlayer(actorId),
       },
       body: JSON.stringify({
-        actorId,
         EffectType,
         targetIds,
       }),
@@ -1405,8 +1479,8 @@ async function submitVoteHelper(
     `http://localhost:${port}/match/${matchId}/vote`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ voterId, targetId }),
+      headers: { "content-type": "application/json", ...asPlayer(voterId) },
+      body: JSON.stringify({ targetId }),
     },
   );
 
@@ -1423,7 +1497,7 @@ async function advancePhaseHelper(matchId: string): Promise<{
     `http://localhost:${port}/match/${matchId}/phase`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...asMatchMember(matchId) },
     },
   );
   const body = (await response.json()) as MatchResponse;
@@ -1443,10 +1517,42 @@ async function advanceToActionPhase(matchId: string): Promise<void> {
 }
 
 async function getMatch(matchId: string): Promise<MatchResponse> {
+  const match = await getMatchAs(matchId, undefined);
+  const ownViews = await Promise.all(
+    match.players
+      .filter((player) => playerTokens.has(player.id))
+      .map((player) => getMatchAs(matchId, player.id)),
+  );
+  // Each player only sees their own role, so the tests' "god view" stitches every player's own view together.
+  return {
+    ...match,
+    players: match.players.map((player) => ({
+      ...player,
+      templateId:
+        player.templateId ??
+        ownViews
+          .flatMap((view) => view.players)
+          .find((candidate) => candidate.id === player.id && candidate.templateId)?.templateId,
+    })),
+  };
+}
+
+async function getMatchAs(matchId: string, playerId: string | undefined): Promise<MatchResponse> {
   const response = await fetch(`http://localhost:${port}/match/${matchId}`, {
     method: "GET",
+    headers: playerId ? asPlayer(playerId) : {},
   });
   return (await response.json()) as MatchResponse;
+}
+
+function asPlayer(playerId: string): Record<string, string> {
+  const token = playerTokens.get(playerId);
+  return token ? { "x-player-token": token } : {};
+}
+
+function asMatchMember(matchId: string): Record<string, string> {
+  const token = matchTokens.get(matchId);
+  return token ? { "x-player-token": token } : {};
 }
 
 function findTemplateAlignment(

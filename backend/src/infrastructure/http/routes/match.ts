@@ -1,12 +1,9 @@
 import { Container, TOKENS } from "../../../container";
-import { HttpServer } from "../server";
 import {
   CreateMatchBody,
   CreateMatchSchema,
   JoinMatchBody,
   JoinMatchSchema,
-  LeaveMatchBody,
-  LeaveMatchSchema,
   StartMatchBody,
   StartMatchSchema,
   SubmitVoteBody,
@@ -15,6 +12,12 @@ import {
   UseAbilitySchema,
 } from "../validators";
 import { validateBody } from "../middlewares/validator";
+import { HttpRequest, HttpServer } from "../server";
+
+function playerToken(req: HttpRequest): string | undefined {
+  const header = req.headers["x-player-token"];
+  return Array.isArray(header) ? header[0] : header;
+}
 
 export function registerMatchRoutes(server: HttpServer, container: Container) {
   server.register(
@@ -38,7 +41,10 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
 
   server.register("get", "/match/:matchId", async (req, res) => {
     const useCase = container.resolve(TOKENS.GetMatchUseCase);
-    const match = await useCase.execute({ matchId: req.params.matchId });
+    const match = await useCase.execute({
+      matchId: req.params.matchId,
+      playerToken: playerToken(req),
+    });
 
     res.status(200).json(match);
   });
@@ -47,7 +53,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     const useCase = container.resolve(TOKENS.RematchMatchUseCase);
     const { matchId } = req.params;
 
-    const result = await useCase.execute({ matchId });
+    const result = await useCase.execute({ matchId, playerToken: playerToken(req) });
 
     res.status(200).json(result);
   });
@@ -81,6 +87,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
 
       const result = await useCase.execute({
         matchId,
+        playerToken: playerToken(req),
         templates: body.templates,
       });
 
@@ -99,7 +106,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
 
       const result = await useCase.execute({
         matchId,
-        actorId: body.actorId,
+        playerToken: playerToken(req),
         EffectType: body.EffectType,
         targetIds: body.targetIds,
       });
@@ -118,7 +125,7 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
       const body: SubmitVoteBody = req.body;
       const result = await useCase.execute({
         matchId,
-        voterId: body.voterId,
+        playerToken: playerToken(req),
         targetId: body.targetId,
       });
 
@@ -130,23 +137,17 @@ export function registerMatchRoutes(server: HttpServer, container: Container) {
     const useCase = container.resolve(TOKENS.AdvancePhaseUseCase);
     const { matchId } = req.params;
 
-    const result = await useCase.execute({ matchId });
+    const result = await useCase.execute({ matchId, playerToken: playerToken(req) });
 
     res.status(200).json(result);
   });
 
-  server.register(
-    "post",
-    "/match/:matchId/leave",
-    validateBody(LeaveMatchSchema),
-    async (req, res) => {
-      const useCase = container.resolve(TOKENS.LeaveMatchUseCase);
-      const { matchId } = req.params;
-      const body: LeaveMatchBody = req.body;
+  server.register("post", "/match/:matchId/leave", async (req, res) => {
+    const useCase = container.resolve(TOKENS.LeaveMatchUseCase);
+    const { matchId } = req.params;
 
-      const result = await useCase.execute({ matchId, playerId: body.playerId });
+    const result = await useCase.execute({ matchId, playerToken: playerToken(req) });
 
-      res.status(200).json(result);
-    },
-  );
+    res.status(200).json(result);
+  });
 }

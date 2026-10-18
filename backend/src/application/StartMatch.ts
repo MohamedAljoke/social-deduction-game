@@ -15,6 +15,7 @@ import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface StartMatchInput {
   matchId: string;
+  playerToken?: string;
   templates: {
     name?: string;
     alignment: Alignment;
@@ -38,6 +39,8 @@ export class StartMatchUseCase {
       throw new MatchNotFound();
     }
 
+    const requester = match.identify(input.playerToken);
+
     const templates = input.templates.map((raw, index) => {
       const abilities = raw.abilities.map((a) => new Ability(a.id));
       const name = raw.name?.trim() || "Citizen";
@@ -58,7 +61,7 @@ export class StartMatchUseCase {
 
     const result = match.toJSON();
     const events = match.pullEvents();
-    publishMatchEvents(events, result, this.publisher);
+    publishMatchEvents(events, match, this.publisher);
     void publishMatchNarration(events, result, this.narrator, this.publisher).catch(
       (error) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -69,6 +72,6 @@ export class StartMatchUseCase {
       },
     );
 
-    return result;
+    return match.toJSON(requester.id);
   }
 }

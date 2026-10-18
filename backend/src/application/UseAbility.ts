@@ -5,7 +5,7 @@ import { EffectType } from "../domain/entity/ability";
 
 export interface UseAbilityInput {
   matchId: string;
-  actorId: string;
+  playerToken?: string;
   EffectType: EffectType;
   targetIds: string[];
 }
@@ -20,10 +20,11 @@ export class UseAbilityUseCase {
       throw new MatchNotFound();
     }
 
-    match.useAbility(input.actorId, input.EffectType, input.targetIds);
+    const actor = match.identify(input.playerToken);
+    match.useAbility(actor.id, input.EffectType, input.targetIds);
 
     await this.matchRepository.save(match);
 
-    return match.toJSON();
+    return match.toJSON(actor.id);
   }
 }

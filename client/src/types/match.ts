@@ -68,10 +68,10 @@ export interface Match {
   endedAt?: string | null;
 }
 
-export interface PlayerAssignment {
+export interface JoinMatchResult {
   playerId: string;
-  templateId: string;
-  alignment: string;
+  playerToken: string;
+  match: Match;
 }
 
 export interface TemplateInput {

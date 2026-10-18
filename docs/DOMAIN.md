@@ -47,7 +47,7 @@ alignment, abilities and win condition.
 The aggregate delegates work that is a rule set of its own to small services in
 `domain/services/match/`: `MatchVoting` counts votes and picks who is eliminated,
 `WinConditionEvaluator` decides whether a side has won, `TemplateAssignmentService` deals roles out, and
-`MatchSnapshotMapper` builds the JSON view. Each is tested on its own. Ability resolution has its own
+`MatchSnapshotMapper` builds the JSON view for one viewer, hiding other players' roles and actions until the end. Each is tested on its own. Ability resolution has its own
 module, described in [ABILITIES.md](ABILITIES.md).
 
 ## Domain events

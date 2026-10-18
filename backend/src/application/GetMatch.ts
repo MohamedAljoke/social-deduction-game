@@ -4,6 +4,7 @@ import { MatchResponse } from "../domain/entity/match";
 
 export interface GetMatchInput {
   matchId: string;
+  playerToken?: string;
 }
 
 export class GetMatchUseCase {
@@ -16,6 +17,7 @@ export class GetMatchUseCase {
       throw new MatchNotFound();
     }
 
-    return match.toJSON();
+    const viewerId = input.playerToken ? match.identify(input.playerToken).id : null;
+    return match.toJSON(viewerId);
   }
 }

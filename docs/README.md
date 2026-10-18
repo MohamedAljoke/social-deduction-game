@@ -6,7 +6,7 @@ How the game works, part by part. Start with the [project README](../README.md) 
 | --- | --- |
 | [DOMAIN.md](DOMAIN.md) | The `Match` aggregate, its invariants and typed errors, domain services, domain events, ports and layers |
 | [ABILITIES.md](ABILITIES.md) | The abilities, staged and prioritized resolution, one handler per ability, roles and win conditions |
-| [REALTIME.md](REALTIME.md) | HTTP for actions and WebSockets for updates, match rooms, join authorization, surviving a refresh |
+| [REALTIME.md](REALTIME.md) | HTTP for actions and WebSockets for updates, player tokens, a view per player, match rooms, surviving a refresh |
 | [AI-NARRATOR.md](AI-NARRATOR.md) | The optional AI game master: a port, provider failover, public events only, never blocking the game |
 | [TESTING.md](TESTING.md) | Architecture fitness tests, the test layers, Playwright and CI |
 

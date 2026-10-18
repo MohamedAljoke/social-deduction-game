@@ -3,7 +3,6 @@ import type {
   Match,
   MatchWinner,
   Player,
-  PlayerAssignment,
 } from "../../types/match";
 import type { GameMasterMessage } from "../../types/events";
 
@@ -26,8 +25,8 @@ export class GameGateway {
     this.ws.disconnect();
   }
 
-  joinMatch(matchId: string, playerId: string): void {
-    this.ws.send("join_match", { matchId, playerId });
+  joinMatch(matchId: string, playerToken: string): void {
+    this.ws.send("join_match", { matchId, playerToken });
   }
 
   leaveMatch(matchId: string, playerId: string): void {
@@ -96,13 +95,10 @@ export class GameGateway {
     );
   }
 
-  onMatchStarted(
-    handler: (matchId: string, assignments: PlayerAssignment[]) => void,
-  ): () => void {
-    return this.ws.on<{
-      matchId: string;
-      playerAssignments: PlayerAssignment[];
-    }>("match_started", (msg) => handler(msg.matchId, msg.playerAssignments));
+  onMatchStarted(handler: (matchId: string) => void): () => void {
+    return this.ws.on<{ matchId: string }>("match_started", (msg) =>
+      handler(msg.matchId),
+    );
   }
 
   onMatchEnded(

@@ -46,9 +46,10 @@ The AI game master is optional. To try it, put `AI_PROVIDER=auto` and `GEMINI_AP
 - **Abilities that resolve the same way every time.** Kill, protect, roleblock, investigate and vote
   shield run in fixed stages and by priority. Each is one `EffectHandler` class, so a new ability is a new
   class, not another `if`. → [docs/ABILITIES.md](docs/ABILITIES.md)
-- **One room per match over WebSockets.** Actions go over HTTP and updates come back to the match's room;
-  joins are authorized, investigation results go only to the investigator, and a refresh lands back in
-  the game. → [docs/REALTIME.md](docs/REALTIME.md)
+- **Secret roles that stay secret.** Each player acts with a private token and gets their own view of
+  the match: their role, never anyone else's, until the end. Updates come back over a WebSocket room per
+  match, investigation results go only to the investigator, and a refresh lands back in the game.
+  → [docs/REALTIME.md](docs/REALTIME.md)
 - **An optional AI game master that can't break the game.** It narrates from public events only, behind
   an `AiNarrator` port, with failover between Gemini and OpenRouter and a plain fallback message.
   → [docs/AI-NARRATOR.md](docs/AI-NARRATOR.md)

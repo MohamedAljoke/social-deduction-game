@@ -6,7 +6,7 @@ import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface SubmitVoteInput {
   matchId: string;
-  voterId: string;
+  playerToken?: string;
   targetId: string | null;
 }
 
@@ -23,13 +23,13 @@ export class SubmitVoteUseCase {
       throw new MatchNotFound();
     }
 
-    match.submitVote(input.voterId, input.targetId);
+    const voter = match.identify(input.playerToken);
+    match.submitVote(voter.id, input.targetId);
 
     await this.matchRepository.save(match);
 
-    const result = match.toJSON();
-    publishMatchEvents(match.pullEvents(), result, this.publisher);
+    publishMatchEvents(match.pullEvents(), match, this.publisher);
 
-    return result;
+    return match.toJSON(voter.id);
   }
 }

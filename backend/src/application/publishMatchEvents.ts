@@ -1,11 +1,11 @@
-import { MatchResponse } from "../domain/entity/match";
+import { Match } from "../domain/entity/match";
 import { Alignment } from "../domain/entity/template";
 import { MatchDomainEvent } from "../domain/events/match-events";
 import { RealtimeEvent, RealtimePublisher } from "../domain/ports/RealtimePublisher";
 
 export function publishMatchEvents(
   events: MatchDomainEvent[],
-  result: MatchResponse,
+  match: Match,
   publisher: RealtimePublisher,
 ): void {
   const realtimeEvents: RealtimeEvent[] = [];
@@ -20,7 +20,7 @@ export function publishMatchEvents(
         realtimeEvents.push({ type: "PlayerLeft", matchId: event.matchId, playerId: event.playerId });
         break;
       case "MatchStarted":
-        realtimeEvents.push({ type: "MatchStarted", matchId: event.matchId, playerAssignments: event.playerAssignments });
+        realtimeEvents.push({ type: "MatchStarted", matchId: event.matchId });
         break;
       case "VoteSubmitted":
         realtimeEvents.push({ type: "VoteSubmitted", matchId: event.matchId, voterId: event.voterId, targetId: event.targetId });
@@ -64,7 +64,14 @@ export function publishMatchEvents(
   }
 
   if (events.length > 0) {
-    realtimeEvents.push({ type: "MatchSnapshotUpdated", matchId: result.id, match: result });
+    realtimeEvents.push({
+      type: "MatchSnapshotUpdated",
+      matchId: match.id,
+      publicView: match.toJSON(),
+      viewsByPlayerId: Object.fromEntries(
+        match.getPlayers().map((player) => [player.id, match.toJSON(player.id)]),
+      ),
+    });
   }
 
   for (const re of realtimeEvents) {

@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
-import { advancePhase, startGameViaTemplateBuilder } from "./helpers";
+import { advancePhase, startGameViaTemplateBuilder, fetchMatchWithAllRoles } from "./helpers";
 
 // ── Snapshot helpers ──────────────────────────────────────────────────────────
 
@@ -23,9 +23,7 @@ interface MatchSnapshot {
 }
 
 async function getMatchSnapshot(page: Page, matchId: string): Promise<MatchSnapshot> {
-  const res = await page.request.get(`http://127.0.0.1:3000/match/${matchId}`);
-  if (!res.ok()) throw new Error(`Failed to fetch match ${matchId}`);
-  return (await res.json()) as MatchSnapshot;
+  return fetchMatchWithAllRoles<MatchSnapshot>(page, matchId);
 }
 
 function getAlignment(match: MatchSnapshot, playerName: string): string | null {

@@ -6,7 +6,7 @@ import { ServerEvent } from "./mod";
 
 export interface MatchBroadcaster {
   broadcastToMatch(matchId: string, event: ServerEvent): void;
-  broadcastMatchUpdate(matchId: string, state: unknown): void;
+  broadcastMatchUpdate(matchId: string, stateFor: (playerId: string | undefined) => unknown): void;
   sendToPlayer(matchId: string, playerId: string, event: ServerEvent): void;
 }
 
@@ -33,7 +33,6 @@ export class WebSocketPublisher implements RealtimePublisher {
         this.broadcaster.broadcastToMatch(event.matchId, {
           type: "match_started",
           matchId: event.matchId,
-          playerAssignments: event.playerAssignments,
         });
         break;
       case "VoteSubmitted":
@@ -75,7 +74,10 @@ export class WebSocketPublisher implements RealtimePublisher {
         });
         break;
       case "MatchSnapshotUpdated":
-        this.broadcaster.broadcastMatchUpdate(event.matchId, event.match);
+        this.broadcaster.broadcastMatchUpdate(
+          event.matchId,
+          (playerId) => (playerId && event.viewsByPlayerId[playerId]) || event.publicView,
+        );
         break;
       case "GameMasterMessage":
         this.broadcaster.broadcastToMatch(event.matchId, {

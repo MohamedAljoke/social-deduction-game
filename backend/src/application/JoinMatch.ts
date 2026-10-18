@@ -10,25 +10,35 @@ export interface JoinMatchInput {
   playerName: string;
 }
 
+export interface JoinMatchOutput {
+  playerId: string;
+  playerToken: string;
+  match: MatchResponse;
+}
+
 export class JoinMatchUseCase {
   constructor(
     private readonly repository: MatchRepository,
     private readonly publisher: RealtimePublisher,
   ) {}
 
-  async execute(input: JoinMatchInput): Promise<MatchResponse> {
+  async execute(input: JoinMatchInput): Promise<JoinMatchOutput> {
     const match = await this.repository.findById(input.matchId);
 
     if (!match) {
       throw new MatchNotFound();
     }
 
-    match.addPlayer(Player.create(input.playerName));
+    const player = Player.create(input.playerName);
+    match.addPlayer(player);
     await this.repository.save(match);
 
-    const result = match.toJSON();
-    publishMatchEvents(match.pullEvents(), result, this.publisher);
+    publishMatchEvents(match.pullEvents(), match, this.publisher);
 
-    return result;
+    return {
+      playerId: player.id,
+      playerToken: player.getToken(),
+      match: match.toJSON(player.id),
+    };
   }
 }

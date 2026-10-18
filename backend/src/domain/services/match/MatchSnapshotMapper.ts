@@ -21,17 +21,24 @@ export interface MatchSnapshotSource {
 }
 
 export class MatchSnapshotMapper {
-  public map(source: MatchSnapshotSource) {
+  // A viewer sees their own role and actions; everyone's roles become public when the match ends.
+  public map(source: MatchSnapshotSource, viewerId: string | null = null) {
+    const rolesArePublic = source.status === "finished";
+    const canSee = (playerId: string) => rolesArePublic || playerId === viewerId;
+
     return {
       id: source.id,
       name: source.name,
       createdAt: source.createdAt,
       status: source.status,
       players: source.players.map(
-        (player: Player): PlayerResponse => player.toJSON(),
+        (player: Player): PlayerResponse & { templateId?: string } => ({
+          ...player.toJSON(),
+          templateId: canSee(player.id) ? player.getTemplateId() : undefined,
+        }),
       ),
       phase: source.phase,
-      actions: source.actions.map((action) => ({
+      actions: source.actions.filter((action) => canSee(action.actorId)).map((action) => ({
         actorId: action.actorId,
         EffectType: action.effectType,
         targetIds: action.targetIds,

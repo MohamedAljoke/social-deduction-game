@@ -1,4 +1,4 @@
-import { MatchResponse, MatchWinner } from "../../domain/entity/match";
+import { MatchResponse, MatchStatus, MatchWinner } from "../../domain/entity/match";
 import {
   NarrationContext,
   NarrationEventSummary,
@@ -29,6 +29,9 @@ export class NarrationContextBuilder {
     match: MatchResponse,
     event: PublicNarrationEvent,
   ): NarrationContext {
+    // Who holds which role is hidden until the match ends; a prompt asking the model not to tell is not secrecy.
+    const rolesArePublic = match.status === MatchStatus.FINISHED;
+
     return {
       matchId: match.id,
       matchName: match.name,
@@ -36,11 +39,12 @@ export class NarrationContextBuilder {
       players: match.players.map(
         (player): NarrationPlayerSummary => ({
           status: player.status,
-          templateName: player.templateId
-            ? match.templates.find(
-                (template) => template.id === player.templateId,
-              )?.name
-            : undefined,
+          templateName:
+            rolesArePublic && player.templateId
+              ? match.templates.find(
+                  (template) => template.id === player.templateId,
+                )?.name
+              : undefined,
         }),
       ),
       templates: match.templates.map(

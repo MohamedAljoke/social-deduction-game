@@ -262,7 +262,7 @@ describe("MatchSnapshotMapper", () => {
       winner: null,
       winnerAlignment: null,
       endedAt: null,
-    });
+    }, "player");
 
     expect(snapshot).toEqual({
       id: "match-id",
@@ -302,6 +302,34 @@ describe("MatchSnapshotMapper", () => {
       winnerAlignment: null,
       endedAt: null,
     });
+  });
+
+  it("hides other players' roles and actions until the match is finished", () => {
+    const mapper = new MatchSnapshotMapper();
+    const player = createPlayer("player");
+    player.assignTemplate("citizen");
+    const source = {
+      id: "match-id",
+      name: "Test Match",
+      createdAt: new Date("2026-03-10T12:00:00.000Z"),
+      status: MatchStatus.STARTED,
+      players: [player],
+      phase: "action" as const,
+      actions: [new Action("player", EffectType.Investigate, 1, ResolutionStage.READ, ["target"])],
+      templates: [createTemplate("citizen", Alignment.Hero)],
+      votes: [],
+      config: { showVotingTransparency: true, aiGameMasterEnabled: false },
+      winner: null,
+      winnerAlignment: null,
+      endedAt: null,
+    };
+
+    const otherView = mapper.map(source, "someone-else");
+    expect(otherView.players[0].templateId).toBeUndefined();
+    expect(otherView.actions).toEqual([]);
+
+    const finishedView = mapper.map({ ...source, status: MatchStatus.FINISHED }, null);
+    expect(finishedView.players[0].templateId).toBe("citizen");
   });
 });
 
@@ -541,6 +569,9 @@ describe("Match aggregate regression", () => {
     expect(snapshot.winner).toBeNull();
     expect(snapshot.winnerAlignment).toBeNull();
     expect(snapshot.endedAt).toBeNull();
-    expect(snapshot.players.every((player) => player.templateId)).toBe(true);
+    for (const player of [alice, bob]) {
+      const ownView = match.toJSON(player.id);
+      expect(ownView.players.find((p) => p.id === player.id)?.templateId).toBeDefined();
+    }
   });
 });

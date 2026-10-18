@@ -1,5 +1,5 @@
 import { buildContainer, TOKENS } from "./container";
-import { MatchNotFound, PlayerNotInMatch } from "./domain/errors";
+import { MatchNotFound } from "./domain/errors";
 import { ExpressServer } from "./infrastructure/http/express_adapter";
 import { registerRoutes } from "./infrastructure/http/routes/route";
 import { WebSocketManager } from "./infrastructure/websocket/mod";
@@ -19,14 +19,7 @@ export function createApp() {
         throw new MatchNotFound();
       }
 
-      const player = match
-        .toJSON()
-        .players.find((candidate) => candidate.id === input.playerId);
-      if (!player) {
-        throw new PlayerNotInMatch();
-      }
-
-      return player;
+      return match.identify(input.playerToken).toJSON();
     },
   });
 

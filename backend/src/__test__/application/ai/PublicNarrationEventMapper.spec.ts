@@ -125,7 +125,6 @@ describe("PublicNarrationEventMapper", () => {
           id: "player-7",
           name: "Eve",
           status: PlayerStatus.ALIVE,
-          templateId: undefined,
         },
       },
     ];

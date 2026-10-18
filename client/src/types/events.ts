@@ -2,7 +2,6 @@ import type {
   Match,
   MatchWinner,
   Player,
-  PlayerAssignment,
 } from "./match";
 
 export interface GameMasterMessage {
@@ -37,7 +36,6 @@ export type ServerEvent =
   | {
       type: "match_started";
       matchId: string;
-      playerAssignments: PlayerAssignment[];
     }
   | { type: "phase_changed"; matchId: string; phase: string }
   | {

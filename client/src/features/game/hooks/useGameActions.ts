@@ -53,12 +53,7 @@ export function useGameActions() {
   const handleConfirm = useCallback(async () => {
     if (!state.matchId || !state.playerId) return;
     if (selectedAbility && selectedTarget) {
-      await service.useAbility(
-        state.matchId,
-        state.playerId,
-        selectedAbility,
-        selectedTarget,
-      );
+      await service.useAbility(state.matchId, selectedAbility, selectedTarget);
     } else if (selectedVote) {
       const selectedPlayer = state.match?.players.find(
         (player) => player.id === selectedVote,
@@ -72,7 +67,7 @@ export function useGameActions() {
       voteInFlightRef.current = true;
       setPendingVoteAction("cast");
       try {
-        await service.castVote(state.matchId, state.playerId, selectedVote);
+        await service.castVote(state.matchId, selectedVote);
       } finally {
         voteInFlightRef.current = false;
         setPendingVoteAction(null);
@@ -93,7 +88,7 @@ export function useGameActions() {
     voteInFlightRef.current = true;
     setPendingVoteAction("skip");
     try {
-      await service.castVote(state.matchId, state.playerId, null);
+      await service.castVote(state.matchId, null);
     } finally {
       voteInFlightRef.current = false;
       setPendingVoteAction(null);

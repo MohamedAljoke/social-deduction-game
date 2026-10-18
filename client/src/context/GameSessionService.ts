@@ -26,15 +26,13 @@ export class GameSessionService {
     this.navigate = navigate;
   }
 
-  connect(
-    matchId: string,
-    playerId: string,
-  ): void {
+  connect(matchId: string, playerId: string, playerToken: string): void {
     this.currentMatchId = matchId;
     this.currentPlayerId = playerId;
+    this.api.setPlayerToken(playerToken);
 
     const offConnected = this.gateway.onConnected(() => {
-      this.gateway.joinMatch(matchId, playerId);
+      this.gateway.joinMatch(matchId, playerToken);
       offConnected();
     });
 
@@ -95,6 +93,7 @@ export class GameSessionService {
     this.cleanups = [];
     this.currentMatchId = null;
     this.currentPlayerId = null;
+    this.api.setPlayerToken(null);
     this.gateway.disconnect();
   }
 
@@ -107,32 +106,32 @@ export class GameSessionService {
   ): Promise<void> {
     const created = await this.api.createMatch({ name, config });
     const joined = await this.api.joinMatch(created.id, name);
-    const player = joined.players.find((p) => p.name === name);
-    if (!player) throw new Error("Player not found after join");
+    this.api.setPlayerToken(joined.playerToken);
     this.dispatch({
       type: GAME_ACTIONS.SET_MATCH,
       payload: {
-        matchId: joined.id,
-        playerId: player.id,
+        matchId: joined.match.id,
+        playerId: joined.playerId,
+        playerToken: joined.playerToken,
         playerName: name,
         isHost: true,
-        match: joined,
+        match: joined.match,
       },
     });
   }
 
   async joinMatch(matchId: string, name: string): Promise<void> {
     const joined = await this.api.joinMatch(matchId, name);
-    const player = joined.players.find((p) => p.name === name);
-    if (!player) throw new Error("Player not found after join");
+    this.api.setPlayerToken(joined.playerToken);
     this.dispatch({
       type: GAME_ACTIONS.SET_MATCH,
       payload: {
-        matchId: joined.id,
-        playerId: player.id,
+        matchId: joined.match.id,
+        playerId: joined.playerId,
+        playerToken: joined.playerToken,
         playerName: name,
         isHost: false,
-        match: joined,
+        match: joined.match,
       },
     });
   }
@@ -149,21 +148,16 @@ export class GameSessionService {
 
   async useAbility(
     matchId: string,
-    playerId: string,
     EffectType: string,
     targetId: string,
   ): Promise<void> {
-    await this.api.useAbility(matchId, playerId, EffectType, [targetId]);
+    await this.api.useAbility(matchId, EffectType, [targetId]);
     this.dispatch({ type: GAME_ACTIONS.SELECT_ABILITY, payload: null });
     this.dispatch({ type: GAME_ACTIONS.SELECT_TARGET, payload: null });
   }
 
-  async castVote(
-    matchId: string,
-    playerId: string,
-    targetId: string | null,
-  ): Promise<void> {
-    const match = await this.api.submitVote(matchId, playerId, targetId);
+  async castVote(matchId: string, targetId: string | null): Promise<void> {
+    const match = await this.api.submitVote(matchId, targetId);
     this.dispatch({ type: GAME_ACTIONS.UPDATE_MATCH, payload: match });
     this.dispatch({ type: GAME_ACTIONS.SELECT_VOTE, payload: null });
   }

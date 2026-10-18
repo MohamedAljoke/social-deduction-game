@@ -19,6 +19,7 @@ const baseMatch: Match = {
 const baseState: GameState = {
   matchId: "match-1",
   playerId: "player-1",
+  playerToken: "token-1",
   playerName: "Alice",
   isHost: true,
   match: { ...baseMatch, players: [{ id: "player-1", name: "Alice", status: "alive" }] },

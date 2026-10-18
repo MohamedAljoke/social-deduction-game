@@ -9,6 +9,7 @@ import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface AdvancePhaseInput {
   matchId: string;
+  playerToken?: string;
 }
 
 export class AdvancePhaseUseCase {
@@ -26,6 +27,7 @@ export class AdvancePhaseUseCase {
       throw new MatchNotFound();
     }
 
+    const requester = match.identify(input.playerToken);
     const newPhase = match.advancePhase();
 
     if (newPhase === "resolution") {
@@ -36,7 +38,7 @@ export class AdvancePhaseUseCase {
 
     const result = match.toJSON();
     const events = match.pullEvents();
-    publishMatchEvents(events, result, this.publisher);
+    publishMatchEvents(events, match, this.publisher);
     void publishMatchNarration(events, result, this.narrator, this.publisher).catch(
       (error) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -47,6 +49,6 @@ export class AdvancePhaseUseCase {
       },
     );
 
-    return result;
+    return match.toJSON(requester.id);
   }
 }

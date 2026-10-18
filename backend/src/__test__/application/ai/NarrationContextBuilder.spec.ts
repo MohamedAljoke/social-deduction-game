@@ -80,16 +80,7 @@ describe("NarrationContextBuilder", () => {
       matchId: "match-1",
       matchName: "Friday Night Match",
       phase: "resolution",
-      players: [
-        {
-          status: "alive",
-          templateName: "Detective",
-        },
-        {
-          status: "dead",
-          templateName: "Assassin",
-        },
-      ],
+      players: [{ status: "alive" }, { status: "dead" }],
       templates: [
         {
           id: "template-1",
@@ -111,6 +102,37 @@ describe("NarrationContextBuilder", () => {
       },
       winner: null,
     });
+  });
+
+  it("never tells the model which player holds which role while the match is running", () => {
+    const match = createMatchResponse();
+    const event: PublicNarrationEvent = {
+      kind: "phase",
+      matchId: "match-1",
+      phase: "discussion",
+      summary: "A partida avancou para a fase de discussion.",
+    };
+
+    const context = builder.build(match, event);
+
+    expect(context.players.every((player) => player.templateName === undefined)).toBe(true);
+  });
+
+  it("reveals each player's role once the match has finished", () => {
+    const match = { ...createMatchResponse(), status: MatchStatus.FINISHED };
+    const event: PublicNarrationEvent = {
+      kind: "end",
+      matchId: "match-1",
+      winner: { kind: "alignment", alignment: Alignment.Hero },
+      summary: "A partida terminou.",
+    };
+
+    const context = builder.build(match, event);
+
+    expect(context.players.map((player) => player.templateName)).toEqual([
+      "Detective",
+      "Assassin",
+    ]);
   });
 
   it("includes winner data and formats end-of-match summaries", () => {

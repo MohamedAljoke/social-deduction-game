@@ -37,6 +37,7 @@ export interface InvestigateResult {
 export interface GameState {
   matchId: string | null;
   playerId: string | null;
+  playerToken: string | null;
   playerName: string | null;
   isHost: boolean;
   match: Match | null;
@@ -54,6 +55,7 @@ export type GameAction =
       payload: {
         matchId: string;
         playerId: string;
+        playerToken: string;
         playerName: string;
         isHost: boolean;
         match: Match;
@@ -84,6 +86,7 @@ export type GameAction =
 const initialState: GameState = {
   matchId: null,
   playerId: null,
+  playerToken: null,
   playerName: null,
   isHost: false,
   match: null,
@@ -100,6 +103,7 @@ const STORAGE_KEY = "game_session";
 interface SessionData {
   matchId: string;
   playerId: string;
+  playerToken: string;
   playerName: string;
   isHost: boolean;
 }
@@ -108,7 +112,8 @@ function loadSession(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw) as SessionData;
+    const session = JSON.parse(raw) as Partial<SessionData>;
+    return session.playerToken ? session : {};
   } catch {
     return {};
   }
@@ -121,6 +126,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         matchId: action.payload.matchId,
         playerId: action.payload.playerId,
+        playerToken: action.payload.playerToken,
         playerName: action.payload.playerName,
         isHost: action.payload.isHost,
         match: action.payload.match,
@@ -240,23 +246,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (state.matchId && state.playerId && state.playerName) {
-      service.connect(state.matchId, state.playerId);
+    if (state.matchId && state.playerId && state.playerToken && state.playerName) {
+      service.connect(state.matchId, state.playerId, state.playerToken);
       const matchId = state.matchId;
       const playerId = state.playerId;
       return () => service.disconnect(matchId, playerId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.matchId, state.playerId]);
+  }, [state.matchId, state.playerId, state.playerToken]);
 
   // Persist session identity so a page refresh can reconnect
   useEffect(() => {
-    if (state.matchId && state.playerId) {
+    if (state.matchId && state.playerId && state.playerToken) {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
           matchId: state.matchId,
           playerId: state.playerId,
+          playerToken: state.playerToken,
           playerName: state.playerName,
           isHost: state.isHost,
         }),
@@ -264,7 +271,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, [state.matchId, state.playerId, state.playerName, state.isHost]);
+  }, [state.matchId, state.playerId, state.playerToken, state.playerName, state.isHost]);
 
   // On hydration from storage: match data is not persisted, fetch it once
   useEffect(() => {

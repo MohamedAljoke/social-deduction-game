@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import WebSocket, { RawData } from "ws";
 import { createApp } from "../../app";
 import { MatchResponse } from "../../domain/entity/match";
-import { PlayerResponse } from "../../domain/entity/player";
+import { JoinMatchOutput } from "../../application/JoinMatch";
 
 const port = 4002;
 
@@ -22,15 +22,12 @@ describe("WebSocket E2E", () => {
     const match = await createMatch("ws_match");
     const alice = await joinMatch(match.id, "Alice");
     const bob = await joinMatch(match.id, "Bob");
-    const alicePlayer = findPlayer(alice, "Alice");
-    const bobPlayer = findPlayer(bob, "Bob");
-
     const aliceSocket = await connectWebSocket();
     aliceSocket.send(
       JSON.stringify({
         type: "join_match",
         matchId: match.id,
-        playerId: alicePlayer.id,
+        playerToken: alice.playerToken,
       }),
     );
 
@@ -47,7 +44,7 @@ describe("WebSocket E2E", () => {
       JSON.stringify({
         type: "join_match",
         matchId: match.id,
-        playerId: bobPlayer.id,
+        playerToken: bob.playerToken,
       }),
     );
 
@@ -57,7 +54,7 @@ describe("WebSocket E2E", () => {
         matchId: match.id,
         players: [
           {
-            id: alicePlayer.id,
+            id: alice.playerId,
             name: "Alice",
             status: "alive",
           },
@@ -70,7 +67,7 @@ describe("WebSocket E2E", () => {
         type: "player_joined",
         matchId: match.id,
         player: {
-          id: bobPlayer.id,
+          id: bob.playerId,
           name: "Bob",
           status: "alive",
         },
@@ -84,9 +81,37 @@ describe("WebSocket E2E", () => {
     await Promise.all([aliceClosed, bobClosed]);
   });
 
-  it("rejects a spoofed player join with a structured error and closes the socket", async () => {
+  it("sends each player a match update that shows only their own role", async () => {
+    const match = await createMatch("roles_match");
+    const alice = await joinMatch(match.id, "Alice");
+    const bob = await joinMatch(match.id, "Bob");
+    const aliceSocket = await joinRoom(match.id, alice.playerToken);
+    const bobSocket = await joinRoom(match.id, bob.playerToken);
+
+    const aliceUpdate = waitForType(aliceSocket, "match_updated");
+    const bobUpdate = waitForType(bobSocket, "match_updated");
+    await fetch(`http://localhost:${port}/match/${match.id}/start`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-player-token": alice.playerToken },
+      body: JSON.stringify({}),
+    });
+
+    for (const [socketUpdate, self] of [
+      [await aliceUpdate, alice],
+      [await bobUpdate, bob],
+    ] as const) {
+      const state = socketUpdate.state as MatchResponse;
+      const visible = state.players.filter((player) => player.templateId);
+      expect(visible.map((player) => player.id)).toEqual([self.playerId]);
+    }
+
+    aliceSocket.close();
+    bobSocket.close();
+  });
+
+  it("rejects a join with a token that belongs to no player and closes the socket", async () => {
     const match = await createMatch("spoof_match");
-    await joinMatch(match.id, "Alice");
+    const alice = await joinMatch(match.id, "Alice");
 
     const socket = await connectWebSocket();
 
@@ -95,15 +120,14 @@ describe("WebSocket E2E", () => {
       JSON.stringify({
         type: "join_match",
         matchId: match.id,
-        playerId: "spoofed-player-id",
+        playerToken: alice.playerId,
       }),
     );
 
     await expectMessage(socket, (event) => {
       expect(event).toMatchObject({
         type: "error",
-        code: "player_not_in_match",
-        message: "Player is not part of this match",
+        code: "invalid_player_token",
       });
     });
 
@@ -118,7 +142,7 @@ describe("WebSocket E2E", () => {
       JSON.stringify({
         type: "join_match",
         matchId: "UNKNOWN1",
-        playerId: "player-id",
+        playerToken: "player-token",
       }),
     );
 
@@ -144,23 +168,37 @@ async function createMatch(name: string) {
   return (await response.json()) as MatchResponse;
 }
 
-async function joinMatch(matchId: string, name: string): Promise<MatchResponse> {
+async function joinMatch(matchId: string, name: string): Promise<JoinMatchOutput> {
   const response = await fetch(`http://localhost:${port}/match/${matchId}/join`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ name }),
   });
 
-  return (await response.json()) as MatchResponse;
+  return (await response.json()) as JoinMatchOutput;
 }
 
-function findPlayer(match: MatchResponse, name: string): PlayerResponse {
-  const player = match.players.find((candidate) => candidate.name === name);
-  if (!player) {
-    throw new Error(`Expected player ${name} to exist in match ${match.id}`);
-  }
+async function joinRoom(matchId: string, playerToken: string): Promise<WebSocket> {
+  const socket = await connectWebSocket();
+  const synced = waitForType(socket, "players_synced");
+  socket.send(JSON.stringify({ type: "join_match", matchId, playerToken }));
+  await synced;
+  return socket;
+}
 
-  return player;
+async function waitForType(
+  socket: WebSocket,
+  type: string,
+): Promise<Record<string, unknown>> {
+  return new Promise((resolve) => {
+    const onMessage = (raw: RawData) => {
+      const event = JSON.parse(raw.toString()) as Record<string, unknown>;
+      if (event.type !== type) return;
+      socket.off("message", onMessage);
+      resolve(event);
+    };
+    socket.on("message", onMessage);
+  });
 }
 
 async function connectWebSocket(): Promise<WebSocket> {

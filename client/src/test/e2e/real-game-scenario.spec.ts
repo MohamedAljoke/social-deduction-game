@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
-import { advancePhase, createMatch, joinMatch } from "./helpers";
+import { advancePhase, createMatch, joinMatch, fetchMatchWithAllRoles } from "./helpers";
 
 const PLAYER_NAMES = [
   "Alice",
@@ -44,17 +44,8 @@ interface MatchSnapshot {
   winnerAlignment: MatchAlignment | null;
 }
 
-async function getMatchSnapshot(
-  page: Page,
-  matchId: string,
-): Promise<MatchSnapshot> {
-  const response = await page.request.get(
-    `http://127.0.0.1:3000/match/${matchId}`,
-  );
-  if (!response.ok()) {
-    throw new Error(`Failed to fetch match ${matchId}`);
-  }
-  return (await response.json()) as MatchSnapshot;
+async function getMatchSnapshot(page: Page, matchId: string): Promise<MatchSnapshot> {
+  return fetchMatchWithAllRoles<MatchSnapshot>(page, matchId);
 }
 
 function getAlignmentByName(

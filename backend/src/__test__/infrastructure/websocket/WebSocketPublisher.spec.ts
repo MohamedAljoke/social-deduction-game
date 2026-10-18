@@ -19,7 +19,7 @@ describe("WebSocketPublisher", () => {
     publisher.publish({
       type: "PlayerJoined",
       matchId: "match-1",
-      player: { id: "player-1", name: "Alice", status: PlayerStatus.ALIVE, templateId: "template-1" },
+      player: { id: "player-1", name: "Alice", status: PlayerStatus.ALIVE },
     });
 
     expect(broadcaster.broadcastToMatch).toHaveBeenCalledWith("match-1", {
@@ -29,9 +29,27 @@ describe("WebSocketPublisher", () => {
         id: "player-1",
         name: "Alice",
         status: PlayerStatus.ALIVE,
-        templateId: "template-1",
       },
     });
+  });
+
+  it("gives each connected player their own snapshot and others the public one", () => {
+    const broadcaster = createBroadcaster();
+    const publisher = new WebSocketPublisher(broadcaster);
+    const publicView = { id: "public" } as never;
+    const aliceView = { id: "alice" } as never;
+
+    publisher.publish({
+      type: "MatchSnapshotUpdated",
+      matchId: "match-1",
+      publicView,
+      viewsByPlayerId: { "player-1": aliceView },
+    });
+
+    const stateFor = broadcaster.broadcastMatchUpdate.mock.calls[0][1];
+    expect(stateFor("player-1")).toBe(aliceView);
+    expect(stateFor("player-2")).toBe(publicView);
+    expect(stateFor(undefined)).toBe(publicView);
   });
 
   it("broadcasts PlayerKilled to the match room", () => {

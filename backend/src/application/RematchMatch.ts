@@ -6,6 +6,7 @@ import { publishMatchEvents } from "./publishMatchEvents";
 
 export interface RematchMatchInput {
   matchId: string;
+  playerToken?: string;
 }
 
 export class RematchMatchUseCase {
@@ -21,12 +22,12 @@ export class RematchMatchUseCase {
       throw new MatchNotFound();
     }
 
+    const requester = match.identify(input.playerToken);
     match.rematch();
     await this.matchRepository.save(match);
 
-    const result = match.toJSON();
-    publishMatchEvents(match.pullEvents(), result, this.publisher);
+    publishMatchEvents(match.pullEvents(), match, this.publisher);
 
-    return result;
+    return match.toJSON(requester.id);
   }
 }
